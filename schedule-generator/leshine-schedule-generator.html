@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>르샤인 진료일정 자동 생성기</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background: transparent;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    color: #111;
+  }
+
+  .panel { display: none; }
+
+  .main-layout {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 1400px;
+  }
+
+  .preview-wrap {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 32px 24px;
+    overflow: auto;
+    background: transparent;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: transparent;
+    border-left: 1px solid #e4e4e4;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    padding: 20px 18px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .sidebar-section:last-child { border-bottom: none; }
+  .sidebar-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #444;
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+  }
+
+  /* 템플릿 토글 버튼 */
+  .template-toggle {
+    display: flex;
+    gap: 6px;
+  }
+  .tmpl-btn {
+    flex: 1;
+    padding: 8px 6px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 7px;
+    background: #fafafa;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .tmpl-btn.active {
+    background: #111;
+    border-color: #111;
+    color: #fff;
+  }
+
+  .sidebar select,
+  .sidebar input[type=number],
+  .sidebar input[type=text] {
+    padding: 7px 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fafafa;
+    color: #111;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .sidebar select:focus,
+  .sidebar input[type=number]:focus,
+  .sidebar input[type=text]:focus { border-color: #1010FF; }
+
+  .ctrl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .ctrl-row label {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    flex-shrink: 0;
+    width: 28px;
+  }
+  .ctrl-row select,
+  .ctrl-row input[type=number] { flex: 1; width: auto; }
+
+  /* 월 탭 (2개월 모드) */
+  .month-tab {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .month-tab-btn {
+    flex: 1;
+    padding: 6px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 6px;
+    background: #fafafa;
+    font-size: 11px;
+    font-family: inherit;
+    font-weight: 600;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .month-tab-btn.active {
+    background: #1010FF;
+    border-color: #1010FF;
+    color: #fff;
+  }
+
+  .schedule-form {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 10px;
+  }
+
+  .btn-add {
+    width: 100%;
+    padding: 8px;
+    background: #1010FF;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.15s;
+    margin-top: 2px;
+  }
+  .btn-add:hover { background: #0a0acc; }
+
+  .tag-area {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 4px;
+  }
+  .tag {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #f7f7f7;
+    border: 1px solid #e8e8e8;
+    border-radius: 6px;
+    padding: 5px 9px;
+    font-size: 11px;
+    color: #333;
+    gap: 6px;
+  }
+  .tag-info { flex: 1; display: flex; align-items: center; gap: 5px; }
+  .tag-date { font-weight: 700; color: #111; min-width: 22px; }
+  .tag-name { color: #555; }
+  .tag-status {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 20px;
+  }
+  .tag-status.hujin  { background: #fee;     color: #c0392b; }
+  .tag-status.normal { background: #f7f2e8;  color: #AE8D4A; }
+  .tag-status.danchu { background: #eef0fd;  color: #4552EF; }
+  .tag button {
+    background: none; border: none; cursor: pointer;
+    color: #bbb; font-size: 14px; line-height: 1; padding: 0;
+    flex-shrink: 0; transition: color 0.15s;
+  }
+  .tag button:hover { color: #888; }
+
+  .slider-group { margin-bottom: 12px; }
+  .slider-group label { display: block; font-size: 11px; color: #888; margin-bottom: 5px; }
+  .slider-row { display: flex; align-items: center; gap: 8px; }
+  .slider-row input[type=range] { flex: 1; height: 3px; accent-color: #1010FF; cursor: pointer; }
+  .slider-val { font-size: 11px; color: #999; width: 36px; text-align: right; flex-shrink: 0; }
+
+  .btn-reset {
+    width: 100%; padding: 7px; background: #fafafa; border: 1px solid #e0e0e0;
+    border-radius: 6px; font-size: 11px; font-family: inherit; cursor: pointer;
+    color: #777; margin-top: 4px; transition: background 0.15s;
+  }
+  .btn-reset:hover { background: #f0f0f0; }
+
+  .btn-save {
+    width: 100%; padding: 10px; background: #111; color: #fff; border: none;
+    border-radius: 7px; font-size: 12px; font-weight: 700; font-family: inherit;
+    cursor: pointer; margin-bottom: 7px; transition: background 0.15s;
+  }
+  .btn-save:hover { background: #333; }
+  .btn-pdf {
+    width: 100%; padding: 10px; background: #fff; color: #111;
+    border: 1.5px solid #d4d4d4; border-radius: 7px; font-size: 12px;
+    font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-pdf:hover { background: #f5f5f5; border-color: #aaa; }
+
+  .drag-hint { font-size: 10px; color: #ccc; text-align: center; margin-top: 10px; line-height: 1.6; }
+
+  /* ══════════════════════════════════
+     1개월 달력 (595×842 A4)
+  ══════════════════════════════════ */
+  #calendar {
+    width: 595px;
+    height: 842px;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a2e;
+    flex-shrink: 0;
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+  }
+  #calendar.mode-two { display: none; }
+
+  /* ══════════════════════════════════
+     2개월 달력 (595×842 A4)
+  ══════════════════════════════════ */
+  #calendar2 {
+    width: 595px;
+    height: 842px;
+    position: relative;
+    overflow: hidden;
+    background: #1a1a2e;
+    flex-shrink: 0;
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    display: none;
+  }
+
+  /* 미리보기 전용: 저장 시에는 원본 색상 유지 */
+  body:not(.exporting) #calendar,
+  body:not(.exporting) #calendar2 {
+    background: #d4d4d4;
+  }
+
+  /* 공통 배경/오버레이 */
+  .cal-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    transform-origin: center center;
+    transform: scale(1);
+    z-index: 0;
+  }
+  .cal-bg-img:not([src]), .cal-bg-img[src=""] { display: none; }
+  .ov-top {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.32);
+    z-index: 1; display: none;
+  }
+
+  /* ── 1개월 내부 ── */
+  .cal-inner {
+    position: relative; z-index: 10;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center;
+    padding-bottom: 48px;
+  }
+  .cal-logo { display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+  .cal-slogan {
+    font-size: 18px;
+    color: rgba(255,255,255,0.88); letter-spacing: 0.5px; font-weight: 400;
+  }
+  .cal-title {
+    margin-top: 6px; font-size: 44px; font-weight: 700;
+    color: #fff; letter-spacing: -0.5px;
+  }
+  .cal-card {
+    margin-top: 20px; margin-bottom: 6px; width: 518px;
+    background: rgba(255,255,255,0.97); border-radius: 0;
+    padding: 18px 16px; box-shadow: 0 4px 28px rgba(0,0,0,0.2);
+  }
+  .cal-msg {
+    margin-top: 20px; margin-bottom: 8px; padding: 5px 18px;
+    font-size: 17px; color: rgba(255,255,255,0.82);
+    font-weight: 400; text-align: center; letter-spacing: 0.2px;
+  }
+
+  /* ── 2개월 내부 ── */
+  .cal2-inner {
+    position: relative; z-index: 10;
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center;
+    padding-bottom: 48px;
+  }
+  .cal2-header {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 0;
+  }
+  .cal2-logo { display: flex; justify-content: center; margin-bottom: 10px; margin-top: 10px; }
+  .cal2-slogan {
+    font-size: 18px;
+    color: rgba(255,255,255,0.85); letter-spacing: -0.3px;
+    white-space: nowrap; text-align: center;
+  }
+  /* 슬로건 + 카드2개 + 메시지 를 감싸는 중앙 그룹 */
+  .cal2-group {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  /* 2개월 달력 카드 공통 — 카드 양쪽 여백 합 267px → 카드 너비 336px */
+  .cal2-card {
+    width: 390px;
+    background: rgba(255,255,255,0.97);
+    border-radius: 0;
+    padding: 8px 12px 6px;
+    box-shadow: 0 3px 16px rgba(0,0,0,0.18);
+    margin-top: 8px;
+  }
+  .cal2-card + .cal2-card { margin-top: 6px; }
+
+  .cal2-title {
+    font-size: 20px; font-weight: 400;
+    color: #111; text-align: center;
+    margin-top: 3px; margin-bottom: 14px; letter-spacing: -0.3px;
+  }
+  .cal2-msg {
+    margin-top: 20px; padding: 0 12px;
+    font-size: 15px; color: rgba(255,255,255,0.82);
+    font-weight: 400; text-align: center;
+  }
+
+  /* 달력 공통 그리드 */
+  .week-header {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    border-bottom: 1px solid #e8e8e8;
+    padding-bottom: 5px; margin-bottom: 2px;
+  }
+  .wh {
+    text-align: center; font-size: 17px;
+    font-weight: 300; color: #555; padding: 3px 0;
+    font-family: 'Cormorant', serif;
+  }
+  .wh.sun { color: #c0392b; }
+  /* 2개월 카드 안 wh는 더 작게 */
+  .cal2-card .wh { font-size: 10px; padding: 2px 0; }
+
+  /* 1개월 셀 */
+  .day-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .dc {
+    text-align: center; padding: 8px 0 5px;
+    font-size: 14px; font-weight: 500; color: #333;
+    line-height: 1.2; min-height: 72px;
+  }
+  .dc.sun { color: #c0392b; }
+  .dc .dn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%; font-size: 15px;
+  }
+
+  /* 2개월 셀 (더 컴팩트) */
+  .day-grid2 { display: grid; grid-template-columns: repeat(7, 1fr); }
+  .dc2 {
+    text-align: center; padding: 3px 0 1px;
+    font-size: 10px; font-weight: 500; color: #333;
+    line-height: 1.2; min-height: 36px;
+  }
+  .dc2.sun { color: #c0392b; }
+  .dc2 .dn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 19px; height: 19px; border-radius: 50%; font-size: 10px;
+  }
+
+  /* 상태별 날짜 원형 */
+  .hol-hujin  .dn { background: #c0392b; color: #fff; font-weight: 700; }
+  .hol-normal .dn { background: #AE8D4A; color: #fff; font-weight: 700; }
+  .hol-danchu .dn { background: #4552EF; color: #fff; font-weight: 700; }
+
+  /* 라벨 공통 */
+  .hlabel {
+    display: block; font-weight: 600; margin-top: 2px; line-height: 1.3;
+  }
+  .dc  .hlabel { font-size: 11px; }
+  .dc2 .hlabel { font-size: 7.5px; margin-top: 1px; }
+  .hol-hujin  .hlabel { color: #c0392b; }
+  .hol-normal .hlabel { color: #AE8D4A; }
+  .hol-danchu .hlabel { color: #4552EF; }
+
+  .hstatus {
+    display: block; font-size: 9px; font-weight: 400; color: #999; margin-top: 1px;
+  }
+  .dc2 .hstatus { font-size: 7px; }
+
+  /* 하단 진료시간 바 */
+  .hours-bar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.72);
+    display: flex; align-items: center; justify-content: space-around;
+    z-index: 20; padding: 0 20px;
+  }
+  .hours-bar { height: 48px; }
+  .hi { text-align: center; }
+  .hi .lb {
+    display: block; font-size: 9px;
+    color: rgba(255,255,255,0.6); margin-bottom: 4px;
+  }
+  .hi .tm {
+    display: block; font-size: 12px;
+    color: #fff; font-weight: 600; white-space: nowrap;
+  }
+  .hdiv { width: 1px; height: 18px; background: rgba(255,255,255,0.2); }
+
+  @media print {
+    .sidebar { display: none; }
+    .preview-wrap { padding: 0; background: none; }
+    .main-layout { display: block; }
+    body { background: none; }
+    #calendar, #calendar2 { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="panel"></div>
+
+<div class="main-layout">
+
+  <!-- ── 미리보기 ── -->
+  <div class="preview-wrap">
+
+    <!-- 1개월 달력 -->
+    <div id="calendar">
+      <img class="cal-bg-img" id="cal-bg" src="" alt="">
+      <div class="ov-top" id="ov-top"></div>
+      <div class="cal-inner">
+        <div class="cal-logo">
+          <svg width="298" height="43" viewBox="0 0 298 43" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:20px; width:auto;">
+<path d="M15.8469 1.28502C16.1339 1.78318 16.3028 2.41719 16.3478 3.18141C16.3928 3.88902 16.4153 4.77212 16.4153 5.80806V26.7873C16.5447 27.5232 16.8317 28.0779 17.2932 28.4912C17.749 28.9044 18.278 29.1026 18.897 29.1026H32.9768V28.4629H25.92C21.2943 28.4629 20.4895 28.1176 20.3714 27.6364C20.135 27.342 19.9887 26.9231 19.9268 26.3684C19.8649 25.8193 19.8368 25.14 19.8368 24.2795V0H13.8098C14.0462 0.045287 14.2544 0.0962349 14.4457 0.164165C15.076 0.379279 15.5487 0.758557 15.8526 1.28502H15.8469Z" fill="white"/>
+<path d="M24.2769 17.6282C24.9522 18.2962 25.802 18.9472 26.798 19.5756C27.8222 20.2209 28.9871 20.9172 30.2589 21.6588C31.2155 22.2248 32.1047 22.7456 32.9094 23.2042C33.731 23.674 34.44 24.1835 35.0309 24.7156C35.6387 25.2647 36.1058 25.8931 36.4265 26.5837C36.7473 27.28 36.9105 28.1405 36.9105 29.1368C36.9105 32.7654 34.5751 34.6108 29.9719 34.6108C27.5577 34.6108 25.0817 33.7164 22.6 31.9559C22.4649 31.8597 22.3467 31.8144 22.2286 31.8144C22.1948 31.8144 22.0991 31.8144 21.9585 31.9672C21.8515 32.0804 21.8065 32.2106 21.8065 32.3691C21.8065 32.5899 21.9472 32.822 22.2229 33.0598L22.2342 33.0711L22.2455 33.0824C23.2021 34.0165 24.3614 34.741 25.7063 35.2335C27.0569 35.7317 28.5369 35.9864 30.1069 35.9864C31.677 35.9864 33.0276 35.7883 34.2712 35.4034C35.498 35.0184 36.5503 34.4693 37.3944 33.773C38.2273 33.0824 38.8857 32.2333 39.3415 31.2596C39.7973 30.2803 40.0337 29.1821 40.0337 27.982C40.0337 27.0536 39.9099 26.2271 39.6679 25.5251C39.4259 24.8288 39.0601 24.1835 38.5818 23.6004C38.0922 23.0117 37.4732 22.4456 36.7473 21.9248C35.9988 21.387 35.121 20.8096 34.1418 20.2209C32.8475 19.4567 31.6601 18.8283 30.6022 18.3471C29.5104 17.849 28.6044 17.3282 27.901 16.8017C27.0062 16.1394 26.3253 15.4092 25.8864 14.6336C25.4418 13.8468 25.2167 12.9353 25.2167 11.9221C25.2167 10.2917 25.757 8.9784 26.8205 8.01605C27.8729 7.06502 29.336 6.58385 31.1705 6.58385C33.2189 6.58385 34.8846 7.09332 36.1226 8.08964C36.9555 8.76328 37.5182 9.60109 37.7996 10.5861V7.82924C36.8373 7.16692 35.8413 6.68574 34.8452 6.38572C33.7873 6.06871 32.6336 5.90454 31.4238 5.90454C28.4187 5.90454 26.0946 6.54988 24.5189 7.81792C22.9489 9.08595 22.1836 10.7389 22.1836 12.8731C22.1836 13.8694 22.3636 14.7582 22.7238 15.4997C23.0896 16.2583 23.6073 16.9772 24.2713 17.6282H24.2769Z" fill="white"/>
+<path d="M50.2192 16.0541H50.011C49.9998 19.3261 49.3526 22.5924 48.0977 25.604C46.8484 28.6213 44.997 31.3781 42.701 33.6821C40.3994 35.9861 37.6476 37.8258 34.6538 39.0656C31.6601 40.311 28.4187 40.9393 25.1773 40.9337C21.9415 40.9393 18.7002 40.311 15.7007 39.0656C12.7013 37.8258 9.94954 35.9861 7.65356 33.6821C5.35195 31.3781 3.50616 28.6213 2.25687 25.604C1.22706 23.1302 0.613672 20.4809 0.416713 17.8033H12.6563V15.7314H0.000284963V17.8033H0.0115398C-0.0784987 20.5545 0.360439 23.351 1.2552 26.0229C1.80668 27.6363 2.53824 29.1987 3.41049 30.6875C4.28274 32.1763 5.34632 33.5519 6.51119 34.8312L7.4172 35.7653L8.36824 36.6597C8.69463 36.9427 9.03227 37.2201 9.36991 37.4919C9.71881 37.7523 10.0621 38.0183 10.4166 38.2731C11.8403 39.2807 13.3654 40.1468 14.9636 40.8601C18.1712 42.264 21.6827 42.9659 25.1773 42.9999C28.6775 42.9716 32.1834 42.264 35.3967 40.8657C36.9948 40.1525 38.5199 39.2864 39.9436 38.2787C40.2981 38.024 40.6414 37.7579 40.9903 37.4975C41.3279 37.2258 41.6656 36.9484 41.9976 36.6654L42.9486 35.7709L43.8547 34.8369C45.0252 33.5575 46.0831 32.1763 46.9554 30.6931C47.8276 29.2043 48.5592 27.6419 49.1106 26.0286C50.1911 22.7906 50.6075 19.3601 50.2192 16.0598V16.0541Z" fill="white"/>
+<path d="M87.5292 33.7529H70.8855C71.0318 33.334 71.0993 32.8699 71.0993 32.3718V5.66732C71.0993 5.14659 71.0318 4.67114 70.8855 4.24097H76.7935C76.6472 4.67114 76.5797 5.14659 76.5797 5.66732V31.3756H85.8749C86.5839 31.3643 87.1353 31.2964 87.5292 31.1832V33.7529Z" fill="white"/>
+<path d="M100.245 4.24097H117.249V6.64086C116.754 6.4937 116.236 6.42578 115.707 6.42578H105.94V17.6668H115.449C116.135 17.6668 116.731 17.5989 117.249 17.4743V19.8742C116.822 19.7837 116.236 19.7497 115.494 19.7497H105.94V31.3756H115.426C115.955 31.3756 116.563 31.3077 117.249 31.1605V33.7529H100.268C100.392 33.3227 100.459 32.8473 100.459 32.3492V5.66732C100.459 5.07867 100.392 4.60322 100.245 4.24097Z" fill="white"/>
+<path d="M141.23 31.9077L142.333 28.4097C143.211 29.0889 143.942 29.6097 144.516 29.9606C146.249 31.036 148.117 31.5794 150.131 31.5794C152.146 31.5794 153.71 31.0473 154.858 29.9832C155.882 29.0323 156.399 27.8663 156.399 26.4853C156.399 24.8665 155.668 23.5646 154.216 22.5685C153.541 22.1043 151.887 21.3119 149.242 20.1912C146.508 19.0252 144.572 17.8592 143.458 16.7159C142.13 15.3575 141.466 13.7726 141.466 11.9614C141.466 10.6595 141.804 9.44828 142.468 8.32757C143.132 7.20687 144.066 6.26729 145.27 5.52015C147.093 4.3768 149.456 3.81079 152.348 3.81079C154.813 3.81079 157.356 4.33152 159.989 5.38431L158.954 8.52002C156.422 6.9465 154.115 6.1654 152.011 6.1654C150.345 6.1654 148.995 6.64086 147.948 7.59176C147.07 8.41814 146.632 9.403 146.632 10.5577C146.632 11.9274 147.284 13.0708 148.578 13.9764C149.411 14.565 151.032 15.3575 153.429 16.3536C156.456 17.5989 158.504 18.7988 159.573 19.9874C160.912 21.4817 161.587 23.225 161.587 25.1948C161.587 26.5305 161.261 27.8211 160.619 29.055C159.967 30.2889 159.067 31.319 157.896 32.1567C156.028 33.5152 153.496 34.183 150.311 34.183C147.802 34.183 145.405 33.7189 143.132 32.802C142.614 32.5869 141.984 32.2926 141.23 31.919V31.9077Z" fill="white"/>
+<path d="M180.909 19.5686V32.3492C180.909 32.8699 180.977 33.334 181.123 33.7529H175.215C175.361 33.368 175.429 32.8925 175.429 32.3492V5.64468C175.429 5.12395 175.361 4.65982 175.215 4.24097H181.123C180.977 4.71642 180.909 5.19187 180.909 5.66732V17.4064H195.314V5.66732C195.314 5.19187 195.246 4.71642 195.1 4.24097H201.008C200.861 4.65982 200.794 5.12395 200.794 5.64468V32.3378C200.794 32.8586 200.861 33.3227 201.008 33.7416H195.1C195.246 33.3227 195.314 32.8586 195.314 32.3378V19.5573H180.909V19.5686Z" fill="white"/>
+<path d="M217.066 4.24097H222.974C222.85 4.59189 222.772 5.05603 222.76 5.64468V32.3265C222.772 32.9265 222.85 33.402 222.974 33.7529H217.066C217.212 33.3227 217.28 32.8473 217.28 32.3265V5.64468C217.28 5.13527 217.212 4.67114 217.066 4.24097Z" fill="white"/>
+<path d="M241.621 9.68601V32.3152C241.621 32.8473 241.688 33.3227 241.835 33.7416H238.909C239.055 33.3114 239.123 32.8359 239.123 32.3152V5.66732C239.123 5.12395 239.055 4.6485 238.909 4.24097H244.119C244.198 4.52397 244.389 4.86358 244.693 5.25979L262.608 27.8097V5.66732C262.608 5.15791 262.541 4.68246 262.395 4.24097H265.32C265.197 4.56925 265.118 5.0447 265.107 5.64468V32.4284C265.118 33.0057 265.208 33.4472 265.343 33.7416H260.56C260.459 33.4925 260.223 33.1303 259.84 32.6435L241.61 9.68601H241.621Z" fill="white"/>
+<path d="M280.996 4.24097H298V6.64086C297.505 6.4937 296.987 6.42578 296.458 6.42578H286.691V17.6668H296.2C296.886 17.6668 297.482 17.5989 298 17.4743V19.8742C297.572 19.7837 296.987 19.7497 296.245 19.7497H286.691V31.3756H296.177C296.706 31.3756 297.314 31.3077 298 31.1605V33.7529H281.019C281.143 33.3227 281.21 32.8473 281.21 32.3492V5.66732C281.21 5.07867 281.143 4.60322 280.996 4.24097Z" fill="white"/>
+</svg>
+        </div>
+        <div class="cal-slogan">빛나는 가치, 나를 위한 선택 르샤인</div>
+        <div class="cal-title" id="cal-title-1">3월 진료일정 안내</div>
+        <div class="cal-card">
+          <div class="week-header">
+            <div class="wh sun">sun</div><div class="wh">mon</div><div class="wh">tue</div>
+            <div class="wh">wed</div><div class="wh">thu</div><div class="wh">fri</div><div class="wh">sat</div>
+          </div>
+          <div class="day-grid" id="day-grid-1"></div>
+        </div>
+        <div class="cal-msg">르샤인의원은 정확한 시술과 올바른 효과를 위해<br>디자인 시술을 약속합니다.</div>
+      </div>
+      <div class="hours-bar">
+        <div class="hi"><span class="lb">월 - 금</span><span class="tm">AM 10:00 - PM 9:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">토 - 일</span><span class="tm">AM 10:00 - PM 7:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">점심시간</span><span class="tm">PM 1:00 - PM 2:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">공휴일</span><span class="tm">AM 10:00 - PM 5:00</span></div>
+      </div>
+    </div><!-- /#calendar -->
+
+    <!-- 2개월 달력 -->
+    <div id="calendar2">
+      <img class="cal-bg-img" id="cal-bg2" src="" alt="" style="display:none;" onerror="this.style.display='none'">
+      <div class="ov-top" id="ov-top2"></div>
+      <div class="cal2-inner">
+        <div class="cal2-header">
+          <div class="cal2-slogan">빛나는 가치, 나를 위한 선택 르샤인</div>
+          <div class="cal2-logo">
+            <svg width="298" height="43" viewBox="0 0 298 43" fill="none" xmlns="http://www.w3.org/2000/svg" style="height:35px; width:auto;">
+<path d="M15.8469 1.28502C16.1339 1.78318 16.3028 2.41719 16.3478 3.18141C16.3928 3.88902 16.4153 4.77212 16.4153 5.80806V26.7873C16.5447 27.5232 16.8317 28.0779 17.2932 28.4912C17.749 28.9044 18.278 29.1026 18.897 29.1026H32.9768V28.4629H25.92C21.2943 28.4629 20.4895 28.1176 20.3714 27.6364C20.135 27.342 19.9887 26.9231 19.9268 26.3684C19.8649 25.8193 19.8368 25.14 19.8368 24.2795V0H13.8098C14.0462 0.045287 14.2544 0.0962349 14.4457 0.164165C15.076 0.379279 15.5487 0.758557 15.8526 1.28502H15.8469Z" fill="white"/>
+<path d="M24.2769 17.6282C24.9522 18.2962 25.802 18.9472 26.798 19.5756C27.8222 20.2209 28.9871 20.9172 30.2589 21.6588C31.2155 22.2248 32.1047 22.7456 32.9094 23.2042C33.731 23.674 34.44 24.1835 35.0309 24.7156C35.6387 25.2647 36.1058 25.8931 36.4265 26.5837C36.7473 27.28 36.9105 28.1405 36.9105 29.1368C36.9105 32.7654 34.5751 34.6108 29.9719 34.6108C27.5577 34.6108 25.0817 33.7164 22.6 31.9559C22.4649 31.8597 22.3467 31.8144 22.2286 31.8144C22.1948 31.8144 22.0991 31.8144 21.9585 31.9672C21.8515 32.0804 21.8065 32.2106 21.8065 32.3691C21.8065 32.5899 21.9472 32.822 22.2229 33.0598L22.2342 33.0711L22.2455 33.0824C23.2021 34.0165 24.3614 34.741 25.7063 35.2335C27.0569 35.7317 28.5369 35.9864 30.1069 35.9864C31.677 35.9864 33.0276 35.7883 34.2712 35.4034C35.498 35.0184 36.5503 34.4693 37.3944 33.773C38.2273 33.0824 38.8857 32.2333 39.3415 31.2596C39.7973 30.2803 40.0337 29.1821 40.0337 27.982C40.0337 27.0536 39.9099 26.2271 39.6679 25.5251C39.4259 24.8288 39.0601 24.1835 38.5818 23.6004C38.0922 23.0117 37.4732 22.4456 36.7473 21.9248C35.9988 21.387 35.121 20.8096 34.1418 20.2209C32.8475 19.4567 31.6601 18.8283 30.6022 18.3471C29.5104 17.849 28.6044 17.3282 27.901 16.8017C27.0062 16.1394 26.3253 15.4092 25.8864 14.6336C25.4418 13.8468 25.2167 12.9353 25.2167 11.9221C25.2167 10.2917 25.757 8.9784 26.8205 8.01605C27.8729 7.06502 29.336 6.58385 31.1705 6.58385C33.2189 6.58385 34.8846 7.09332 36.1226 8.08964C36.9555 8.76328 37.5182 9.60109 37.7996 10.5861V7.82924C36.8373 7.16692 35.8413 6.68574 34.8452 6.38572C33.7873 6.06871 32.6336 5.90454 31.4238 5.90454C28.4187 5.90454 26.0946 6.54988 24.5189 7.81792C22.9489 9.08595 22.1836 10.7389 22.1836 12.8731C22.1836 13.8694 22.3636 14.7582 22.7238 15.4997C23.0896 16.2583 23.6073 16.9772 24.2713 17.6282H24.2769Z" fill="white"/>
+<path d="M50.2192 16.0541H50.011C49.9998 19.3261 49.3526 22.5924 48.0977 25.604C46.8484 28.6213 44.997 31.3781 42.701 33.6821C40.3994 35.9861 37.6476 37.8258 34.6538 39.0656C31.6601 40.311 28.4187 40.9393 25.1773 40.9337C21.9415 40.9393 18.7002 40.311 15.7007 39.0656C12.7013 37.8258 9.94954 35.9861 7.65356 33.6821C5.35195 31.3781 3.50616 28.6213 2.25687 25.604C1.22706 23.1302 0.613672 20.4809 0.416713 17.8033H12.6563V15.7314H0.000284963V17.8033H0.0115398C-0.0784987 20.5545 0.360439 23.351 1.2552 26.0229C1.80668 27.6363 2.53824 29.1987 3.41049 30.6875C4.28274 32.1763 5.34632 33.5519 6.51119 34.8312L7.4172 35.7653L8.36824 36.6597C8.69463 36.9427 9.03227 37.2201 9.36991 37.4919C9.71881 37.7523 10.0621 38.0183 10.4166 38.2731C11.8403 39.2807 13.3654 40.1468 14.9636 40.8601C18.1712 42.264 21.6827 42.9659 25.1773 42.9999C28.6775 42.9716 32.1834 42.264 35.3967 40.8657C36.9948 40.1525 38.5199 39.2864 39.9436 38.2787C40.2981 38.024 40.6414 37.7579 40.9903 37.4975C41.3279 37.2258 41.6656 36.9484 41.9976 36.6654L42.9486 35.7709L43.8547 34.8369C45.0252 33.5575 46.0831 32.1763 46.9554 30.6931C47.8276 29.2043 48.5592 27.6419 49.1106 26.0286C50.1911 22.7906 50.6075 19.3601 50.2192 16.0598V16.0541Z" fill="white"/>
+<path d="M87.5292 33.7529H70.8855C71.0318 33.334 71.0993 32.8699 71.0993 32.3718V5.66732C71.0993 5.14659 71.0318 4.67114 70.8855 4.24097H76.7935C76.6472 4.67114 76.5797 5.14659 76.5797 5.66732V31.3756H85.8749C86.5839 31.3643 87.1353 31.2964 87.5292 31.1832V33.7529Z" fill="white"/>
+<path d="M100.245 4.24097H117.249V6.64086C116.754 6.4937 116.236 6.42578 115.707 6.42578H105.94V17.6668H115.449C116.135 17.6668 116.731 17.5989 117.249 17.4743V19.8742C116.822 19.7837 116.236 19.7497 115.494 19.7497H105.94V31.3756H115.426C115.955 31.3756 116.563 31.3077 117.249 31.1605V33.7529H100.268C100.392 33.3227 100.459 32.8473 100.459 32.3492V5.66732C100.459 5.07867 100.392 4.60322 100.245 4.24097Z" fill="white"/>
+<path d="M141.23 31.9077L142.333 28.4097C143.211 29.0889 143.942 29.6097 144.516 29.9606C146.249 31.036 148.117 31.5794 150.131 31.5794C152.146 31.5794 153.71 31.0473 154.858 29.9832C155.882 29.0323 156.399 27.8663 156.399 26.4853C156.399 24.8665 155.668 23.5646 154.216 22.5685C153.541 22.1043 151.887 21.3119 149.242 20.1912C146.508 19.0252 144.572 17.8592 143.458 16.7159C142.13 15.3575 141.466 13.7726 141.466 11.9614C141.466 10.6595 141.804 9.44828 142.468 8.32757C143.132 7.20687 144.066 6.26729 145.27 5.52015C147.093 4.3768 149.456 3.81079 152.348 3.81079C154.813 3.81079 157.356 4.33152 159.989 5.38431L158.954 8.52002C156.422 6.9465 154.115 6.1654 152.011 6.1654C150.345 6.1654 148.995 6.64086 147.948 7.59176C147.07 8.41814 146.632 9.403 146.632 10.5577C146.632 11.9274 147.284 13.0708 148.578 13.9764C149.411 14.565 151.032 15.3575 153.429 16.3536C156.456 17.5989 158.504 18.7988 159.573 19.9874C160.912 21.4817 161.587 23.225 161.587 25.1948C161.587 26.5305 161.261 27.8211 160.619 29.055C159.967 30.2889 159.067 31.319 157.896 32.1567C156.028 33.5152 153.496 34.183 150.311 34.183C147.802 34.183 145.405 33.7189 143.132 32.802C142.614 32.5869 141.984 32.2926 141.23 31.919V31.9077Z" fill="white"/>
+<path d="M180.909 19.5686V32.3492C180.909 32.8699 180.977 33.334 181.123 33.7529H175.215C175.361 33.368 175.429 32.8925 175.429 32.3492V5.64468C175.429 5.12395 175.361 4.65982 175.215 4.24097H181.123C180.977 4.71642 180.909 5.19187 180.909 5.66732V17.4064H195.314V5.66732C195.314 5.19187 195.246 4.71642 195.1 4.24097H201.008C200.861 4.65982 200.794 5.12395 200.794 5.64468V32.3378C200.794 32.8586 200.861 33.3227 201.008 33.7416H195.1C195.246 33.3227 195.314 32.8586 195.314 32.3378V19.5573H180.909V19.5686Z" fill="white"/>
+<path d="M217.066 4.24097H222.974C222.85 4.59189 222.772 5.05603 222.76 5.64468V32.3265C222.772 32.9265 222.85 33.402 222.974 33.7529H217.066C217.212 33.3227 217.28 32.8473 217.28 32.3265V5.64468C217.28 5.13527 217.212 4.67114 217.066 4.24097Z" fill="white"/>
+<path d="M241.621 9.68601V32.3152C241.621 32.8473 241.688 33.3227 241.835 33.7416H238.909C239.055 33.3114 239.123 32.8359 239.123 32.3152V5.66732C239.123 5.12395 239.055 4.6485 238.909 4.24097H244.119C244.198 4.52397 244.389 4.86358 244.693 5.25979L262.608 27.8097V5.66732C262.608 5.15791 262.541 4.68246 262.395 4.24097H265.32C265.197 4.56925 265.118 5.0447 265.107 5.64468V32.4284C265.118 33.0057 265.208 33.4472 265.343 33.7416H260.56C260.459 33.4925 260.223 33.1303 259.84 32.6435L241.61 9.68601H241.621Z" fill="white"/>
+<path d="M280.996 4.24097H298V6.64086C297.505 6.4937 296.987 6.42578 296.458 6.42578H286.691V17.6668H296.2C296.886 17.6668 297.482 17.5989 298 17.4743V19.8742C297.572 19.7837 296.987 19.7497 296.245 19.7497H286.691V31.3756H296.177C296.706 31.3756 297.314 31.3077 298 31.1605V33.7529H281.019C281.143 33.3227 281.21 32.8473 281.21 32.3492V5.66732C281.21 5.07867 281.143 4.60322 280.996 4.24097Z" fill="white"/>
+</svg>
+          </div>
+        </div>
+
+        <div class="cal2-group">
+
+          <!-- 첫 번째 달 -->
+          <div class="cal2-card">
+            <div class="cal2-title" id="cal2-title-1">2월 진료일정 안내</div>
+            <div class="week-header">
+              <div class="wh sun">sun</div><div class="wh">mon</div><div class="wh">tue</div>
+              <div class="wh">wed</div><div class="wh">thu</div><div class="wh">fri</div><div class="wh">sat</div>
+            </div>
+            <div class="day-grid2" id="day-grid2-1"></div>
+          </div>
+
+          <!-- 두 번째 달 -->
+          <div class="cal2-card">
+            <div class="cal2-title" id="cal2-title-2">3월 진료일정 안내</div>
+            <div class="week-header">
+              <div class="wh sun">sun</div><div class="wh">mon</div><div class="wh">tue</div>
+              <div class="wh">wed</div><div class="wh">thu</div><div class="wh">fri</div><div class="wh">sat</div>
+            </div>
+            <div class="day-grid2" id="day-grid2-2"></div>
+          </div>
+
+          <div class="cal2-msg">르샤인의원은 정확한 시술과 올바른 효과를 위해<br>디자인 시술을 약속합니다.</div>
+        </div>
+      </div>
+      <div class="hours-bar">
+        <div class="hi"><span class="lb">월 - 금</span><span class="tm">AM 10:00 - PM 9:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">토 - 일</span><span class="tm">AM 10:00 - PM 7:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">점심시간</span><span class="tm">PM 1:00 - PM 2:00</span></div>
+        <div class="hdiv"></div>
+        <div class="hi"><span class="lb">공휴일</span><span class="tm">AM 10:00 - PM 5:00</span></div>
+      </div>
+    </div><!-- /#calendar2 -->
+
+  </div><!-- /preview-wrap -->
+
+  <!-- ── 우측 사이드바 ── -->
+  <div class="sidebar">
+
+    <!-- 템플릿 선택 -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">템플릿</div>
+      <div class="template-toggle">
+        <button class="tmpl-btn active" id="tmpl-1" onclick="switchTemplate(1)">1개월</button>
+        <button class="tmpl-btn"        id="tmpl-2" onclick="switchTemplate(2)">2개월</button>
+      </div>
+    </div>
+
+    <!-- 날짜 섹션 -->
+    <div class="sidebar-section" id="section-date-1">
+      <div class="sidebar-title">날짜</div>
+      <div class="ctrl-row">
+        <label>연도</label>
+        <input type="number" id="inp-year" value="2026" min="2024" max="2030">
+      </div>
+      <div class="ctrl-row">
+        <label>월</label>
+        <select id="inp-month">
+          <option value="1">1월</option><option value="2">2월</option>
+          <option value="3" selected>3월</option><option value="4">4월</option>
+          <option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option>
+          <option value="9">9월</option><option value="10">10월</option>
+          <option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 2개월 날짜 섹션 -->
+    <div class="sidebar-section" id="section-date-2" style="display:none;">
+      <div class="sidebar-title">날짜</div>
+      <div class="ctrl-row">
+        <label>연도</label>
+        <input type="number" id="inp-year2" value="2026" min="2024" max="2030">
+      </div>
+      <div class="ctrl-row" style="margin-bottom:6px;">
+        <label style="width:60px;">1번째 달력</label>
+        <select id="inp-month2-1">
+          <option value="1">1월</option><option value="2" selected>2월</option>
+          <option value="3">3월</option><option value="4">4월</option>
+          <option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option>
+          <option value="9">9월</option><option value="10">10월</option>
+          <option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+      <div class="ctrl-row">
+        <label style="width:60px;">2번째 달력</label>
+        <select id="inp-month2-2">
+          <option value="1">1월</option><option value="2">2월</option>
+          <option value="3" selected>3월</option><option value="4">4월</option>
+          <option value="5">5월</option><option value="6">6월</option>
+          <option value="7">7월</option><option value="8">8월</option>
+          <option value="9">9월</option><option value="10">10월</option>
+          <option value="11">11월</option><option value="12">12월</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 일정 추가 (공통) -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">일정 추가</div>
+
+      <!-- 2개월 모드 월 탭 -->
+      <div class="month-tab" id="month-tab" style="display:none;">
+        <button class="month-tab-btn active" id="tab-m1" onclick="switchMonthTab(1)">첫째 달</button>
+        <button class="month-tab-btn"        id="tab-m2" onclick="switchMonthTab(2)">둘째 달</button>
+      </div>
+
+      <div class="schedule-form">
+        <input type="number" id="inp-hday" placeholder="날짜 (예: 1)" min="1" max="31">
+        <input type="text"   id="inp-hname" placeholder="일정명 (예: 삼일절)">
+        <select id="inp-hstatus">
+          <option value="hujin">휴진</option>
+          <option value="normal">정상진료</option>
+          <option value="danchu">단축진료</option>
+        </select>
+      </div>
+      <button class="btn-add" onclick="addHoliday()">＋ 추가</button>
+      <div class="tag-area" id="tag-area" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- 배경 이미지 -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">배경 이미지</div>
+      <div style="position:relative;overflow:hidden;display:block;width:100%;margin-bottom:14px;">
+        <button style="width:100%;padding:8px 14px;background:#fafafa;border:1.5px dashed #ddd;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;color:#555;">이미지 업로드</button>
+        <input type="file" id="inp-bg" accept="image/*" onchange="changeBg(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;">
+      </div>
+      <div class="slider-group">
+        <label>확대 / 축소</label>
+        <div class="slider-row">
+          <input type="range" id="bg-scale" min="50" max="200" value="100" step="1" oninput="updateBg()">
+          <span class="slider-val" id="bg-scale-val">100%</span>
+        </div>
+      </div>
+      <div class="slider-group">
+        <label>좌우 위치</label>
+        <div class="slider-row">
+          <input type="range" id="bg-x" min="0" max="100" value="50" step="1" oninput="updateBg()">
+          <span class="slider-val" id="bg-x-val">50%</span>
+        </div>
+      </div>
+      <div class="slider-group">
+        <label>상하 위치</label>
+        <div class="slider-row">
+          <input type="range" id="bg-y" min="0" max="100" value="50" step="1" oninput="updateBg()">
+          <span class="slider-val" id="bg-y-val">50%</span>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetBg()">↺ 초기화</button>
+      <p class="drag-hint">이미지 확대 후 달력 위에서<br>드래그하면 위치 조정 가능</p>
+    </div>
+
+    <!-- 저장 -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">저장</div>
+      <button class="btn-save" onclick="saveImage()">PNG 저장</button>
+      <button class="btn-pdf"  onclick="savePDF()">PDF 저장</button>
+    </div>
+
+  </div><!-- /sidebar -->
+
+</div><!-- /main-layout -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  // ── 상태 ──
+  let currentTemplate = 1;  // 1 or 2
+  let activeMonthTab  = 1;  // 1 or 2 (2개월 모드에서 어느 달 편집 중)
+  let holidays = { 1: {}, 2: {} };  // 각 달의 일정
+
+  const STATUS_LABEL = { hujin: '휴진', normal: '정상진료', danchu: '단축진료' };
+
+  // ── 템플릿 전환 ──
+  function switchTemplate(n) {
+    currentTemplate = n;
+    document.getElementById('calendar').style.display  = n === 1 ? 'block' : 'none';
+    document.getElementById('calendar2').style.display = n === 2 ? 'block' : 'none';
+    document.getElementById('tmpl-1').classList.toggle('active', n === 1);
+    document.getElementById('tmpl-2').classList.toggle('active', n === 2);
+    document.getElementById('section-date-1').style.display = n === 1 ? 'block' : 'none';
+    document.getElementById('section-date-2').style.display = n === 2 ? 'block' : 'none';
+    document.getElementById('month-tab').style.display = n === 2 ? 'flex' : 'none';
+    // 배경 이미지 동기화
+    const src = document.getElementById('cal-bg').src;
+    if (src) {
+      document.getElementById('cal-bg2').src = src;
+      document.getElementById('ov-top2').style.display =
+        document.getElementById('ov-top').style.display;
+    }
+    renderAll();
+    renderTags();
+  }
+
+  // ── 월 탭 전환 (2개월 모드) ──
+  function switchMonthTab(n) {
+    activeMonthTab = n;
+    document.getElementById('tab-m1').classList.toggle('active', n === 1);
+    document.getElementById('tab-m2').classList.toggle('active', n === 2);
+    renderTags();
+  }
+
+  // ── 달력 렌더 공통 ──
+  function buildGrid(year, month, entries, cellClass) {
+    const firstDay = new Date(year, month - 1, 1).getDay();
+    const lastDate = new Date(year, month, 0).getDate();
+    let html = '';
+    for (let i = 0; i < firstDay; i++) html += `<div class="${cellClass}"></div>`;
+    for (let d = 1; d <= lastDate; d++) {
+      const dow = (firstDay + d - 1) % 7;
+      const isSun = dow === 0;
+      const entry = entries[d];
+      let cls = cellClass;
+      if (isSun) cls += ' sun';
+      if (entry) cls += ` hol-${entry.status}`;
+      let label = entry
+        ? `<span class="hlabel">${entry.name}<span class="hstatus">${STATUS_LABEL[entry.status]}</span></span>`
+        : '';
+      html += `<div class="${cls}"><span class="dn">${d}</span>${label}</div>`;
+    }
+    const remainder = (firstDay + lastDate) % 7;
+    if (remainder !== 0) for (let i = 0; i < 7 - remainder; i++) html += `<div class="${cellClass}"></div>`;
+    return html;
+  }
+
+  function renderAll() {
+    if (currentTemplate === 1) {
+      const year  = parseInt(document.getElementById('inp-year').value);
+      const month = parseInt(document.getElementById('inp-month').value);
+      document.getElementById('cal-title-1').textContent = month + '월 진료일정 안내';
+      document.getElementById('day-grid-1').innerHTML = buildGrid(year, month, holidays[1], 'dc');
+    } else {
+      const year  = parseInt(document.getElementById('inp-year2').value);
+      const m1    = parseInt(document.getElementById('inp-month2-1').value);
+      const m2    = parseInt(document.getElementById('inp-month2-2').value);
+      document.getElementById('cal2-title-1').textContent = m1 + '월 진료일정 안내';
+      document.getElementById('cal2-title-2').textContent = m2 + '월 진료일정 안내';
+      document.getElementById('day-grid2-1').innerHTML = buildGrid(year, m1, holidays[1], 'dc2');
+      document.getElementById('day-grid2-2').innerHTML = buildGrid(year, m2, holidays[2], 'dc2');
+    }
+  }
+
+  // ── 태그 렌더 ──
+  function renderTags() {
+    const key  = currentTemplate === 1 ? 1 : activeMonthTab;
+    const area = document.getElementById('tag-area');
+    area.innerHTML = '';
+    Object.entries(holidays[key]).sort((a,b) => a[0]-b[0]).forEach(([day, entry]) => {
+      const tag = document.createElement('div');
+      tag.className = 'tag';
+      tag.innerHTML = `
+        <div class="tag-info">
+          <span class="tag-date">${day}일</span>
+          <span class="tag-name">${entry.name}</span>
+          <span class="tag-status ${entry.status}">${STATUS_LABEL[entry.status]}</span>
+        </div>
+        <button onclick="removeHoliday(${day})">×</button>`;
+      area.appendChild(tag);
+    });
+  }
+
+  // ── 일정 추가/삭제 ──
+  function addHoliday() {
+    const day    = parseInt(document.getElementById('inp-hday').value);
+    const name   = document.getElementById('inp-hname').value.trim();
+    const status = document.getElementById('inp-hstatus').value;
+    if (!day || !name) { alert('날짜와 일정명을 입력해주세요.'); return; }
+    const key = currentTemplate === 1 ? 1 : activeMonthTab;
+    holidays[key][day] = { name, status };
+    document.getElementById('inp-hday').value  = '';
+    document.getElementById('inp-hname').value = '';
+    renderTags();
+    renderAll();
+  }
+
+  function removeHoliday(day) {
+    const key = currentTemplate === 1 ? 1 : activeMonthTab;
+    delete holidays[key][day];
+    renderTags();
+    renderAll();
+  }
+
+  // ── 연/월 변경 시 초기화 ──
+  ['inp-year','inp-month'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      holidays[1] = {};
+      renderTags(); renderAll();
+    });
+  });
+  ['inp-year2','inp-month2-1'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => {
+      holidays[1] = {};
+      renderTags(); renderAll();
+    });
+  });
+  document.getElementById('inp-month2-2').addEventListener('change', () => {
+    holidays[2] = {};
+    renderTags(); renderAll();
+  });
+
+  // ── 배경 이미지 ──
+  function getActiveCalendar() {
+    return document.getElementById(currentTemplate === 1 ? 'calendar' : 'calendar2');
+  }
+
+  function updateBg() {
+    const scale = document.getElementById('bg-scale').value;
+    const x = document.getElementById('bg-x').value;
+    const y = document.getElementById('bg-y').value;
+    document.getElementById('bg-scale-val').textContent = scale + '%';
+    document.getElementById('bg-x-val').textContent = x + '%';
+    document.getElementById('bg-y-val').textContent = y + '%';
+    const tx = (x - 50), ty = (y - 50);
+    const t = `scale(${scale / 100}) translate(${tx}%, ${ty}%)`;
+    document.getElementById('cal-bg').style.transform  = t;
+    document.getElementById('cal-bg2').style.transform = t;
+  }
+
+  function resetBg() {
+    document.getElementById('bg-scale').value = 100;
+    document.getElementById('bg-x').value = 50;
+    document.getElementById('bg-y').value = 50;
+    updateBg();
+  }
+
+  function changeBg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const bg1 = document.getElementById('cal-bg');
+      const bg2 = document.getElementById('cal-bg2');
+      bg1.src = e.target.result; bg1.style.display = '';
+      bg2.src = e.target.result; bg2.style.display = '';
+      document.getElementById('ov-top').style.display  = 'block';
+      document.getElementById('ov-top2').style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // ── 드래그 이동 ──
+  (function() {
+    let isDragging = false, startX, startY, startBgX, startBgY;
+
+    function onDown(e) {
+      if (parseFloat(document.getElementById('bg-scale').value) <= 100) return;
+      isDragging = true;
+      const pt = e.touches ? e.touches[0] : e;
+      startX = pt.clientX; startY = pt.clientY;
+      startBgX = parseFloat(document.getElementById('bg-x').value);
+      startBgY = parseFloat(document.getElementById('bg-y').value);
+      getActiveCalendar().style.cursor = 'grabbing';
+      e.preventDefault();
+    }
+    function onMove(e) {
+      if (!isDragging) return;
+      const pt = e.touches ? e.touches[0] : e;
+      const s = 0.05;
+      document.getElementById('bg-x').value = Math.max(0, Math.min(100, startBgX - (pt.clientX - startX) * s));
+      document.getElementById('bg-y').value = Math.max(0, Math.min(100, startBgY - (pt.clientY - startY) * s));
+      updateBg();
+    }
+    function onUp() {
+      if (!isDragging) return;
+      isDragging = false;
+      getActiveCalendar().style.cursor = '';
+    }
+
+    [document.getElementById('calendar'), document.getElementById('calendar2')].forEach(el => {
+      el.addEventListener('mousedown', onDown);
+      el.addEventListener('touchstart', onDown, { passive: false });
+    });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchend', onUp);
+
+    document.getElementById('bg-scale').addEventListener('input', function() {
+      getActiveCalendar().style.cursor = parseFloat(this.value) > 100 ? 'grab' : '';
+    });
+  })();
+
+  // ── 저장 ──
+  function getFileName() {
+    if (currentTemplate === 1) {
+      const y = document.getElementById('inp-year').value;
+      const m = document.getElementById('inp-month').value;
+      return `르샤인_${y}년_${m}월_진료일정`;
+    } else {
+      const y  = document.getElementById('inp-year2').value;
+      const m1 = document.getElementById('inp-month2-1').value;
+      const m2 = document.getElementById('inp-month2-2').value;
+      return `르샤인_${y}년_${m1}-${m2}월_진료일정`;
+    }
+  }
+
+  function saveImage() {
+    const el = document.getElementById(currentTemplate === 1 ? 'calendar' : 'calendar2');
+    document.body.classList.add('exporting');
+    html2canvas(el, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
+      document.body.classList.remove('exporting');
+      const link = document.createElement('a');
+      link.download = getFileName() + '.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  }
+
+  function savePDF() {
+    const el = document.getElementById(currentTemplate === 1 ? 'calendar' : 'calendar2');
+    document.body.classList.add('exporting');
+    html2canvas(el, { scale: 2, useCORS: true, allowTaint: true }).then(canvas => {
+      document.body.classList.remove('exporting');
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' });
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, 148, 210);
+      pdf.save(getFileName() + '.pdf');
+    });
+  }
+
+  // ── 초기 렌더 ──
+  renderAll();
+</script>
+</body>
+</html>
