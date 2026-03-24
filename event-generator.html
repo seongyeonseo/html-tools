@@ -1189,10 +1189,15 @@ function tA4Int(data, bgUrl) {
   const lineClr   = hasBg ? 'rgba(255,255,255,.12)' : '#EBEBEB';
   const thmClr    = hasBg ? '#FFFFFF'               : (S.bgAccentDark || '#143428');
   const thmBdr    = hasBg ? 'rgba(255,255,255,.6)'  : (S.bgAccentDark || '#143428');
-  const _acDark   = S.bgAccentDark || '#143428';
-  const bdgBg     = hexToRgba(_acDark, hasBg ? 0.15 : 0.08);
-  const bdgClr    = hasBg ? (S.bgAccentLight || '#CCBB94') : _acDark;
-  const optBoxBg  = _acDark;
+  const _acDark   = S.bgAccentDark  || '#143428';
+  const _acLight  = S.bgAccentLight || '#CCBB94';
+  // 포인트 박스: 밝은 컬러 + 보더
+  const bdgBg     = hasBg ? hexToRgba(_acLight, 0.15) : hexToRgba(_acDark, 0.08);
+  const bdgClr    = hasBg ? _acLight : _acDark;
+  const bdgBdr    = hasBg ? hexToRgba(_acLight, 0.55) : hexToRgba(_acDark, 0.25);
+  // 옵션 박스: 조금 밝은 컬러 + 보더
+  const optBoxBg  = hasBg ? hexToRgba(_acLight, 0.30) : hexToRgba(_acDark, 0.15);
+  const optBoxBdr = hasBg ? hexToRgba(_acLight, 0.65) : hexToRgba(_acDark, 0.40);
   return pages.map((secs, pi) => `
 <div style="width:794px;height:1123px;font-family:'Pretendard','Jost',sans-serif;position:relative;display:flex;flex-direction:column;overflow:hidden;${hasBg ? `background-image:url('${bgUrl}');background-size:cover;background-position:center;` : `background:${S.bgLightColor||'#FAFAFD'};`}">
   ${hasBg ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,.6);pointer-events:none;"></div>` : ''}
@@ -1220,8 +1225,8 @@ function tA4Int(data, bgUrl) {
           const priceBelow = item.prices.length >= 4;
           const nameHtml = `<div style="font-family:'Pretendard',sans-serif;font-size:20px;font-weight:500;color:${nameClr};letter-spacing:-0.04em;line-height:1.3;">${item.name}</div>`;
           const tagsHtml = item.hashtags.length ? `<div style="margin-top:3px;">${item.hashtags.map(t=>`<span style="font-size:15px;color:${accent};opacity:.7;margin-right:5px;letter-spacing:-0.04em;">${t}</span>`).join('')}</div>` : '';
-          const badgesHtml  = (item.badges||[]).length  ? `<div style="margin-top:10px;">${(item.badges||[]).map(b=>`<span style="display:inline-block;background:${bdgBg};border-radius:3px;padding:2px 8px;font-size:13px;color:${bdgClr};margin-right:4px;">🎁 ${b}</span>`).join('')}</div>` : '';
-          const optionsHtml = (item.options||[]).length ? `<div style="margin-top:10px;">${(item.options||[]).map(o=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:8px;"><span style="display:inline-block;background:${optBoxBg};border-radius:3px;padding:2px 8px;font-size:13px;color:#FFFFFF;font-weight:700;flex-shrink:0;">옵션</span><span style="font-size:13px;color:${nameClr};letter-spacing:-0.03em;">${o}</span></span>`).join('')}</div>` : '';
+          const badgesHtml  = (item.badges||[]).length  ? `<div style="margin-top:10px;">${(item.badges||[]).map(b=>`<span style="display:inline-block;background:${bdgBg};border:1px solid ${bdgBdr};border-radius:3px;padding:2px 8px;font-size:13px;color:${bdgClr};margin-right:4px;">🎁 ${b}</span>`).join('')}</div>` : '';
+          const optionsHtml = (item.options||[]).length ? `<div style="margin-top:10px;">${(item.options||[]).map(o=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:8px;"><span style="display:inline-block;background:${optBoxBg};border:1px solid ${optBoxBdr};border-radius:3px;padding:2px 8px;font-size:13px;color:#FFFFFF;font-weight:700;flex-shrink:0;">옵션</span><span style="font-size:13px;color:${nameClr};letter-spacing:-0.03em;">${o}</span></span>`).join('')}</div>` : '';
           const pricesHtml = `<div style="display:flex;flex-direction:row;flex-wrap:wrap;gap:3px 8px;align-items:flex-end;${priceBelow ? 'justify-content:flex-end;' : ''}">
             ${item.prices.map(p=>{
               const [n,u] = splitPriceVal(p.value);
