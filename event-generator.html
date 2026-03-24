@@ -499,9 +499,9 @@ const DEFAULT = {
     theme_label: "theme1 : Skincare",
     background_image: "",
     desk_rows: [
-      { name: "시술명", price: "0만원" },
-      { name: "시술명", price: "0만원" },
-      { name: "시술명", price: "0만원" }
+      { name: "시술명", prices: [{ count: "", value: "0만원" }] },
+      { name: "시술명", prices: [{ count: "", value: "0만원" }] },
+      { name: "시술명", prices: [{ count: "", value: "0만원" }] }
     ]
   },
   sections: [
@@ -1309,13 +1309,24 @@ function tTV(data, bgUrl) {
       ${chunks.map(chunk => `
       <div style="flex:1;">
         ${chunk.map(row => {
-          const [num, unit] = splitPriceVal(row.price);
+          const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
-        <div style="padding:14px 0;border-bottom:1px solid #EBEBEB;display:flex;align-items:center;justify-content:space-between;gap:24px;">
-          <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:34pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;">${row.name}</div>
-          <div style="display:flex;align-items:baseline;gap:2px;flex-shrink:0;">
-            <div data-edit="concept.desk_rows.${row._i}.price" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:34pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:17pt;font-weight:300;line-height:1;">${unit}</span></div>
-            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0 0 0 4px;line-height:1;flex-shrink:0;">×</button>
+        <div style="padding:14px 0;border-bottom:1px solid #EBEBEB;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
+            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:34pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:4px;">${row.name}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+              ${rowPrices.map((p, pi) => {
+                const [num, unit] = splitPriceVal(p.value);
+                return `
+              <div style="display:flex;align-items:baseline;gap:10px;">
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:22pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:34pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:17pt;font-weight:300;line-height:1;">${unit}</span></div>
+                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;">×</button>
+              </div>`;
+              }).join('')}
+              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 14px;font-size:12px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
+            </div>
+            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
           </div>
         </div>`;
         }).join('')}
@@ -1364,12 +1375,24 @@ function tDesk(data, bgUrl) {
       ${chunks.map(chunk => `
       <div style="flex:1;">
         ${chunk.map(row => {
-          const [num, unit] = splitPriceVal(row.price);
+          const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
-        <div style="padding:10px 0;border-bottom:1px solid #EBEBEB;display:flex;align-items:center;justify-content:space-between;gap:20px;">
-          <div style="font-family:'Pretendard',sans-serif;font-size:26pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;">${row.name}</div>
-          <div style="display:flex;align-items:baseline;gap:2px;flex-shrink:0;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;">
-            <span style="font-size:26pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:13pt;font-weight:300;line-height:1;">${unit}</span>
+        <div style="padding:10px 0;border-bottom:1px solid #EBEBEB;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">
+            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:26pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:3px;">${row.name}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+              ${rowPrices.map((p, pi) => {
+                const [num, unit] = splitPriceVal(p.value);
+                return `
+              <div style="display:flex;align-items:baseline;gap:8px;">
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:16pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:26pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:13pt;font-weight:300;line-height:1;">${unit}</span></div>
+                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:16px;color:#CCC;padding:0;line-height:1;">×</button>
+              </div>`;
+              }).join('')}
+              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 12px;font-size:11px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
+            </div>
+            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:16px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
           </div>
         </div>`;
         }).join('')}
@@ -1664,11 +1687,23 @@ async function waitFonts() {
 /* ─── DESK ROWS CRUD ────────── */
 function addDeskRow() {
   if (!S.data.concept.desk_rows) S.data.concept.desk_rows = [];
-  S.data.concept.desk_rows.push({ name: '시술명', price: '0만원' });
+  S.data.concept.desk_rows.push({ name: '시술명', prices: [{ count: '', value: '0만원' }] });
   render();
 }
 function removeDeskRow(i) {
   S.data.concept.desk_rows.splice(i, 1);
+  render();
+}
+function addDeskPrice(ri) {
+  const row = S.data.concept.desk_rows[ri];
+  if (!row.prices) row.prices = [{ count: '', value: '0만원' }];
+  row.prices.push({ count: '', value: '0만원' });
+  render();
+}
+function removeDeskPrice(ri, pi) {
+  const row = S.data.concept.desk_rows[ri];
+  if (!row.prices || row.prices.length <= 1) return;
+  row.prices.splice(pi, 1);
   render();
 }
 
