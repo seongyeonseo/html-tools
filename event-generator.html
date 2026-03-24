@@ -1284,7 +1284,7 @@ function tTV(data, bgUrl) {
   const rows = concept.desk_rows || [];
 
   const cols     = rows.length <= 2 ? 1 : rows.length <= 6 ? 2 : 3;
-  const panelW   = cols === 1 ? 820 : cols === 2 ? 1520 : 2160;
+  const panelW   = cols === 1 ? 1230 : cols === 2 ? 2280 : 3240;
   const chunkSize = Math.ceil(rows.length / cols);
   const chunks = [];
   for (let i = 0; i < Math.max(rows.length, 1); i += chunkSize) {
@@ -1297,43 +1297,43 @@ function tTV(data, bgUrl) {
 
   <!-- ── LEFT area, text center-aligned ── -->
   <div style="position:absolute;top:0;left:0;width:2200px;bottom:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 200px;">
-    <div style="font-size:50px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:28px;">${concept.sub_copy}</div>
-    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:130px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
-    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:130px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
-    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:35px;letter-spacing:-0.03em;color:#FFFFFF;border:1.5px solid rgba(255,255,255,.55);border-radius:50%;padding:28px 70px;display:inline-block;text-align:center;margin-top:40px;">${concept.theme_label}</div>
+    <div style="font-size:75px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:42px;">${concept.sub_copy}</div>
+    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
+    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
+    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:42px 105px;display:inline-block;text-align:center;margin-top:60px;">${concept.theme_label}</div>
   </div>
 
   <!-- ── Bottom-right: price panel ── -->
   <div style="position:absolute;bottom:120px;right:200px;z-index:2;width:${panelW}px;background:rgba(250,250,253,.88);">
-    <div style="padding:36px 64px 40px;display:flex;gap:64px;">
+    <div style="padding:54px 96px 60px;display:flex;gap:96px;">
       ${chunks.map(chunk => `
       <div style="flex:1;">
         ${chunk.map(row => {
           const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
-        <div style="padding:14px 0;border-bottom:1px solid #EBEBEB;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;">
-            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:34pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:4px;">${row.name}</div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
+        <div style="padding:28px 0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:36px;">
+            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:51pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:6px;">${row.name}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;">
               ${rowPrices.map((p, pi) => {
                 const [num, unit] = splitPriceVal(p.value);
                 return `
-              <div style="display:flex;align-items:baseline;gap:10px;">
-                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:22pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
-                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:34pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:17pt;font-weight:300;line-height:1;">${unit}</span></div>
-                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;">×</button>
+              <div style="display:flex;align-items:baseline;gap:16px;">
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:33pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:3px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:51pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:26pt;font-weight:300;line-height:1;">${unit}</span></div>
+                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:22px;color:#CCC;padding:0;line-height:1;">×</button>
               </div>`;
               }).join('')}
-              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 14px;font-size:12px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
+              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:4px 16px;font-size:14px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
             </div>
-            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
+            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:22px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
           </div>
         </div>`;
         }).join('')}
       </div>`).join('')}
     </div>
-    <div data-ctrl style="padding:0 56px 20px;">
-      <button onclick="addDeskRow()" style="background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:6px 20px;font-size:14px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;letter-spacing:-0.02em;">+ 시술 추가</button>
+    <div data-ctrl style="padding:0 80px 28px;">
+      <button onclick="addDeskRow()" style="background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:8px 24px;font-size:16px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;letter-spacing:-0.02em;">+ 시술 추가</button>
     </div>
   </div>
 </div>`;
@@ -1350,7 +1350,7 @@ function tDesk(data, bgUrl) {
 
   // Adaptive columns: 1~2개→1열, 3~6개→2열, 7+개→3열
   const cols   = rows.length <= 2 ? 1 : rows.length <= 6 ? 2 : 3;
-  const panelW = cols === 1 ? 860 : cols === 2 ? 1580 : 2240;
+  const panelW = cols === 1 ? 1290 : cols === 2 ? 2370 : 3360;
   const chunkSize = Math.ceil(rows.length / cols);
   const chunks = [];
   for (let i = 0; i < Math.max(rows.length, 1); i += chunkSize) {
@@ -1363,36 +1363,36 @@ function tDesk(data, bgUrl) {
 
   <!-- ── LEFT area, text center-aligned ── -->
   <div style="position:absolute;top:0;left:0;width:2200px;bottom:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 200px;">
-    <div style="font-size:50px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:28px;">${concept.sub_copy}</div>
-    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:130px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
-    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:130px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
-    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:35px;letter-spacing:-0.03em;color:#FFFFFF;border:1.5px solid rgba(255,255,255,.55);border-radius:50%;padding:28px 70px;display:inline-block;text-align:center;margin-top:40px;">${concept.theme_label}</div>
+    <div style="font-size:75px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:42px;">${concept.sub_copy}</div>
+    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
+    <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
+    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:42px 105px;display:inline-block;text-align:center;margin-top:60px;">${concept.theme_label}</div>
   </div>
 
   <!-- ── Bottom-right: price panel ── -->
   <div style="position:absolute;bottom:175px;right:200px;z-index:2;width:${panelW}px;background:rgba(250,250,253,.88);">
-    <div style="padding:28px 56px 32px;display:flex;gap:56px;">
+    <div style="padding:42px 84px 48px;display:flex;gap:84px;">
       ${chunks.map(chunk => `
       <div style="flex:1;">
         ${chunk.map(row => {
           const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
-        <div style="padding:10px 0;border-bottom:1px solid #EBEBEB;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;">
-            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:26pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:3px;">${row.name}</div>
-            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+        <div style="padding:20px 0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:30px;">
+            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:39pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:5px;">${row.name}</div>
+            <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">
               ${rowPrices.map((p, pi) => {
                 const [num, unit] = splitPriceVal(p.value);
                 return `
-              <div style="display:flex;align-items:baseline;gap:8px;">
-                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:16pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
-                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:26pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:13pt;font-weight:300;line-height:1;">${unit}</span></div>
-                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:16px;color:#CCC;padding:0;line-height:1;">×</button>
+              <div style="display:flex;align-items:baseline;gap:12px;">
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:24pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;min-width:2em;text-align:right;">${p.count||''}</div>
+                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:39pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:20pt;font-weight:300;line-height:1;">${unit}</span></div>
+                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;">×</button>
               </div>`;
               }).join('')}
-              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 12px;font-size:11px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
+              <button data-ctrl onclick="addDeskPrice(${row._i})" style="margin-top:2px;background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 14px;font-size:13px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;">+ 가격</button>
             </div>
-            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:16px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
+            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
           </div>
         </div>`;
         }).join('')}
