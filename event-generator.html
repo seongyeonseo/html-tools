@@ -860,7 +860,7 @@ function tThumb(data, bgUrl) {
       <div style="font-family:'New York','Cormorant Garamond',serif;font-style:normal;font-size:30px;color:#FFFFFF;line-height:1.05;font-weight:300;">${concept.name}</div>
     </div>
     <!-- theme label -->
-    <div style="font-family:'PT Serif',serif;font-style:normal;font-size:8.5px;font-weight:300;letter-spacing:-0.03em;color:#FFFFFF;border:0.6px solid rgba(255,255,255,.6);border-radius:50%;padding:8px 16px;display:inline-block;text-align:center;">${concept.theme_label}</div>
+    <div style="font-family:'PT Serif',serif;font-style:normal;font-size:8.5px;font-weight:300;letter-spacing:-0.03em;color:#FFFFFF;border:0.6px solid rgba(255,255,255,.6);border-radius:50%;padding:9px 16px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
   </div>
 </div>`;
 }
@@ -893,7 +893,7 @@ function tLanding(data, bgUrl) {
         <div style="font-family:'New York','Cormorant Garamond',serif;font-style:normal;font-size:78px;color:#FFFFFF;line-height:1.05;font-weight:300;">${concept.name}</div>
       </div>
       <!-- theme_label 타원 -->
-      <div style="font-family:'PT Serif',serif;font-style:normal;font-size:20px;font-weight:300;letter-spacing:-0.03em;color:#FFFFFF;border:1.5px solid rgba(255,255,255,.6);border-radius:50%;padding:20px 40px;display:inline-block;text-align:center;">${concept.theme_label}</div>
+      <div style="font-family:'PT Serif',serif;font-style:normal;font-size:20px;font-weight:300;letter-spacing:-0.03em;color:#FFFFFF;border:1.5px solid rgba(255,255,255,.6);border-radius:50%;padding:22px 40px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
     </div>
   </div>
 
@@ -902,7 +902,7 @@ function tLanding(data, bgUrl) {
 
     <!-- theme_label 타원 중앙 -->
     <div style="text-align:center;margin-top:60px;margin-bottom:40px;">
-      <div style="font-family:'PT Serif',serif;font-style:normal;font-size:18px;font-weight:300;letter-spacing:-0.04em;color:${S.bgAccentDark||'#143428'};border:1.5px solid ${S.bgAccentDark||'#143428'};border-radius:50%;padding:16px 40px;display:inline-block;text-align:center;">${concept.theme_label}</div>
+      <div style="font-family:'PT Serif',serif;font-style:normal;font-size:18px;font-weight:300;letter-spacing:-0.04em;color:${S.bgAccentDark||'#143428'};border:1.5px solid ${S.bgAccentDark||'#143428'};border-radius:50%;padding:18px 40px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
     </div>
 
     ${sections.map((sec,si)=>{
@@ -1149,7 +1149,7 @@ function tA4Cov(data, bgUrl) {
       <div style="font-family:'New York','Cormorant Garamond',serif;font-size:62px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
       <div style="font-family:'New York','Cormorant Garamond',serif;font-size:62px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
       <div style="margin-top:28px;">
-        <div style="font-family:'PT Serif',serif;font-weight:300;font-size:16pt;letter-spacing:-0.03em;color:#FFFFFF;border:0.8px solid rgba(255,255,255,.55);border-radius:50%;padding:12px 30px;display:inline-block;text-align:center;">${concept.theme_label}</div>
+        <div style="font-family:'PT Serif',serif;font-weight:300;font-size:16pt;letter-spacing:-0.03em;color:#FFFFFF;border:0.8px solid rgba(255,255,255,.55);border-radius:50%;padding:13px 30px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
       </div>
     </div>
   </div>
@@ -1200,7 +1200,7 @@ function tA4Int(data, bgUrl) {
     ${pi === pages.length - 1 ? `<div style="position:absolute;bottom:18px;right:52px;font-size:11px;color:rgba(255,255,255,.5);font-family:'Pretendard',sans-serif;letter-spacing:.04em;">VAT 별도</div>` : ''}
     ${pi === 0 ? `
     <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-family:'PT Serif',serif;font-size:13px;font-weight:300;letter-spacing:-0.04em;color:${thmClr};border:1.5px solid ${thmBdr};border-radius:50%;padding:11px 28px;display:inline-block;">${concept.theme_label}</div>
+      <div style="font-family:'PT Serif',serif;font-size:13px;font-weight:300;letter-spacing:-0.04em;color:${thmClr};border:1.5px solid ${thmBdr};border-radius:50%;padding:12px 28px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
     </div>` : ''}
 
     ${secs.map(sec=>{
@@ -1267,7 +1267,7 @@ function tInsta(data, bgUrl) {
       <div style="font-family:'New York','Cormorant Garamond',serif;font-size:90px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
       <div style="font-family:'New York','Cormorant Garamond',serif;font-size:90px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
       <div style="margin-top:40px;">
-        <div style="font-family:'PT Serif',serif;font-weight:300;font-size:26px;letter-spacing:-0.03em;color:#FFFFFF;border:1px solid rgba(255,255,255,.55);border-radius:50%;padding:18px 44px;display:inline-block;text-align:center;">${concept.theme_label}</div>
+        <div style="font-family:'PT Serif',serif;font-weight:300;font-size:26px;letter-spacing:-0.03em;color:#FFFFFF;border:1px solid rgba(255,255,255,.55);border-radius:50%;padding:19px 44px;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${concept.theme_label}</div>
       </div>
     </div>
   </div>
@@ -1300,7 +1300,7 @@ function tTV(data, bgUrl) {
     <div style="font-size:75px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:42px;">${concept.sub_copy}</div>
     <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
     <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
-    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:42px 105px;display:inline-block;text-align:center;margin-top:60px;">${concept.theme_label}</div>
+    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:44px 105px;display:inline-flex;align-items:center;justify-content:center;line-height:1;margin-top:60px;">${concept.theme_label}</div>
   </div>
 
   <!-- ── Bottom-right: price panel ── -->
@@ -1366,7 +1366,7 @@ function tDesk(data, bgUrl) {
     <div style="font-size:75px;color:#FFFFFF;letter-spacing:-0.03em;line-height:1.6;font-weight:300;margin-bottom:42px;">${concept.sub_copy}</div>
     <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${bn}</div>
     <div style="font-family:'New York','Cormorant Garamond',serif;font-size:195px;color:#FFFFFF;line-height:1.0;font-weight:300;">${concept.name}</div>
-    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:42px 105px;display:inline-block;text-align:center;margin-top:60px;">${concept.theme_label}</div>
+    <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:44px 105px;display:inline-flex;align-items:center;justify-content:center;line-height:1;margin-top:60px;">${concept.theme_label}</div>
   </div>
 
   <!-- ── Bottom-right: price panel (display-only, TV에서 수정) ── -->
