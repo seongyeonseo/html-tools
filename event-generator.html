@@ -1312,9 +1312,9 @@ function tTV(data, bgUrl) {
           const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
         <div style="padding:28px 0;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:36px;">
-            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:51pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:6px;">${row.name}</div>
-            <div style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:8px 52px;flex-shrink:0;">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:36px;">
+            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:51pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;">${row.name}</div>
+            <div style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:8px 20px;flex-shrink:0;">
               ${rowPrices.map((p, pi) => {
                 const [num, unit] = splitPriceVal(p.value);
                 return `
@@ -1326,7 +1326,7 @@ function tTV(data, bgUrl) {
               }).join('')}
               <button data-ctrl onclick="addDeskPrice(${row._i})" style="background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:4px 16px;font-size:14px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;align-self:center;">+ 가격</button>
             </div>
-            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:22px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
+            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:22px;color:#CCC;padding:0;line-height:1;flex-shrink:0;">×</button>
           </div>
         </div>`;
         }).join('')}
@@ -1369,7 +1369,7 @@ function tDesk(data, bgUrl) {
     <div style="font-family:'PT Serif',serif;font-weight:300;font-size:52px;letter-spacing:-0.03em;color:#FFFFFF;border:2px solid rgba(255,255,255,.55);border-radius:50%;padding:42px 105px;display:inline-block;text-align:center;margin-top:60px;">${concept.theme_label}</div>
   </div>
 
-  <!-- ── Bottom-right: price panel ── -->
+  <!-- ── Bottom-right: price panel (display-only, TV에서 수정) ── -->
   <div style="position:absolute;bottom:175px;right:200px;z-index:2;width:${panelW}px;background:rgba(250,250,253,.88);">
     <div style="padding:42px 84px 48px;display:flex;gap:84px;">
       ${chunks.map(chunk => `
@@ -1378,21 +1378,18 @@ function tDesk(data, bgUrl) {
           const rowPrices = row.prices || [{ count: row.count||'', value: row.price||'0만원' }];
           return `
         <div style="padding:20px 0;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:30px;">
-            <div data-edit="concept.desk_rows.${row._i}.name" data-placeholder="시술명" style="font-family:'Pretendard',sans-serif;font-size:39pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;padding-top:5px;">${row.name}</div>
-            <div style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:6px 40px;flex-shrink:0;">
-              ${rowPrices.map((p, pi) => {
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:30px;">
+            <div style="font-family:'Pretendard',sans-serif;font-size:39pt;font-weight:600;color:#1A1A1A;letter-spacing:-0.04em;line-height:1.2;flex:1;min-width:0;">${row.name}</div>
+            <div style="display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:6px 20px;flex-shrink:0;">
+              ${rowPrices.map(p => {
                 const [num, unit] = splitPriceVal(p.value);
                 return `
               <div style="display:flex;align-items:baseline;gap:12px;">
-                ${p.count ? `<div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" style="font-family:'Pretendard',sans-serif;font-size:24pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;">${p.count}</div>` : `<span data-ctrl><div data-edit="concept.desk_rows.${row._i}.prices.${pi}.count" data-placeholder="횟수" style="font-family:'Pretendard',sans-serif;font-size:14px;color:#C0B8A8;border:1px dashed #D0C8B8;border-radius:4px;padding:2px 8px;cursor:text;min-width:36px;"></div></span>`}
-                <div data-edit="concept.desk_rows.${row._i}.prices.${pi}.value" data-rerender data-placeholder="0만원" style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:39pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:20pt;font-weight:300;line-height:1;">${unit}</span></div>
-                <button data-ctrl onclick="removeDeskPrice(${row._i},${pi})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;">×</button>
+                ${p.count ? `<div style="font-family:'Pretendard',sans-serif;font-size:24pt;font-weight:300;color:#888;letter-spacing:-0.02em;line-height:1;">${p.count}</div>` : ''}
+                <div style="display:inline-flex;align-items:baseline;gap:2px;font-family:'GmarketSans','Pretendard',sans-serif;color:#143428;letter-spacing:-0.04em;"><span style="font-size:39pt;font-weight:500;line-height:1;">${num}</span><span style="font-size:20pt;font-weight:300;line-height:1;">${unit}</span></div>
               </div>`;
               }).join('')}
-              <button data-ctrl onclick="addDeskPrice(${row._i})" style="background:none;border:1px dashed #C0B8A8;border-radius:20px;padding:3px 14px;font-size:13px;color:#A0988A;cursor:pointer;font-family:'Pretendard',sans-serif;align-self:center;">+ 가격</button>
             </div>
-            <button data-ctrl onclick="removeDeskRow(${row._i})" style="background:none;border:none;cursor:pointer;font-size:18px;color:#CCC;padding:0;line-height:1;flex-shrink:0;align-self:center;">×</button>
           </div>
         </div>`;
         }).join('')}
