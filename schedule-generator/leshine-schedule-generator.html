@@ -38,7 +38,7 @@
 
   /* ── 사이드바 ── */
   .sidebar {
-    width: 260px;
+    width: 360px;
     flex-shrink: 0;
     background: transparent;
     border-left: 1px solid #e4e4e4;
@@ -47,7 +47,7 @@
     overflow-y: auto;
   }
   .sidebar-section {
-    padding: 20px 18px;
+    padding: 18px 16px;
     border-bottom: 1px solid #f0f0f0;
   }
   .sidebar-section:last-child { border-bottom: none; }
@@ -57,6 +57,33 @@
     color: #444;
     letter-spacing: 0.3px;
     margin-bottom: 14px;
+  }
+
+  /* ── 하단 2열 그리드 ── */
+  .sidebar-bottom-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+  .sidebar-bottom-grid .sidebar-section {
+    border-bottom: none;
+  }
+  .sidebar-col-left {
+    border-right: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-col-right {
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-col-right .sidebar-section {
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .sidebar-col-right .sidebar-section:last-child {
+    border-bottom: none;
+    flex: 1;
   }
 
   /* 템플릿 토글 버튼 */
@@ -206,8 +233,8 @@
   .slider-group { margin-bottom: 12px; }
   .slider-group label { display: block; font-size: 11px; color: #888; margin-bottom: 5px; }
   .slider-row { display: flex; align-items: center; gap: 8px; }
-  .slider-row input[type=range] { flex: 1; height: 3px; accent-color: #1010FF; cursor: pointer; }
-  .slider-val { font-size: 11px; color: #999; width: 36px; text-align: right; flex-shrink: 0; }
+  .slider-row input[type=range] { flex: 1; height: 3px; accent-color: #1010FF; cursor: pointer; min-width: 0; }
+  .slider-val { font-size: 11px; color: #999; width: 30px; text-align: right; flex-shrink: 0; }
 
   .btn-reset {
     width: 100%; padding: 7px; background: #fafafa; border: 1px solid #e0e0e0;
@@ -231,6 +258,30 @@
   .btn-pdf:hover { background: #f5f5f5; border-color: #aaa; }
 
   .drag-hint { font-size: 10px; color: #ccc; text-align: center; margin-top: 10px; line-height: 1.6; }
+
+  /* ── 히스토리 ── */
+  .btn-data-save {
+    width: 100%; padding: 8px; background: #f0f4ff; color: #1010FF;
+    border: 1.5px solid #c0c8ff; border-radius: 6px; font-size: 12px;
+    font-weight: 700; font-family: inherit; cursor: pointer;
+    margin-bottom: 8px; transition: background 0.15s;
+  }
+  .btn-data-save:hover { background: #e0e8ff; }
+  .history-list { display: flex; flex-direction: column; gap: 5px; }
+  .history-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f7f7f7; border: 1px solid #e8e8e8; border-radius: 6px;
+    padding: 6px 10px; cursor: pointer; transition: background 0.15s;
+  }
+  .history-item:hover { background: #eef0fd; border-color: #c0c8ff; }
+  .history-item-label { font-size: 11px; font-weight: 600; color: #333; }
+  .history-item-del {
+    background: none; border: none; cursor: pointer;
+    color: #ccc; font-size: 14px; line-height: 1; padding: 0;
+    flex-shrink: 0; transition: color 0.15s;
+  }
+  .history-item-del:hover { color: #e74c3c; }
+  .history-empty { font-size: 11px; color: #bbb; text-align: center; padding: 8px 0; }
 
   /* ══════════════════════════════════
      1개월 달력 (595×842 A4)
@@ -644,44 +695,65 @@
       <div class="tag-area" id="tag-area" style="margin-top:14px;"></div>
     </div>
 
-    <!-- 배경 이미지 -->
-    <div class="sidebar-section">
-      <div class="sidebar-title">배경 이미지</div>
-      <div style="position:relative;overflow:hidden;display:block;width:100%;margin-bottom:14px;">
-        <button style="width:100%;padding:8px 14px;background:#fafafa;border:1.5px dashed #ddd;border-radius:7px;font-size:12px;font-family:inherit;cursor:pointer;color:#555;">이미지 업로드</button>
-        <input type="file" id="inp-bg" accept="image/*" onchange="changeBg(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;">
-      </div>
-      <div class="slider-group">
-        <label>확대 / 축소</label>
-        <div class="slider-row">
-          <input type="range" id="bg-scale" min="50" max="200" value="100" step="1" oninput="updateBg()">
-          <span class="slider-val" id="bg-scale-val">100%</span>
-        </div>
-      </div>
-      <div class="slider-group">
-        <label>좌우 위치</label>
-        <div class="slider-row">
-          <input type="range" id="bg-x" min="0" max="100" value="50" step="1" oninput="updateBg()">
-          <span class="slider-val" id="bg-x-val">50%</span>
-        </div>
-      </div>
-      <div class="slider-group">
-        <label>상하 위치</label>
-        <div class="slider-row">
-          <input type="range" id="bg-y" min="0" max="100" value="50" step="1" oninput="updateBg()">
-          <span class="slider-val" id="bg-y-val">50%</span>
-        </div>
-      </div>
-      <button class="btn-reset" onclick="resetBg()">↺ 초기화</button>
-      <p class="drag-hint">이미지 확대 후 달력 위에서<br>드래그하면 위치 조정 가능</p>
-    </div>
+    <!-- 하단 2열: 배경이미지 | 저장+히스토리 -->
+    <div class="sidebar-bottom-grid">
 
-    <!-- 저장 -->
-    <div class="sidebar-section">
-      <div class="sidebar-title">저장</div>
-      <button class="btn-save" onclick="saveImage()">PNG 저장</button>
-      <button class="btn-pdf"  onclick="savePDF()">PDF 저장</button>
-    </div>
+      <!-- 좌: 배경 이미지 -->
+      <div class="sidebar-col-left">
+        <div class="sidebar-section" style="flex:1;">
+          <div class="sidebar-title">배경 이미지</div>
+          <div style="position:relative;overflow:hidden;display:block;width:100%;margin-bottom:12px;">
+            <button style="width:100%;padding:7px 10px;background:#fafafa;border:1.5px dashed #ddd;border-radius:7px;font-size:11px;font-family:inherit;cursor:pointer;color:#555;">이미지 업로드</button>
+            <input type="file" id="inp-bg" accept="image/*" onchange="changeBg(this)" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;">
+          </div>
+          <div class="slider-group">
+            <label>확대 / 축소</label>
+            <div class="slider-row">
+              <input type="range" id="bg-scale" min="50" max="200" value="100" step="1" oninput="updateBg()">
+              <span class="slider-val" id="bg-scale-val">100%</span>
+            </div>
+          </div>
+          <div class="slider-group">
+            <label>좌우 위치</label>
+            <div class="slider-row">
+              <input type="range" id="bg-x" min="0" max="100" value="50" step="1" oninput="updateBg()">
+              <span class="slider-val" id="bg-x-val">50%</span>
+            </div>
+          </div>
+          <div class="slider-group">
+            <label>상하 위치</label>
+            <div class="slider-row">
+              <input type="range" id="bg-y" min="0" max="100" value="50" step="1" oninput="updateBg()">
+              <span class="slider-val" id="bg-y-val">50%</span>
+            </div>
+          </div>
+          <button class="btn-reset" onclick="resetBg()">↺ 초기화</button>
+          <p class="drag-hint">이미지 확대 후 달력 위에서<br>드래그하면 위치 조정 가능</p>
+        </div>
+      </div>
+
+      <!-- 우: 저장 + 히스토리 -->
+      <div class="sidebar-col-right">
+
+        <!-- 저장 -->
+        <div class="sidebar-section">
+          <div class="sidebar-title">저장</div>
+          <button class="btn-data-save" onclick="saveData()">💾 일정 저장</button>
+          <button class="btn-save" onclick="saveImage()">PNG 저장</button>
+          <button class="btn-pdf"  onclick="savePDF()">PDF 저장</button>
+        </div>
+
+        <!-- 히스토리 -->
+        <div class="sidebar-section">
+          <div class="sidebar-title">히스토리</div>
+          <div class="history-list" id="history-list">
+            <div class="history-empty">저장된 일정이 없습니다</div>
+          </div>
+        </div>
+
+      </div><!-- /sidebar-col-right -->
+
+    </div><!-- /sidebar-bottom-grid -->
 
   </div><!-- /sidebar -->
 
@@ -944,8 +1016,94 @@
     });
   }
 
+  // ── localStorage 데이터 저장/불러오기 ──
+  function getStorageKey() {
+    if (currentTemplate === 1) {
+      const y = document.getElementById('inp-year').value;
+      const m = String(document.getElementById('inp-month').value).padStart(2, '0');
+      return `schedule:${y}-${m}`;
+    } else {
+      const y  = document.getElementById('inp-year2').value;
+      const m1 = String(document.getElementById('inp-month2-1').value).padStart(2, '0');
+      const m2 = String(document.getElementById('inp-month2-2').value).padStart(2, '0');
+      return `schedule:${y}-${m1}+${m2}`;
+    }
+  }
+
+  function saveData() {
+    const key = getStorageKey();
+    const data = {
+      template: currentTemplate,
+      year:  document.getElementById('inp-year').value,
+      month: document.getElementById('inp-month').value,
+      year2:    document.getElementById('inp-year2').value,
+      month2_1: document.getElementById('inp-month2-1').value,
+      month2_2: document.getElementById('inp-month2-2').value,
+      holidays: holidays,
+    };
+    localStorage.setItem(key, JSON.stringify(data));
+    renderHistory();
+    // 저장 완료 피드백
+    const btn = document.querySelector('.btn-data-save');
+    const orig = btn.textContent;
+    btn.textContent = '✓ 저장됨';
+    setTimeout(() => { btn.textContent = orig; }, 1200);
+  }
+
+  function loadData(key) {
+    const raw = localStorage.getItem(key);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    currentTemplate = data.template;
+    document.getElementById('inp-year').value    = data.year;
+    document.getElementById('inp-month').value   = data.month;
+    document.getElementById('inp-year2').value   = data.year2;
+    document.getElementById('inp-month2-1').value = data.month2_1;
+    document.getElementById('inp-month2-2').value = data.month2_2;
+    holidays = data.holidays || { 1: {}, 2: {} };
+    switchTemplate(currentTemplate);
+  }
+
+  function deleteData(key, e) {
+    e.stopPropagation();
+    if (!confirm(`"${keyToLabel(key)}" 일정을 삭제할까요?`)) return;
+    localStorage.removeItem(key);
+    renderHistory();
+  }
+
+  function keyToLabel(key) {
+    // schedule:2026-04 → 2026년 4월
+    // schedule:2026-04+05 → 2026년 4+5월
+    const body = key.replace('schedule:', '');
+    if (body.includes('+')) {
+      const [yearPart, months] = body.split('-');
+      const [m1, m2] = months.split('+').map(m => parseInt(m));
+      return `${yearPart}년 ${m1}+${m2}월`;
+    } else {
+      const [y, m] = body.split('-');
+      return `${y}년 ${parseInt(m)}월`;
+    }
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    const keys = Object.keys(localStorage)
+      .filter(k => k.startsWith('schedule:'))
+      .sort().reverse();
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="history-empty">저장된 일정이 없습니다</div>';
+      return;
+    }
+    list.innerHTML = keys.map(key => `
+      <div class="history-item" onclick="loadData('${key}')">
+        <span class="history-item-label">${keyToLabel(key)}</span>
+        <button class="history-item-del" onclick="deleteData('${key}', event)" title="삭제">×</button>
+      </div>`).join('');
+  }
+
   // ── 초기 렌더 ──
   renderAll();
+  renderHistory();
 </script>
 </body>
 </html>
