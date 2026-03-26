@@ -878,22 +878,53 @@
     renderAll();
   }
 
-  // ── 연/월 변경 시 초기화 ──
+  // ── 연/월 변경 시 → 해당 월 저장 데이터 자동 로드 ──
+  function tryAutoLoad(year, month, slot) {
+    const key = `schedule:${year}-${String(month).padStart(2,'0')}`;
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      holidays[slot] = JSON.parse(raw).holidays || {};
+      // 자동 로드 피드백
+      const label = `${parseInt(month)}월 일정 불러옴`;
+      showToast(label);
+    } else {
+      holidays[slot] = {};
+    }
+    renderTags(); renderAll();
+  }
+
+  function showToast(msg) {
+    let t = document.getElementById('auto-toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'auto-toast';
+      t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:7px 18px;border-radius:20px;font-size:12px;z-index:9999;opacity:0;transition:opacity 0.25s;pointer-events:none;';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.opacity = '1';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.opacity = '0'; }, 1800);
+  }
+
   ['inp-year','inp-month'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-      holidays[1] = {};
-      renderTags(); renderAll();
+      const y = document.getElementById('inp-year').value;
+      const m = document.getElementById('inp-month').value;
+      tryAutoLoad(y, m, 1);
     });
   });
   ['inp-year2','inp-month2-1'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-      holidays[1] = {};
-      renderTags(); renderAll();
+      const y  = document.getElementById('inp-year2').value;
+      const m1 = document.getElementById('inp-month2-1').value;
+      tryAutoLoad(y, m1, 1);
     });
   });
   document.getElementById('inp-month2-2').addEventListener('change', () => {
-    holidays[2] = {};
-    renderTags(); renderAll();
+    const y  = document.getElementById('inp-year2').value;
+    const m2 = document.getElementById('inp-month2-2').value;
+    tryAutoLoad(y, m2, 2);
   });
 
   // ── 배경 이미지 ──
@@ -1016,52 +1047,47 @@
     });
   }
 
-  // ── localStorage 데이터 저장/불러오기 ──
-  function getStorageKey() {
-    if (currentTemplate === 1) {
-      const y = document.getElementById('inp-year').value;
-      const m = String(document.getElementById('inp-month').value).padStart(2, '0');
-      return `schedule:${y}-${m}`;
-    } else {
-      const y  = document.getElementById('inp-year2').value;
-      const m1 = String(document.getElementById('inp-month2-1').value).padStart(2, '0');
-      const m2 = String(document.getElementById('inp-month2-2').value).padStart(2, '0');
-      return `schedule:${y}-${m1}+${m2}`;
-    }
-  }
-
+  // ── localStorage 저장 (항상 월 단위로 분리 저장) ──
   function saveData() {
-    const key = getStorageKey();
-    const data = {
-      template: currentTemplate,
-      year:  document.getElementById('inp-year').value,
-      month: document.getElementById('inp-month').value,
-      year2:    document.getElementById('inp-year2').value,
-      month2_1: document.getElementById('inp-month2-1').value,
-      month2_2: document.getElementById('inp-month2-2').value,
-      holidays: holidays,
-    };
-    localStorage.setItem(key, JSON.stringify(data));
+    const slots = currentTemplate === 1
+      ? [{ y: document.getElementById('inp-year').value,
+           m: document.getElementById('inp-month').value, slot: 1 }]
+      : [{ y: document.getElementById('inp-year2').value,
+           m: document.getElementById('inp-month2-1').value, slot: 1 },
+         { y: document.getElementById('inp-year2').value,
+           m: document.getElementById('inp-month2-2').value, slot: 2 }];
+
+    slots.forEach(({ y, m, slot }) => {
+      const key = `schedule:${y}-${String(m).padStart(2,'0')}`;
+      localStorage.setItem(key, JSON.stringify({ year: y, month: m, holidays: holidays[slot] }));
+    });
+
     renderHistory();
-    // 저장 완료 피드백
     const btn = document.querySelector('.btn-data-save');
     const orig = btn.textContent;
     btn.textContent = '✓ 저장됨';
     setTimeout(() => { btn.textContent = orig; }, 1200);
   }
 
+  // ── 히스토리 클릭 → 현재 활성 슬롯에 로드 ──
   function loadData(key) {
     const raw = localStorage.getItem(key);
     if (!raw) return;
     const data = JSON.parse(raw);
-    currentTemplate = data.template;
-    document.getElementById('inp-year').value    = data.year;
-    document.getElementById('inp-month').value   = data.month;
-    document.getElementById('inp-year2').value   = data.year2;
-    document.getElementById('inp-month2-1').value = data.month2_1;
-    document.getElementById('inp-month2-2').value = data.month2_2;
-    holidays = data.holidays || { 1: {}, 2: {} };
-    switchTemplate(currentTemplate);
+
+    if (currentTemplate === 2) {
+      // 2개월 모드: 현재 활성 탭(첫째/둘째 달)에 로드
+      const slot = activeMonthTab;
+      document.getElementById('inp-year2').value = data.year;
+      document.getElementById(slot === 1 ? 'inp-month2-1' : 'inp-month2-2').value = data.month;
+      holidays[slot] = data.holidays || {};
+    } else {
+      // 1개월 모드
+      document.getElementById('inp-year').value  = data.year;
+      document.getElementById('inp-month').value = data.month;
+      holidays[1] = data.holidays || {};
+    }
+    renderTags(); renderAll();
   }
 
   function deleteData(key, e) {
@@ -1072,23 +1098,15 @@
   }
 
   function keyToLabel(key) {
-    // schedule:2026-04 → 2026년 4월
-    // schedule:2026-04+05 → 2026년 4+5월
-    const body = key.replace('schedule:', '');
-    if (body.includes('+')) {
-      const [yearPart, months] = body.split('-');
-      const [m1, m2] = months.split('+').map(m => parseInt(m));
-      return `${yearPart}년 ${m1}+${m2}월`;
-    } else {
-      const [y, m] = body.split('-');
-      return `${y}년 ${parseInt(m)}월`;
-    }
+    const [y, m] = key.replace('schedule:', '').split('-');
+    return `${y}년 ${parseInt(m)}월`;
   }
 
   function renderHistory() {
     const list = document.getElementById('history-list');
+    // 구형 합산 키(+포함) 제외, 월 단위 키만 표시
     const keys = Object.keys(localStorage)
-      .filter(k => k.startsWith('schedule:'))
+      .filter(k => k.startsWith('schedule:') && !k.includes('+'))
       .sort().reverse();
     if (keys.length === 0) {
       list.innerHTML = '<div class="history-empty">저장된 일정이 없습니다</div>';
