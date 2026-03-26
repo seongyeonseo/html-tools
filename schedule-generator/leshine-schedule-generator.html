@@ -763,13 +763,31 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
   // ── 상태 ──
-  let currentTemplate = 1;  // 1 or 2
-  let activeMonthTab  = 1;  // 1 or 2 (2개월 모드에서 어느 달 편집 중)
-  let holidays = { 1: {}, 2: {} };  // 각 달의 일정
+  let currentTemplate = 1;
+  let activeMonthTab  = 1;
+
+  // holidays 키 = "YYYY-MM" 문자열 → 슬롯 번호 개념 완전 제거
+  // 예: holidays["2026-03"] = { 15: {name:'삼일절', status:'hujin'}, ... }
+  let holidays = {};
 
   const STATUS_LABEL = { hujin: '휴진', normal: '정상진료', danchu: '단축진료' };
 
-  // ── 템플릿 전환 ──
+  // ── 현재 컨텍스트의 YYYY-MM 키 반환 ──
+  function mk(yearId, monthId) {
+    const y = document.getElementById(yearId).value;
+    const m = String(document.getElementById(monthId).value).padStart(2, '0');
+    return `${y}-${m}`;
+  }
+
+  // 현재 편집 중인 달의 키 (일정 추가/삭제/태그 렌더에 사용)
+  function activeKey() {
+    if (currentTemplate === 1) return mk('inp-year', 'inp-month');
+    return activeMonthTab === 1
+      ? mk('inp-year2', 'inp-month2-1')
+      : mk('inp-year2', 'inp-month2-2');
+  }
+
+  // ── 템플릿 전환 ── holidays 절대 건드리지 않음
   function switchTemplate(n) {
     currentTemplate = n;
     document.getElementById('calendar').style.display  = n === 1 ? 'block' : 'none';
@@ -786,26 +804,22 @@
       document.getElementById('ov-top2').style.display =
         document.getElementById('ov-top').style.display;
     }
-    // ── 월 셀렉터를 데이터에 맞게 동기화 (holidays 데이터는 건드리지 않음) ──
+    // 1→2개월: 2개월 셀렉터를 1개월 선택 월 기준으로 자동 세팅
     if (n === 2) {
-      // 1→2개월: 첫째 달을 현재 1개월 선택 월로 맞춤 → holidays[1] 그대로 보존
       const y = document.getElementById('inp-year').value;
       const m = parseInt(document.getElementById('inp-month').value);
       document.getElementById('inp-year2').value    = y;
       document.getElementById('inp-month2-1').value = m;
-      // 둘째 달은 다음 달로 자동 세팅 후 저장 데이터 로드
-      const m2 = (m % 12) + 1;
-      document.getElementById('inp-month2-2').value = m2;
-      loadMonthData(y, m2, 2);
-    } else {
-      // 2→1개월: 활성 탭(첫째/둘째) 월을 1개월 셀렉터로 맞춤
+      document.getElementById('inp-month2-2').value = (m % 12) + 1;
+    }
+    // 2→1개월: 활성 탭 월을 1개월 셀렉터로 세팅
+    if (n === 1) {
       const y = document.getElementById('inp-year2').value;
       const m = document.getElementById(
         activeMonthTab === 1 ? 'inp-month2-1' : 'inp-month2-2'
       ).value;
       document.getElementById('inp-year').value  = y;
       document.getElementById('inp-month').value = m;
-      holidays[1] = holidays[activeMonthTab] || {};
     }
     renderAll();
     renderTags();
@@ -846,25 +860,28 @@
     if (currentTemplate === 1) {
       const year  = parseInt(document.getElementById('inp-year').value);
       const month = parseInt(document.getElementById('inp-month').value);
+      const key   = mk('inp-year', 'inp-month');
       document.getElementById('cal-title-1').textContent = month + '월 진료일정 안내';
-      document.getElementById('day-grid-1').innerHTML = buildGrid(year, month, holidays[1], 'dc');
+      document.getElementById('day-grid-1').innerHTML = buildGrid(year, month, holidays[key] || {}, 'dc');
     } else {
       const year  = parseInt(document.getElementById('inp-year2').value);
       const m1    = parseInt(document.getElementById('inp-month2-1').value);
       const m2    = parseInt(document.getElementById('inp-month2-2').value);
+      const k1    = mk('inp-year2', 'inp-month2-1');
+      const k2    = mk('inp-year2', 'inp-month2-2');
       document.getElementById('cal2-title-1').textContent = m1 + '월 진료일정 안내';
       document.getElementById('cal2-title-2').textContent = m2 + '월 진료일정 안내';
-      document.getElementById('day-grid2-1').innerHTML = buildGrid(year, m1, holidays[1], 'dc2');
-      document.getElementById('day-grid2-2').innerHTML = buildGrid(year, m2, holidays[2], 'dc2');
+      document.getElementById('day-grid2-1').innerHTML = buildGrid(year, m1, holidays[k1] || {}, 'dc2');
+      document.getElementById('day-grid2-2').innerHTML = buildGrid(year, m2, holidays[k2] || {}, 'dc2');
     }
   }
 
   // ── 태그 렌더 ──
   function renderTags() {
-    const key  = currentTemplate === 1 ? 1 : activeMonthTab;
+    const key  = activeKey();
     const area = document.getElementById('tag-area');
     area.innerHTML = '';
-    Object.entries(holidays[key]).sort((a,b) => a[0]-b[0]).forEach(([day, entry]) => {
+    Object.entries(holidays[key] || {}).sort((a,b) => a[0]-b[0]).forEach(([day, entry]) => {
       const tag = document.createElement('div');
       tag.className = 'tag';
       tag.innerHTML = `
@@ -884,7 +901,8 @@
     const name   = document.getElementById('inp-hname').value.trim();
     const status = document.getElementById('inp-hstatus').value;
     if (!day || !name) { alert('날짜와 일정명을 입력해주세요.'); return; }
-    const key = currentTemplate === 1 ? 1 : activeMonthTab;
+    const key = activeKey();
+    if (!holidays[key]) holidays[key] = {};
     holidays[key][day] = { name, status };
     document.getElementById('inp-hday').value  = '';
     document.getElementById('inp-hname').value = '';
@@ -893,27 +911,23 @@
   }
 
   function removeHoliday(day) {
-    const key = currentTemplate === 1 ? 1 : activeMonthTab;
-    delete holidays[key][day];
+    const key = activeKey();
+    if (holidays[key]) delete holidays[key][day];
     renderTags();
     renderAll();
   }
 
-  // ── 연/월 변경 시 → 해당 월 저장 데이터 자동 로드 ──
-  // loadMonthData: holidays만 세팅, 렌더 없음 (switchTemplate 내부 등에서 재사용)
-  function loadMonthData(year, month, slot) {
-    const key = `schedule:${year}-${String(month).padStart(2,'0')}`;
-    const raw = localStorage.getItem(key);
-    if (raw) {
-      holidays[slot] = JSON.parse(raw).holidays || {};
-      showToast(`${parseInt(month)}월 일정 불러옴`);
-    } else {
-      holidays[slot] = {};
+  // ── 연/월 변경 시 → localStorage에서 해당 월 데이터 로드 (미저장 데이터 보호) ──
+  function tryAutoLoad(monthKey) {
+    // 이미 메모리에 데이터 있으면 덮어쓰지 않음
+    if (holidays[monthKey] && Object.keys(holidays[monthKey]).length > 0) {
+      renderTags(); renderAll(); return;
     }
-  }
-
-  function tryAutoLoad(year, month, slot) {
-    loadMonthData(year, month, slot);
+    const raw = localStorage.getItem(`schedule:${monthKey}`);
+    if (raw) {
+      holidays[monthKey] = JSON.parse(raw).holidays || {};
+      showToast(`${parseInt(monthKey.split('-')[1])}월 저장 데이터 불러옴`);
+    }
     renderTags(); renderAll();
   }
 
@@ -933,22 +947,16 @@
 
   ['inp-year','inp-month'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-      const y = document.getElementById('inp-year').value;
-      const m = document.getElementById('inp-month').value;
-      tryAutoLoad(y, m, 1);
+      tryAutoLoad(mk('inp-year', 'inp-month'));
     });
   });
   ['inp-year2','inp-month2-1'].forEach(id => {
     document.getElementById(id).addEventListener('change', () => {
-      const y  = document.getElementById('inp-year2').value;
-      const m1 = document.getElementById('inp-month2-1').value;
-      tryAutoLoad(y, m1, 1);
+      tryAutoLoad(mk('inp-year2', 'inp-month2-1'));
     });
   });
   document.getElementById('inp-month2-2').addEventListener('change', () => {
-    const y  = document.getElementById('inp-year2').value;
-    const m2 = document.getElementById('inp-month2-2').value;
-    tryAutoLoad(y, m2, 2);
+    tryAutoLoad(mk('inp-year2', 'inp-month2-2'));
   });
 
   // ── 배경 이미지 ──
@@ -1071,19 +1079,20 @@
     });
   }
 
-  // ── localStorage 저장 (항상 월 단위로 분리 저장) ──
+  // ── localStorage 저장 (월 단위 분리 저장) ──
   function saveData() {
-    const slots = currentTemplate === 1
-      ? [{ y: document.getElementById('inp-year').value,
-           m: document.getElementById('inp-month').value, slot: 1 }]
-      : [{ y: document.getElementById('inp-year2').value,
-           m: document.getElementById('inp-month2-1').value, slot: 1 },
-         { y: document.getElementById('inp-year2').value,
-           m: document.getElementById('inp-month2-2').value, slot: 2 }];
+    const targets = currentTemplate === 1
+      ? [{ yearId: 'inp-year', monthId: 'inp-month' }]
+      : [{ yearId: 'inp-year2', monthId: 'inp-month2-1' },
+         { yearId: 'inp-year2', monthId: 'inp-month2-2' }];
 
-    slots.forEach(({ y, m, slot }) => {
-      const key = `schedule:${y}-${String(m).padStart(2,'0')}`;
-      localStorage.setItem(key, JSON.stringify({ year: y, month: m, holidays: holidays[slot] }));
+    targets.forEach(({ yearId, monthId }) => {
+      const key    = mk(yearId, monthId);
+      const y      = document.getElementById(yearId).value;
+      const m      = document.getElementById(monthId).value;
+      localStorage.setItem(`schedule:${key}`, JSON.stringify({
+        year: y, month: m, holidays: holidays[key] || {}
+      }));
     });
 
     renderHistory();
@@ -1094,22 +1103,24 @@
   }
 
   // ── 히스토리 클릭 → 현재 활성 슬롯에 로드 ──
-  function loadData(key) {
-    const raw = localStorage.getItem(key);
+  function loadData(storageKey) {
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return;
-    const data = JSON.parse(raw);
+    const data  = JSON.parse(raw);
+    const dataKey = storageKey.replace('schedule:', ''); // "YYYY-MM"
+
+    // 메모리에 해당 월 데이터 적재
+    holidays[dataKey] = data.holidays || {};
 
     if (currentTemplate === 2) {
-      // 2개월 모드: 현재 활성 탭(첫째/둘째 달)에 로드
-      const slot = activeMonthTab;
+      // 활성 탭 셀렉터를 해당 월로 맞춤
       document.getElementById('inp-year2').value = data.year;
-      document.getElementById(slot === 1 ? 'inp-month2-1' : 'inp-month2-2').value = data.month;
-      holidays[slot] = data.holidays || {};
+      document.getElementById(
+        activeMonthTab === 1 ? 'inp-month2-1' : 'inp-month2-2'
+      ).value = data.month;
     } else {
-      // 1개월 모드
       document.getElementById('inp-year').value  = data.year;
       document.getElementById('inp-month').value = data.month;
-      holidays[1] = data.holidays || {};
     }
     renderTags(); renderAll();
   }
