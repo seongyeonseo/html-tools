@@ -786,6 +786,18 @@
       document.getElementById('ov-top2').style.display =
         document.getElementById('ov-top').style.display;
     }
+    // ── 전환 시 선택된 월에 맞춰 저장 데이터 재동기화 ──
+    if (n === 1) {
+      const y = document.getElementById('inp-year').value;
+      const m = document.getElementById('inp-month').value;
+      loadMonthData(y, m, 1);
+    } else {
+      const y  = document.getElementById('inp-year2').value;
+      const m1 = document.getElementById('inp-month2-1').value;
+      const m2 = document.getElementById('inp-month2-2').value;
+      loadMonthData(y, m1, 1);
+      loadMonthData(y, m2, 2);
+    }
     renderAll();
     renderTags();
   }
@@ -879,17 +891,20 @@
   }
 
   // ── 연/월 변경 시 → 해당 월 저장 데이터 자동 로드 ──
-  function tryAutoLoad(year, month, slot) {
+  // loadMonthData: holidays만 세팅, 렌더 없음 (switchTemplate 내부 등에서 재사용)
+  function loadMonthData(year, month, slot) {
     const key = `schedule:${year}-${String(month).padStart(2,'0')}`;
     const raw = localStorage.getItem(key);
     if (raw) {
       holidays[slot] = JSON.parse(raw).holidays || {};
-      // 자동 로드 피드백
-      const label = `${parseInt(month)}월 일정 불러옴`;
-      showToast(label);
+      showToast(`${parseInt(month)}월 일정 불러옴`);
     } else {
       holidays[slot] = {};
     }
+  }
+
+  function tryAutoLoad(year, month, slot) {
+    loadMonthData(year, month, slot);
     renderTags(); renderAll();
   }
 
