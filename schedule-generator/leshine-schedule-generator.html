@@ -786,17 +786,26 @@
       document.getElementById('ov-top2').style.display =
         document.getElementById('ov-top').style.display;
     }
-    // ── 전환 시 선택된 월에 맞춰 저장 데이터 재동기화 ──
-    if (n === 1) {
+    // ── 월 셀렉터를 데이터에 맞게 동기화 (holidays 데이터는 건드리지 않음) ──
+    if (n === 2) {
+      // 1→2개월: 첫째 달을 현재 1개월 선택 월로 맞춤 → holidays[1] 그대로 보존
       const y = document.getElementById('inp-year').value;
-      const m = document.getElementById('inp-month').value;
-      loadMonthData(y, m, 1);
-    } else {
-      const y  = document.getElementById('inp-year2').value;
-      const m1 = document.getElementById('inp-month2-1').value;
-      const m2 = document.getElementById('inp-month2-2').value;
-      loadMonthData(y, m1, 1);
+      const m = parseInt(document.getElementById('inp-month').value);
+      document.getElementById('inp-year2').value    = y;
+      document.getElementById('inp-month2-1').value = m;
+      // 둘째 달은 다음 달로 자동 세팅 후 저장 데이터 로드
+      const m2 = (m % 12) + 1;
+      document.getElementById('inp-month2-2').value = m2;
       loadMonthData(y, m2, 2);
+    } else {
+      // 2→1개월: 활성 탭(첫째/둘째) 월을 1개월 셀렉터로 맞춤
+      const y = document.getElementById('inp-year2').value;
+      const m = document.getElementById(
+        activeMonthTab === 1 ? 'inp-month2-1' : 'inp-month2-2'
+      ).value;
+      document.getElementById('inp-year').value  = y;
+      document.getElementById('inp-month').value = m;
+      holidays[1] = holidays[activeMonthTab] || {};
     }
     renderAll();
     renderTags();
