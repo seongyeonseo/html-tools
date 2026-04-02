@@ -187,6 +187,13 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
   width: 14px; height: 14px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0;
 }
 .pos-toggle-item label { cursor: pointer; flex: 1; }
+.pos-drag-handle {
+  cursor: grab; color: #bbb; font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1;
+  user-select: none;
+}
+.pos-drag-handle:active { cursor: grabbing; }
+.pos-toggle-item.drag-over { border-color: #1010FF; background: #eeeeff; }
+.pos-toggle-item.dragging { opacity: 0.4; }
 .pos-del {
   background: none; border: none; cursor: pointer;
   color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0;
@@ -580,42 +587,50 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
       <div class="ctrl-label">모집 포지션 표시/숨김</div>
       <div class="ctrl-body">
         <ul class="pos-toggle-list" id="pos-toggle-list">
-          <li class="pos-toggle-item" data-tog="tog-sangdam">
+          <li class="pos-toggle-item" data-tog="tog-sangdam" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-sangdam">
             <label for="tog-sangdam">상담실장</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-longlasting">
+          <li class="pos-toggle-item" data-tog="tog-longlasting" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-longlasting">
             <label for="tog-longlasting">롱래스팅 상담실장</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-coordinator">
+          <li class="pos-toggle-item" data-tog="tog-coordinator" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-coordinator">
             <label for="tog-coordinator">코디네이터</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-nurse">
+          <li class="pos-toggle-item" data-tog="tog-nurse" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-nurse">
             <label for="tog-nurse">간호조무사</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-skin">
+          <li class="pos-toggle-item" data-tog="tog-skin" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-skin">
             <label for="tog-skin">피부&amp;바디관리사</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-language">
+          <li class="pos-toggle-item" data-tog="tog-language" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-language">
             <label for="tog-language">언어 코디네이터</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-manual">
+          <li class="pos-toggle-item" data-tog="tog-manual" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-manual">
             <label for="tog-manual">도수치료사</label>
             <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item" data-tog="tog-nail">
+          <li class="pos-toggle-item" data-tog="tog-nail" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
             <input type="checkbox" checked id="tog-nail">
             <label for="tog-nail">발톱치료사</label>
             <button class="pos-del">✕</button>
@@ -788,6 +803,7 @@ function renderHistoryList() {
 document.addEventListener('DOMContentLoaded', () => {
   // 기존 포지션 삭제 버튼 바인딩
   bindPosDelButtons();
+  initPosDragSort();
 
   // 포지션 추가 버튼
   document.getElementById('btn-add-pos')?.addEventListener('click', () => {
@@ -830,6 +846,61 @@ document.querySelectorAll('.ctrl-label').forEach(label => {
     label.closest('.ctrl-section').classList.toggle('collapsed');
   });
 });
+
+// 포지션 순서 드래그 앤 드롭
+function initPosDragSort() {
+  const list = document.getElementById('pos-toggle-list');
+  let draggingEl = null;
+
+  list.addEventListener('dragstart', e => {
+    draggingEl = e.target.closest('.pos-toggle-item');
+    if (!draggingEl) return;
+    setTimeout(() => draggingEl.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  list.addEventListener('dragend', () => {
+    if (draggingEl) draggingEl.classList.remove('dragging');
+    list.querySelectorAll('.pos-toggle-item').forEach(el => el.classList.remove('drag-over'));
+    draggingEl = null;
+  });
+
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest('.pos-toggle-item');
+    if (!target || target === draggingEl) return;
+    list.querySelectorAll('.pos-toggle-item').forEach(el => el.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  });
+
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.pos-toggle-item');
+    if (!target || target === draggingEl || !draggingEl) return;
+    target.classList.remove('drag-over');
+
+    // 사이드바 순서 변경
+    const items = [...list.querySelectorAll('.pos-toggle-item')];
+    const fromIdx = items.indexOf(draggingEl);
+    const toIdx = items.indexOf(target);
+    if (fromIdx < toIdx) {
+      list.insertBefore(draggingEl, target.nextSibling);
+    } else {
+      list.insertBefore(draggingEl, target);
+    }
+
+    // 포스터 테이블 순서 동기화
+    const table = document.querySelector('.recruit-table');
+    const thead = table.querySelector('.recruit-thead');
+    const newOrder = [...list.querySelectorAll('.pos-toggle-item')].map(li => posMap[li.dataset.tog]).filter(Boolean);
+    newOrder.forEach(rowId => {
+      const row = document.getElementById(rowId);
+      if (row) table.appendChild(row);
+    });
+
+    saveState();
+  });
+}
 
 // 포지션 삭제
 function bindPosDelButtons() {
@@ -879,7 +950,9 @@ function addPosition(name) {
   const li = document.createElement('li');
   li.className = 'pos-toggle-item';
   li.dataset.tog = togId;
+  li.draggable = true;
   li.innerHTML = `
+    <span class="pos-drag-handle">⠿</span>
     <input type="checkbox" checked id="${togId}">
     <label for="${togId}">${name}</label>
     <button class="pos-del">✕</button>`;
