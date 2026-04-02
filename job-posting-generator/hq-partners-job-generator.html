@@ -209,6 +209,33 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
 }
 .btn-export:hover { background: #0000cc; }
 .btn-export:disabled { background: #888; cursor: default; }
+
+/* 히스토리 */
+.btn-save-history {
+  width: 100%; background: #fff; border: 1.5px solid #1010FF; color: #1010FF;
+  border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700;
+  font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px;
+  letter-spacing: -0.03em; transition: background 0.15s;
+}
+.btn-save-history:hover { background: #f0f0ff; }
+.history-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.history-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 9px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
+}
+.history-item button.load {
+  flex: 1; background: none; border: none; cursor: pointer; text-align: left;
+  font-size: 11px; font-weight: 600; color: #333;
+  font-family: "Pretendard", sans-serif; letter-spacing: -0.02em;
+}
+.history-item button.load:hover { color: #1010FF; }
+.history-item button.del {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: #ccc; line-height: 1; padding: 0;
+}
+.history-item button.del:hover { color: #e00; }
+.history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; letter-spacing: -0.02em; }
 </style>
 </head>
 <body>
@@ -603,7 +630,15 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
     </div>
 
     <button class="btn-export" id="btn-export">이미지로 내보내기</button>
-    <button onclick="resetState()" style="width:100%;background:none;border:1px solid #ddd;border-radius:7px;padding:9px 0;font-size:11px;font-weight:600;font-family:'Pretendard',sans-serif;color:#999;cursor:pointer;margin-top:6px;">작성 내용 초기화</button>
+
+    <!-- 히스토리 -->
+    <div class="ctrl-section" style="margin-top:14px;">
+      <div class="ctrl-label">히스토리</div>
+      <div class="ctrl-body">
+        <button class="btn-save-history" id="btn-save-history">현재 상태 저장</button>
+        <ul class="history-list" id="history-list"></ul>
+      </div>
+    </div>
   </div>
 
 </div><!-- /app-wrapper -->
@@ -654,11 +689,93 @@ function restoreState() {
   } catch(e) {}
 }
 
-function resetState() {
-  if (!confirm('작성 내용을 모두 초기화할까요?')) return;
-  localStorage.removeItem(SAVE_KEY);
-  location.reload();
+// ── 히스토리 ──
+const HISTORY_KEY = 'hq-partners-history';
+const MAX_HISTORY = 20;
+
+function getSnapshot() {
+  const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+  const texts = Array.from(editables).map(el => el.innerHTML);
+  const posStates = {};
+  Object.keys(posMap).forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) posStates[id] = cb.checked;
+  });
+  const benefitStates = {};
+  document.querySelectorAll('[data-b]').forEach(cb => {
+    benefitStates[cb.dataset.b] = cb.checked;
+  });
+  return { texts, posStates, benefitStates };
 }
+
+function applySnapshot(snap) {
+  const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+  editables.forEach((el, i) => { if (snap.texts[i] != null) el.innerHTML = snap.texts[i]; });
+  Object.entries(snap.posStates).forEach(([id, checked]) => {
+    const cb = document.getElementById(id);
+    if (!cb) return;
+    cb.checked = checked;
+    const row = document.getElementById(posMap[id]);
+    if (row) row.classList.toggle('hidden', !checked);
+  });
+  Object.entries(snap.benefitStates).forEach(([bId, checked]) => {
+    const cb = document.querySelector(`[data-b="${bId}"]`);
+    if (!cb) return;
+    cb.checked = checked;
+    const cell = document.getElementById(bId);
+    if (cell) cell.classList.toggle('hidden', !checked);
+  });
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+}
+
+function saveHistory(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {}
+}
+
+function renderHistoryList() {
+  const list = loadHistory();
+  const ul = document.getElementById('history-list');
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!list.length) {
+    ul.innerHTML = '<li class="history-empty">저장된 히스토리가 없습니다</li>';
+    return;
+  }
+  list.forEach((item, i) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.innerHTML = `
+      <button class="load">${item.label}</button>
+      <button class="del" title="삭제">✕</button>`;
+    li.querySelector('.load').addEventListener('click', () => {
+      if (!confirm(`"${item.label}" 상태로 불러올까요?`)) return;
+      applySnapshot(item.snap);
+      saveState();
+    });
+    li.querySelector('.del').addEventListener('click', () => {
+      const updated = loadHistory().filter((_, idx) => idx !== i);
+      saveHistory(updated);
+      renderHistoryList();
+    });
+    ul.appendChild(li);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btn-save-history')?.addEventListener('click', () => {
+    const now = new Date();
+    const label = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const list = loadHistory();
+    list.unshift({ label, snap: getSnapshot() });
+    if (list.length > MAX_HISTORY) list.pop();
+    saveHistory(list);
+    renderHistoryList();
+  });
+  renderHistoryList();
+});
 
 // ── 서식 단축키 (contenteditable 전체 적용)
 // Ctrl+B: 굵게 (브라우저 기본), Ctrl+Shift+X: 포인트 컬러 #7F4800
