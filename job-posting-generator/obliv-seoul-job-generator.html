@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Obliv Seoul 채용공고 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 100vh; }
+
+/* ── 레이아웃 ── */
+.app-wrapper { display: flex; width: 1240px; margin: 0 auto; padding: 32px 0; align-items: flex-start; gap: 28px; }
+.preview-area { flex: 1; min-width: 0; }
+#poster-canvas { width: 860px; }
+
+/* ── 포스터 바디 ── */
+.poster-body { background: #1e1713; padding: 47px 0 80px; }
+.poster-card { margin: 0 40px; background: #fff; padding: 40px 30px 60px; }
+
+/* ── 섹션 타이틀 ── */
+.section-heading {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 800; font-size: 45px; color: #1e1713;
+  line-height: normal; white-space: nowrap; margin-bottom: 28px;
+}
+.section-heading .sec-mark { color: #dfa46c; }
+.section-heading.common-heading { margin-top: 60px; }
+
+/* ── 모집분야 테이블 ── */
+.pos-table { width: 100%; }
+
+.pos-header-bar {
+  background: #dfa46c; height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Pretendard", sans-serif;
+  font-weight: 500; font-size: 25px; color: #fff; letter-spacing: -0.5px;
+}
+
+.pos-row {
+  display: flex; border-bottom: 1px solid #d8c8b8; align-items: stretch;
+}
+.pos-row.hidden { display: none; }
+
+.pos-label-col {
+  width: 151px; flex-shrink: 0;
+  border-right: 1px solid #d8c8b8;
+  padding: 30px 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: 6px;
+}
+.pos-name {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  letter-spacing: -0.5px; line-height: 1.35;
+}
+.pos-count {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  letter-spacing: -0.5px; line-height: 1.35;
+}
+
+.pos-content-col {
+  flex: 1; padding: 30px 20px 30px 37px;
+  display: flex; flex-direction: column; gap: 35px;
+}
+
+.sub-section { display: flex; flex-direction: column; }
+.sub-label {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  line-height: normal; margin-bottom: 12px;
+}
+.sub-content {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400; font-size: 25px; color: #1e1713;
+  line-height: 40px; letter-spacing: -0.5px; white-space: pre-wrap;
+}
+
+/* ── 공통사항 테이블 ── */
+.common-table { width: 100%; }
+.common-row {
+  display: flex; padding: 25px 0;
+  border-bottom: 1px solid #d8c8b8;
+  align-items: start;
+}
+.common-row:last-child { border-bottom: none; }
+
+.common-key {
+  width: 151px; flex-shrink: 0;
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  line-height: normal; padding-top: 3px;
+}
+.common-val {
+  flex: 1; padding-left: 37px;
+  font-family: "Pretendard", sans-serif;
+  font-size: 25px; color: #1e1713; letter-spacing: -0.5px;
+}
+.common-val-text {
+  font-weight: 400; line-height: 45px; white-space: pre-wrap;
+}
+
+/* 근무시간 특수 */
+.work-time-basic {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  letter-spacing: -0.5px; line-height: normal; margin-bottom: 10px;
+}
+.work-note-bar {
+  display: block;
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400; font-size: 25px; color: #1e1713;
+  letter-spacing: -0.5px; line-height: 40px;
+  margin-bottom: 4px;
+}
+.work-detail {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400; font-size: 25px; color: #1e1713;
+  line-height: 40px; letter-spacing: -0.5px; white-space: pre-wrap;
+}
+
+/* 절차 */
+.process-steps {
+  display: flex; align-items: flex-start; gap: 0; flex-wrap: wrap;
+}
+.process-step { display: flex; flex-direction: column; align-items: flex-start; }
+.step-num {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 21px; color: #dfa46c;
+  letter-spacing: -0.42px; line-height: 33px;
+}
+.step-name {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 700; font-size: 25px; color: #1e1713;
+  letter-spacing: -0.5px; line-height: 33px;
+  min-width: 80px;
+}
+.step-arrow {
+  font-size: 20px; color: #c4b0a0;
+  margin: 33px 14px 0; line-height: 33px;
+}
+
+/* 지원방법 */
+.contact-row {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400; font-size: 25px; color: #1e1713;
+  line-height: 35px; letter-spacing: -0.5px;
+}
+.contact-bold {
+  font-weight: 700;
+}
+
+/* ── 빈 영역: 에디터에서는 흐리게(클릭 가능), 내보내기 시 숨김 ── */
+.sub-section.is-empty { opacity: 0.15; }
+.common-row.row-empty > .common-val { opacity: 0.15; }
+.work-note-bar.is-empty,
+.work-detail.is-empty,
+.work-time-basic.is-empty,
+.common-val-text.is-empty,
+.step-name.is-empty,
+.pos-count.is-empty,
+.pos-name.is-empty { opacity: 0.15; }
+
+/* 내보내기 시에만 완전히 숨김 */
+#poster-canvas.exporting .sub-section.is-empty { display: none !important; }
+#poster-canvas.exporting .common-row.row-empty { display: none !important; }
+#poster-canvas.exporting .work-note-bar.is-empty,
+#poster-canvas.exporting .work-detail.is-empty,
+#poster-canvas.exporting .work-time-basic.is-empty,
+#poster-canvas.exporting .common-val-text.is-empty,
+#poster-canvas.exporting .step-name.is-empty,
+#poster-canvas.exporting .pos-count.is-empty,
+#poster-canvas.exporting .pos-name.is-empty { display: none !important; }
+
+/* ── contenteditable ── */
+[contenteditable]:focus {
+  outline: 2px solid rgba(16,16,255,0.25); border-radius: 3px;
+}
+
+/* ── 사이드바 ── */
+.sidebar {
+  width: 310px; flex-shrink: 0;
+  position: sticky; top: 32px;
+  max-height: calc(100vh - 64px); overflow-y: auto; overflow-x: hidden;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+.hint-box {
+  font-size: 11px; color: #666; background: #f6f6ff;
+  border: 1px solid #dcdcff; border-radius: 6px;
+  padding: 8px 11px; margin-bottom: 14px; line-height: 1.7;
+  letter-spacing: -0.02em;
+}
+.hint-box strong { color: #1010FF; font-weight: 700; }
+
+.ctrl-section { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e0e0e0; }
+.ctrl-section:last-of-type { border-bottom: none; }
+.ctrl-label {
+  font-size: 12px; font-weight: 700; color: #1010FF;
+  letter-spacing: -0.04em; margin-bottom: 10px;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: space-between; user-select: none;
+}
+.ctrl-label::after { content: "▾"; font-size: 10px; transition: transform 0.2s; }
+.ctrl-section.collapsed .ctrl-label { margin-bottom: 0; }
+.ctrl-section.collapsed .ctrl-label::after { transform: rotate(-90deg); }
+.ctrl-section.collapsed .ctrl-body { display: none; }
+
+/* 포지션 토글 */
+.pos-toggle-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
+.pos-toggle-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
+  font-size: 12px; font-weight: 600; color: #333;
+  font-family: "Pretendard", sans-serif;
+}
+.pos-toggle-item input[type="checkbox"] {
+  width: 14px; height: 14px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0;
+}
+.pos-toggle-item label { cursor: pointer; flex: 1; }
+.pos-drag-handle {
+  cursor: grab; color: #bbb; font-size: 13px;
+  padding: 0 2px; flex-shrink: 0; line-height: 1; user-select: none;
+}
+.pos-drag-handle:active { cursor: grabbing; }
+.pos-toggle-item.drag-over { border-color: #1010FF; background: #eeeeff; }
+.pos-toggle-item.dragging { opacity: 0.4; }
+.pos-del {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0;
+}
+.pos-del:hover { color: #e00; }
+.btn-add-pos {
+  width: 100%; background: none; border: 1.5px dashed #1010FF;
+  color: #1010FF; border-radius: 6px; padding: 8px 0;
+  font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif;
+  cursor: pointer; margin-top: 6px; letter-spacing: -0.02em;
+}
+.btn-add-pos:hover { background: #f0f0ff; }
+
+.btn-export {
+  width: 100%; background: #1010FF; color: #fff; border: none;
+  border-radius: 7px; padding: 12px 0; font-size: 13px; font-weight: 700;
+  font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 8px;
+  transition: background 0.15s; letter-spacing: -0.04em;
+}
+.btn-export:hover { background: #0000cc; }
+.btn-export:disabled { background: #888; cursor: default; }
+
+/* 히스토리 */
+.btn-save-history {
+  width: 100%; background: #fff; border: 1.5px solid #1010FF; color: #1010FF;
+  border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700;
+  font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px;
+  letter-spacing: -0.03em; transition: background 0.15s;
+}
+.btn-save-history:hover { background: #f0f0ff; }
+.history-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.history-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 9px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
+}
+.history-item button.load {
+  flex: 1; background: none; border: none; cursor: pointer; text-align: left;
+  font-size: 11px; font-weight: 600; color: #333;
+  font-family: "Pretendard", sans-serif; letter-spacing: -0.02em;
+}
+.history-item button.load:hover { color: #1010FF; }
+.history-item button.del {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: #ccc; line-height: 1; padding: 0;
+}
+.history-item button.del:hover { color: #e00; }
+.history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; letter-spacing: -0.02em; }
+
+/* 센터 선택 */
+.center-btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.center-btn {
+  padding: 8px 0; border: 1.5px solid #e0e0e0; border-radius: 6px;
+  background: #f8f8f8; font-size: 12px; font-weight: 600; color: #555;
+  font-family: "Pretendard", sans-serif; cursor: pointer; text-align: center;
+  transition: all 0.15s; letter-spacing: -0.02em;
+}
+.center-btn:hover { border-color: #1e1713; color: #1e1713; }
+.center-btn.active { background: #1e1713; color: #fff; border-color: #1e1713; }
+.center-none-btn {
+  grid-column: 1 / -1; margin-top: 2px;
+  padding: 6px 0; border: 1.5px dashed #ccc; border-radius: 6px;
+  background: none; font-size: 11px; font-weight: 600; color: #aaa;
+  font-family: "Pretendard", sans-serif; cursor: pointer; text-align: center;
+  letter-spacing: -0.02em;
+}
+.center-none-btn:hover { border-color: #999; color: #666; }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ── 미리보기 ── -->
+  <div class="preview-area">
+  <div id="poster-canvas">
+
+    <!-- 상단 이미지 (내보내기 시 표시) -->
+    <img id="top-edge-img" class="poster-edge-img" src="" style="width:100%;display:none;vertical-align:top">
+
+    <!-- 포스터 바디 -->
+    <div class="poster-body">
+      <div class="poster-card">
+
+        <!-- 섹션 1: 모집분야 -->
+        <div class="section-heading">
+          <span class="sec-mark">✓</span> 모집분야
+        </div>
+
+        <!-- 포지션 테이블 -->
+        <div class="pos-table" id="pos-table">
+          <div class="pos-header-bar">모집 내용</div>
+
+          <!-- 상담 실장 -->
+          <div class="pos-row" id="row-sangdam">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">상담 실장</div>
+              <div class="pos-count" contenteditable="true">0명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  피부 시술 상담 및 VIP고객 응대 전반
+·  시술, 치료 프로그램 안내 및 맞춤 상담 진행
+·  예약, 스케줄, 수납 및 매출 관리
+·  초/재진 고객관리</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  성형외과/피부과 상담 경력 1년 이상
+·  상담실장으로서 세일즈 욕심이 크고 성장욕심이 크신 분
+·  VIP 관리 및 고객과 커뮤니케이션이 유연하신 분
+·  피부, 쁘띠성형, 리프팅, 비만 상담 가능자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  메디컬 동종업계 경력 우대
+·  신규 센터 오픈 및 세팅 경험자
+·  실손의료보험(실비) 관련 고객 안내 및 상담 경험
+·  병원 행정, 수납, 보험청구 경험
+·  외국어 가능자</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 코디 팀장 -->
+          <div class="pos-row" id="row-kodi-team">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">코디 팀장</div>
+              <div class="pos-count" contenteditable="true">1명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  피부센터 전반 운영 및 코디네이터 팀원 관리
+·  예약/접수/스케줄 관리 및 고객 응대 총괄
+·  상담 프로세스 개선 및 CS 품질 관리
+·  매출 및 일일결산 총괄</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  성형외과/피부과 경력 3년 이상
+·  코디네이터 또는 데스크팀 운영 및 직원 관리 경험자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  성형외과/피부과 코디 운영 관리 경력자
+·  신규 센터 오픈 및 세팅 경험자
+·  의료기관 경영지원, 행정, 운영 경험자
+·  외국어 가능자</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 코디네이터 -->
+          <div class="pos-row" id="row-coordinator">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">코디네이터</div>
+              <div class="pos-count" contenteditable="true">0명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  고객 응대 및 접수, 수납
+·  진료 및 시술 일정 관리
+·  각종 서류작업 및 일일결산</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  성형외과/피부과 경력 1년 이상
+·  메디컬 관련 경력 무관하나, 서비스 마인드로 고객 응대 자신 있는 분</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  코디네이터 자격증 소지자
+·  서비스직 경력자</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 피부관리팀장 -->
+          <div class="pos-row" id="row-skin-team">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">피부관리팀장</div>
+              <div class="pos-count" contenteditable="true">1명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  피부 관리팀 업무 총괄 및 팀원 관리
+·  피부관리
+·  레이저 바디관리</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  피부&바디관리 경력 3년 이상
+·  피부&바디관리사 팀 운영 및 직원 관리 경험자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  동종업계 경력 3년 이상
+·  간호조무사 혹은 피부관리사 자격증 소지자</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 피부&바디관리사 -->
+          <div class="pos-row" id="row-skin-body">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">피부&바디관리사</div>
+              <div class="pos-count" contenteditable="true">00명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  피부관리
+·  레이저 바디관리</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  피부&바디관리 경력 1년 이상
+·  피부관리사 자격증 소지자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  동종업계 경력 1년 이상
+·  간호조무사 자격증 소지자</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 간호 팀장 -->
+          <div class="pos-row" id="row-nurse-team">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">간호 팀장</div>
+              <div class="pos-count" contenteditable="true">1명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  간호팀 업무 총괄 및 팀원 관리
+·  진료 및 시술 보조
+·  의료기기 및 소모품 관리
+·  환자 안내 및 회복 관리</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  성형외과/피부과 간호 경력 3년 이상
+·  간호사 면허증 또는 간호조무사 자격증 소지자
+·  간호팀 운영 및 직원 관리 경험자
+·  IV, IM 가능 및 수면시술 경력자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  피부과, 성형외과, 수술실 근무 경험자
+·  수면시술 경력 우대</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 간호사 및 간호조무사 -->
+          <div class="pos-row" id="row-nurse">
+            <div class="pos-label-col">
+              <div class="pos-name" contenteditable="true">간호사 및 간호조무사</div>
+              <div class="pos-count" contenteditable="true">0명</div>
+            </div>
+            <div class="pos-content-col">
+              <div class="sub-section">
+                <div class="sub-label">담당 업무</div>
+                <div class="sub-content" contenteditable="true">·  진료 및 시술 보조
+·  의료기기 및 소모품 관리
+·  환자 안내 및 회복 관리</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">자격 요건</div>
+                <div class="sub-content" contenteditable="true">·  간호사 면허, 간호조무사 자격증 소지자
+·  IV, IM 가능자</div>
+              </div>
+              <div class="sub-section">
+                <div class="sub-label">우대 사항</div>
+                <div class="sub-content" contenteditable="true">·  피부과, 성형외과, 수술실 근무 경험자
+·  수면시술 경력 우대
+·  시술 어시스트 경험자</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /pos-table -->
+
+        <!-- 섹션 2: 전 모집 분야 공통사항 -->
+        <div class="section-heading common-heading">
+          <span class="sec-mark">✓</span> 전 모집 분야 공통사항
+        </div>
+
+        <!-- 공통사항 테이블 -->
+        <div class="common-table">
+
+          <!-- 근무 시간 -->
+          <div class="common-row">
+            <div class="common-key">근무 시간</div>
+            <div class="common-val">
+              <div class="work-time-basic" contenteditable="true">주 4일 / 40시간</div>
+              <div class="work-note-bar" contenteditable="true">*탄력근무/코어타임 운영(추후 변동 가능)</div>
+              <div class="work-detail" contenteditable="true">👉 피부센터 : 주 7일 진료
+평일 : 10:00 - 21:00
+주말 : 10:00 - 19:00
+점심시간 : 13:00 - 14:00</div>
+            </div>
+          </div>
+
+          <!-- 근무 지역 -->
+          <div class="common-row">
+            <div class="common-key">근무 지역</div>
+            <div class="common-val">
+              <div class="common-val-text" contenteditable="true">서울시 종로구 수표로 26길 12, 파고다빌딩 2, 3층</div>
+            </div>
+          </div>
+
+          <!-- 급여 -->
+          <div class="common-row">
+            <div class="common-key">급여</div>
+            <div class="common-val">
+              <div class="common-val-text" contenteditable="true">· 면접 후 결정 (경력에 따른 연봉 합의)
+· 수습계약 : 3개월 (급여 100% 지급)
+· 연장근무 수당 지급
+· 4대보험 적용/퇴직연금 별도</div>
+            </div>
+          </div>
+
+          <!-- 절차 -->
+          <div class="common-row">
+            <div class="common-key">절차</div>
+            <div class="common-val">
+              <div class="process-steps">
+                <div class="process-step">
+                  <div class="step-num">step 01</div>
+                  <div class="step-name" contenteditable="true">서류전형</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="process-step">
+                  <div class="step-num">step 02</div>
+                  <div class="step-name" contenteditable="true">면접전형</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="process-step">
+                  <div class="step-num">step 03</div>
+                  <div class="step-name" contenteditable="true">처우협의</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="process-step">
+                  <div class="step-num">step 04</div>
+                  <div class="step-name" contenteditable="true">최종합격</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 지원 자격 -->
+          <div class="common-row">
+            <div class="common-key">지원 자격</div>
+            <div class="common-val">
+              <div class="common-val-text" contenteditable="true">신입 및 경력직</div>
+            </div>
+          </div>
+
+          <!-- 근무 형태 -->
+          <div class="common-row">
+            <div class="common-key">근무 형태</div>
+            <div class="common-val">
+              <div class="common-val-text" contenteditable="true">정규직</div>
+            </div>
+          </div>
+
+          <!-- 지원 방법 -->
+          <div class="common-row">
+            <div class="common-key">지원 방법</div>
+            <div class="common-val">
+              <div class="contact-row">인사담당자 메일로 이력서 접수</div>
+              <div class="contact-row">E-mail : <span class="contact-bold" contenteditable="true">j.park@medibuilder.com</span></div>
+              <div class="contact-row">연락처 : <span class="contact-bold" contenteditable="true">010 7431 3323</span></div>
+            </div>
+          </div>
+
+          <!-- 복리 후생 -->
+          <div class="common-row">
+            <div class="common-key">복리 후생</div>
+            <div class="common-val">
+              <div class="common-val-text" contenteditable="true">· 탄력근무제
+· 점심 식사 및 저녁 간식 제공
+· 유니폼지급
+· 병원 전문 청소 업체 활용
+· 승진기회
+· 우수파트너스 포상
+· 지인, 친구 채용시 포상
+· 경조사 지원
+· 명절 상여금
+· 생일 축하금
+· 장기근속자 특별포상
+· 본인/가족 제품 &amp; 시술 할인
+· 출산 전후 휴가, 육아휴직
+· 연차 보상 선택 가능
+· 연장 근무 수당 지급
+· 세미나 및 관련 교육기회 제공
+· 신규직원 교육(OJT)</div>
+            </div>
+          </div>
+
+        </div><!-- /common-table -->
+
+      </div><!-- /poster-card -->
+    </div><!-- /poster-body -->
+
+    <!-- 하단 이미지 (내보내기 시 표시) -->
+    <img class="poster-edge-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_new_members_v260403_bottom.png" style="width:100%;display:none;vertical-align:top">
+
+  </div><!-- /poster-canvas -->
+  </div><!-- /preview-area -->
+
+  <!-- ── 사이드바 ── -->
+  <div class="sidebar">
+    <div class="hint-box">
+      <strong>📌 사용법</strong><br>
+      포스터 텍스트를 직접 클릭해 수정하세요.<br>
+      <strong>Ctrl+B</strong>: 굵게 &nbsp; <strong>Ctrl+Shift+X</strong>: 포인트 색상(골드)
+    </div>
+
+    <!-- 센터 선택 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">센터 선택</div>
+      <div class="ctrl-body">
+        <div class="center-btn-group">
+          <button class="center-btn" data-center="skin">피부</button>
+          <button class="center-btn" data-center="foot">발톱</button>
+          <button class="center-btn" data-center="ma">도수</button>
+          <button class="center-btn" data-center="long">롱래스팅</button>
+          <button class="center-btn" data-center="gl">글로벌</button>
+        </div>
+        <button class="center-none-btn" id="btn-center-none">선택 안 함 (상단 이미지 제외)</button>
+      </div>
+    </div>
+
+    <!-- 포지션 관리 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">포지션 관리</div>
+      <div class="ctrl-body">
+        <ul class="pos-toggle-list" id="pos-toggle-list">
+          <li class="pos-toggle-item" data-tog="tog-sangdam" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-sangdam">
+            <label for="tog-sangdam">상담 실장</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-kodi-team" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-kodi-team">
+            <label for="tog-kodi-team">코디 팀장</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-coordinator" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-coordinator">
+            <label for="tog-coordinator">코디네이터</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-skin-team" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-skin-team">
+            <label for="tog-skin-team">피부관리팀장</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-skin-body" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-skin-body">
+            <label for="tog-skin-body">피부&amp;바디관리사</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-nurse-team" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-nurse-team">
+            <label for="tog-nurse-team">간호 팀장</label>
+            <button class="pos-del">✕</button>
+          </li>
+          <li class="pos-toggle-item" data-tog="tog-nurse" draggable="true">
+            <span class="pos-drag-handle">⠿</span>
+            <input type="checkbox" checked id="tog-nurse">
+            <label for="tog-nurse">간호사 및 간호조무사</label>
+            <button class="pos-del">✕</button>
+          </li>
+        </ul>
+        <button class="btn-add-pos" id="btn-add-pos">+ 포지션 추가</button>
+      </div>
+    </div>
+
+    <!-- 내보내기 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">내보내기</div>
+      <div class="ctrl-body">
+        <button class="btn-export" id="btn-export">이미지로 내보내기</button>
+      </div>
+    </div>
+
+    <!-- 히스토리 -->
+    <div class="ctrl-section collapsed">
+      <div class="ctrl-label">히스토리</div>
+      <div class="ctrl-body">
+        <button class="btn-save-history" id="btn-save-history">현재 상태 저장</button>
+        <ul class="history-list" id="history-list">
+          <li class="history-empty">저장된 히스토리가 없습니다</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /app-wrapper -->
+
+<script>
+const SAVE_KEY = 'obliv-seoul-draft';
+
+// posMap: toggleId → rowId
+const posMap = {
+  'tog-sangdam':    'row-sangdam',
+  'tog-kodi-team':  'row-kodi-team',
+  'tog-coordinator':'row-coordinator',
+  'tog-skin-team':  'row-skin-team',
+  'tog-skin-body':  'row-skin-body',
+  'tog-nurse-team': 'row-nurse-team',
+  'tog-nurse':      'row-nurse',
+};
+
+// ── localStorage 자동저장 ──
+function saveState() {
+  const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+  const texts = Array.from(editables).map(el => el.innerHTML);
+  const posStates = {};
+  Object.keys(posMap).forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) posStates[id] = cb.checked;
+  });
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ texts, posStates }));
+  } catch(e) {}
+}
+
+function restoreState() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  try {
+    const { texts, posStates } = JSON.parse(raw);
+    const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+    editables.forEach((el, i) => { if (texts[i] != null) el.innerHTML = texts[i]; });
+    Object.entries(posStates).forEach(([id, checked]) => {
+      const cb = document.getElementById(id);
+      if (!cb) return;
+      cb.checked = checked;
+      const row = document.getElementById(posMap[id]);
+      if (row) row.classList.toggle('hidden', !checked);
+    });
+  } catch(e) {}
+}
+
+// ── 히스토리 ──
+const HISTORY_KEY = 'obliv-seoul-history';
+const MAX_HISTORY = 20;
+
+function getSnapshot() {
+  const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+  const texts = Array.from(editables).map(el => el.innerHTML);
+  const posStates = {};
+  Object.keys(posMap).forEach(id => {
+    const cb = document.getElementById(id);
+    if (cb) posStates[id] = cb.checked;
+  });
+  return { texts, posStates };
+}
+
+function applySnapshot(snap) {
+  const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
+  editables.forEach((el, i) => { if (snap.texts[i] != null) el.innerHTML = snap.texts[i]; });
+  Object.entries(snap.posStates).forEach(([id, checked]) => {
+    const cb = document.getElementById(id);
+    if (!cb) return;
+    cb.checked = checked;
+    const row = document.getElementById(posMap[id]);
+    if (row) row.classList.toggle('hidden', !checked);
+  });
+}
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+}
+function saveHistory(list) {
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {}
+}
+
+function renderHistoryList() {
+  const list = loadHistory();
+  const ul = document.getElementById('history-list');
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!list.length) {
+    ul.innerHTML = '<li class="history-empty">저장된 히스토리가 없습니다</li>';
+    return;
+  }
+  list.forEach((item, i) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.innerHTML = `<button class="load">${item.label}</button><button class="del" title="삭제">✕</button>`;
+    li.querySelector('.load').addEventListener('click', () => {
+      if (!confirm(`"${item.label}" 상태로 불러올까요?`)) return;
+      applySnapshot(item.snap);
+      saveState();
+    });
+    li.querySelector('.del').addEventListener('click', () => {
+      const updated = loadHistory().filter((_, idx) => idx !== i);
+      saveHistory(updated);
+      renderHistoryList();
+    });
+    ul.appendChild(li);
+  });
+}
+
+// ── 포지션 삭제 ──
+function bindPosDelButtons() {
+  document.querySelectorAll('.pos-del').forEach(btn => {
+    btn.replaceWith(btn.cloneNode(true));
+  });
+  document.querySelectorAll('.pos-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const li = btn.closest('.pos-toggle-item');
+      const togId = li.dataset.tog;
+      const rowId = posMap[togId];
+      if (!confirm('이 포지션을 삭제할까요?')) return;
+      document.getElementById(rowId)?.remove();
+      li.remove();
+      delete posMap[togId];
+      saveState();
+    });
+  });
+}
+
+// ── 포지션 추가 ──
+function addPosition(name) {
+  const uid = 'pos-' + Date.now();
+  const rowId = 'row-' + uid;
+  const togId = 'tog-' + uid;
+  posMap[togId] = rowId;
+
+  const row = document.createElement('div');
+  row.className = 'pos-row';
+  row.id = rowId;
+  row.innerHTML = `
+    <div class="pos-label-col">
+      <div class="pos-name" contenteditable="true">${name}</div>
+      <div class="pos-count" contenteditable="true">0명</div>
+    </div>
+    <div class="pos-content-col">
+      <div class="sub-section">
+        <div class="sub-label">담당 업무</div>
+        <div class="sub-content" contenteditable="true">· </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-label">자격 요건</div>
+        <div class="sub-content" contenteditable="true">· </div>
+      </div>
+      <div class="sub-section">
+        <div class="sub-label">우대 사항</div>
+        <div class="sub-content" contenteditable="true">· </div>
+      </div>
+    </div>`;
+  document.getElementById('pos-table').appendChild(row);
+
+  const li = document.createElement('li');
+  li.className = 'pos-toggle-item';
+  li.dataset.tog = togId;
+  li.draggable = true;
+  li.innerHTML = `
+    <span class="pos-drag-handle">⠿</span>
+    <input type="checkbox" checked id="${togId}">
+    <label for="${togId}">${name}</label>
+    <button class="pos-del">✕</button>`;
+  li.querySelector('input').addEventListener('change', e => {
+    document.getElementById(rowId)?.classList.toggle('hidden', !e.target.checked);
+    saveState();
+  });
+  document.getElementById('pos-toggle-list').appendChild(li);
+  bindPosDelButtons();
+  saveState();
+}
+
+// ── 포지션 드래그 정렬 ──
+function initPosDragSort() {
+  const list = document.getElementById('pos-toggle-list');
+  let draggingEl = null;
+
+  list.addEventListener('dragstart', e => {
+    draggingEl = e.target.closest('.pos-toggle-item');
+    if (!draggingEl) return;
+    setTimeout(() => draggingEl.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+  });
+  list.addEventListener('dragend', () => {
+    if (draggingEl) draggingEl.classList.remove('dragging');
+    list.querySelectorAll('.pos-toggle-item').forEach(el => el.classList.remove('drag-over'));
+    draggingEl = null;
+  });
+  list.addEventListener('dragover', e => {
+    e.preventDefault();
+    const target = e.target.closest('.pos-toggle-item');
+    if (!target || target === draggingEl) return;
+    list.querySelectorAll('.pos-toggle-item').forEach(el => el.classList.remove('drag-over'));
+    target.classList.add('drag-over');
+  });
+  list.addEventListener('drop', e => {
+    e.preventDefault();
+    const target = e.target.closest('.pos-toggle-item');
+    if (!target || target === draggingEl || !draggingEl) return;
+    target.classList.remove('drag-over');
+
+    const items = [...list.querySelectorAll('.pos-toggle-item')];
+    const fromIdx = items.indexOf(draggingEl);
+    const toIdx = items.indexOf(target);
+    if (fromIdx < toIdx) list.insertBefore(draggingEl, target.nextSibling);
+    else list.insertBefore(draggingEl, target);
+
+    // 포스터 순서 동기화
+    const table = document.getElementById('pos-table');
+    const newOrder = [...list.querySelectorAll('.pos-toggle-item')]
+      .map(li => posMap[li.dataset.tog]).filter(Boolean);
+    newOrder.forEach(rowId => {
+      const row = document.getElementById(rowId);
+      if (row) table.appendChild(row);
+    });
+
+    saveState();
+  });
+}
+
+// ── 포지션 토글 ──
+Object.entries(posMap).forEach(([cbId, rowId]) => {
+  const cb = document.getElementById(cbId);
+  if (!cb) return;
+  cb.addEventListener('change', () => {
+    const row = document.getElementById(rowId);
+    if (row) row.classList.toggle('hidden', !cb.checked);
+    saveState();
+  });
+});
+
+// ── 초기화 ──
+document.addEventListener('DOMContentLoaded', () => {
+  bindPosDelButtons();
+  initPosDragSort();
+
+  document.getElementById('btn-add-pos')?.addEventListener('click', () => {
+    const name = prompt('포지션 이름을 입력하세요');
+    if (!name?.trim()) return;
+    addPosition(name.trim());
+  });
+
+  document.getElementById('btn-save-history')?.addEventListener('click', () => {
+    const now = new Date();
+    const label = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const list = loadHistory();
+    list.unshift({ label, snap: getSnapshot() });
+    if (list.length > MAX_HISTORY) list.pop();
+    saveHistory(list);
+    renderHistoryList();
+  });
+
+  renderHistoryList();
+});
+
+// 사이드바 섹션 접기/펼치기
+document.querySelectorAll('.ctrl-label').forEach(label => {
+  label.addEventListener('click', () => {
+    label.closest('.ctrl-section').classList.toggle('collapsed');
+  });
+});
+
+// Ctrl+Shift+X: 골드 포인트 컬러
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const ancestor = sel.getRangeAt(0).commonAncestorContainer;
+    const inEditable = ancestor.nodeType === 3
+      ? ancestor.parentElement.closest('[contenteditable]')
+      : ancestor.closest?.('[contenteditable]');
+    if (!inEditable) return;
+    e.preventDefault();
+    document.execCommand('foreColor', false, '#dfa46c');
+  }
+});
+
+// ── 빈 영역 자동 숨김 ──
+function updateEmptyState(el) {
+  const isEmpty = el.innerText.trim() === '';
+  if (el.classList.contains('sub-content')) {
+    el.closest('.sub-section').classList.toggle('is-empty', isEmpty);
+  } else {
+    el.classList.toggle('is-empty', isEmpty);
+  }
+  // common-row: 모든 contenteditable이 비면 행 전체 숨김
+  const commonRow = el.closest('.common-row');
+  if (commonRow) {
+    const allEmpty = [...commonRow.querySelectorAll('[contenteditable]')]
+      .every(e => e.innerText.trim() === '');
+    commonRow.classList.toggle('row-empty', allEmpty);
+  }
+}
+function updateAllEmptyStates() {
+  document.querySelectorAll('#poster-canvas [contenteditable]').forEach(updateEmptyState);
+}
+
+// 텍스트 자동저장 (500ms 디바운스)
+let _saveTimer;
+document.getElementById('poster-canvas').addEventListener('input', (e) => {
+  if (e.target.matches('[contenteditable]')) updateEmptyState(e.target);
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 500);
+});
+
+// ── 센터 선택 ──
+const CENTER_IMAGES = {
+  skin: 'https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_skin_new_members_v260403_top.jpg',
+  foot: 'https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_foot_new_members_v260403_top.png',
+  ma:   'https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_ma_new_members_v260403_top.png',
+  long: 'https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_long_new_members_v260403_top.png',
+  gl:   'https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_center_gl_new_members_v260403_top.png',
+};
+const CENTER_KEY = 'obliv-seoul-center';
+
+function applyCenter(centerKey) {
+  const topImg = document.getElementById('top-edge-img');
+  document.querySelectorAll('.center-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.center === centerKey);
+  });
+  if (centerKey && CENTER_IMAGES[centerKey]) {
+    topImg.src = CENTER_IMAGES[centerKey];
+    localStorage.setItem(CENTER_KEY, centerKey);
+  } else {
+    topImg.src = '';
+    localStorage.removeItem(CENTER_KEY);
+  }
+}
+
+document.querySelectorAll('.center-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyCenter(btn.dataset.center));
+});
+document.getElementById('btn-center-none').addEventListener('click', () => applyCenter(null));
+
+// 페이지 로드 시 복원
+restoreState();
+updateAllEmptyStates();
+applyCenter(localStorage.getItem(CENTER_KEY));
+
+// ── 이미지 내보내기 ──
+document.getElementById('btn-export').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true;
+  btn.textContent = '내보내는 중…';
+
+  const posterEl = document.getElementById('poster-canvas');
+  const edgeImgs = document.querySelectorAll('.poster-edge-img');
+  try {
+    posterEl.classList.add('exporting');
+    const SCALE  = 1;
+    const MAX_H  = 5000;
+
+    // 상단/하단 이미지 표시
+    edgeImgs.forEach(img => img.style.display = 'block');
+
+    // 안전 분할 지점 수집 (포스터 전체 기준)
+    const posterTop   = posterEl.getBoundingClientRect().top;
+    const totalH      = posterEl.offsetHeight;
+    const safeCutsSet = new Set();
+    posterEl.querySelectorAll('.pos-row:not(.hidden), .common-row').forEach(row => {
+      safeCutsSet.add(Math.round(row.getBoundingClientRect().bottom - posterTop));
+    });
+    const safeCuts = [...safeCutsSet].filter(c => c > 0 && c < totalH).sort((a, b) => a - b);
+
+    // 전체 포스터 캡처
+    const full = await html2canvas(posterEl, {
+      scale: SCALE,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#1e1713',
+    });
+
+    // 5000px 기준 분할
+    const ranges = [];
+    let s = 0;
+    while (s < full.height) {
+      const idealEnd = s + MAX_H;
+      if (idealEnd >= full.height) { ranges.push([s, full.height]); break; }
+      let bestCut = null;
+      for (let i = safeCuts.length - 1; i >= 0; i--) {
+        const c = safeCuts[i];
+        if (c <= idealEnd && c > s) { bestCut = c; break; }
+      }
+      if (bestCut === null) bestCut = idealEnd;
+      ranges.push([s, bestCut]);
+      s = bestCut;
+    }
+
+    // 각 청크 저장
+    for (let i = 0; i < ranges.length; i++) {
+      const [y0, y1] = ranges[i];
+      const h      = y1 - y0;
+      const slice  = document.createElement('canvas');
+      slice.width  = full.width;
+      slice.height = h;
+      slice.getContext('2d').drawImage(full, 0, y0, full.width, h, 0, 0, full.width, h);
+      const suffix = ranges.length > 1 ? `_${i + 1}` : '';
+      dlCanvas(slice, `obliv-seoul-채용공고${suffix}.png`);
+      if (i < ranges.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
+
+  } finally {
+    posterEl.classList.remove('exporting');
+    edgeImgs.forEach(img => img.style.display = 'none');
+    btn.disabled = false;
+    btn.textContent = '이미지로 내보내기';
+  }
+});
+
+function dlCanvas(canvas, filename) {
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+</script>
+</body>
+</html>

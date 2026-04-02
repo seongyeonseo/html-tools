@@ -1029,46 +1029,29 @@ document.getElementById('btn-export').addEventListener('click', async () => {
   btn.disabled = true;
   btn.textContent = '내보내는 중…';
 
+  const posterEl = document.getElementById('poster-canvas');
   const edgeImgs = document.querySelectorAll('.poster-edge-img');
   try {
-    // top/bottom 이미지 표시
+    const SCALE  = 1;
+    const MAX_H  = 5000;
+
+    // 상단/하단 이미지 표시
     edgeImgs.forEach(img => img.style.display = 'block');
 
-    const posterEl = document.getElementById('poster-canvas');
-    const SCALE = 2;
-    const MAX_H = 5000; // 화면 px 기준 최대 높이
-
-    // ── DOM 위치 측정 (html2canvas 캡처 전) ──
-    const posterTop = posterEl.getBoundingClientRect().top;
-    const totalScreenH = posterEl.offsetHeight;
-
-    const topImg  = edgeImgs[0];
-    const botImg  = edgeImgs[edgeImgs.length - 1];
-    const topH    = topImg  ? topImg.offsetHeight  : 0;
-    const botH    = botImg  ? botImg.offsetHeight  : 0;
-    const contentStart = topH;
-    const contentEnd   = totalScreenH - botH;
-
-    // ── 안전 분할 지점 수집 (섹션 경계 & 행 경계) ──
+    // 안전 분할 지점 수집 (포스터 전체 기준)
+    const posterTop   = posterEl.getBoundingClientRect().top;
+    const totalH      = posterEl.offsetHeight;
     const safeCutsSet = new Set();
     posterEl.querySelectorAll('.poster-section').forEach(sec => {
-      // 섹션 시작점
-      const secTop = Math.round(sec.getBoundingClientRect().top - posterTop);
-      if (secTop > contentStart && secTop < contentEnd) safeCutsSet.add(secTop);
-
-      // 섹션 끝점
-      const secBot = Math.round(sec.getBoundingClientRect().bottom - posterTop);
-      if (secBot > contentStart && secBot < contentEnd) safeCutsSet.add(secBot);
-
-      // 모집분야 행 경계
+      safeCutsSet.add(Math.round(sec.getBoundingClientRect().top    - posterTop));
+      safeCutsSet.add(Math.round(sec.getBoundingClientRect().bottom - posterTop));
       sec.querySelectorAll('.recruit-row:not(.hidden)').forEach(row => {
-        const rowBot = Math.round(row.getBoundingClientRect().bottom - posterTop);
-        if (rowBot > contentStart && rowBot < contentEnd) safeCutsSet.add(rowBot);
+        safeCutsSet.add(Math.round(row.getBoundingClientRect().bottom - posterTop));
       });
     });
-    const safeCuts = [...safeCutsSet].sort((a, b) => a - b);
+    const safeCuts = [...safeCutsSet].filter(c => c > 0 && c < totalH).sort((a, b) => a - b);
 
-    // ── html2canvas 전체 캡처 ──
+    // 전체 포스터 캡처
     const full = await html2canvas(posterEl, {
       scale: SCALE,
       useCORS: true,
@@ -1076,42 +1059,30 @@ document.getElementById('btn-export').addEventListener('click', async () => {
       backgroundColor: '#ffffff',
     });
 
-    // ── 단일 파일로 충분하면 바로 저장 ──
-    if (totalScreenH <= MAX_H) {
-      dlCanvas(full, 'hq-partners-채용공고.png');
-      return;
-    }
-
-    // ── 청크 계획: top/bottom은 건드리지 않고, 내용 영역만 분할 ──
-    // 분할 기준 → safeCuts 중 MAX_H 이하에서 가장 가까운 지점
+    // 5000px 기준 분할
     const ranges = [];
-    let start = 0;
-    while (start < totalScreenH) {
-      const idealEnd = start + MAX_H;
-      if (idealEnd >= totalScreenH) {
-        ranges.push([start, totalScreenH]);
-        break;
-      }
-      // idealEnd 이하 & start 초과 & 콘텐츠 범위 내의 가장 가까운 안전점 탐색
+    let s = 0;
+    while (s < full.height) {
+      const idealEnd = s + MAX_H;
+      if (idealEnd >= full.height) { ranges.push([s, full.height]); break; }
       let bestCut = null;
       for (let i = safeCuts.length - 1; i >= 0; i--) {
         const c = safeCuts[i];
-        if (c <= idealEnd && c > start) { bestCut = c; break; }
+        if (c <= idealEnd && c > s) { bestCut = c; break; }
       }
-      // 안전점이 없으면 어쩔 수 없이 강제 분할
       if (bestCut === null) bestCut = idealEnd;
-      ranges.push([start, bestCut]);
-      start = bestCut;
+      ranges.push([s, bestCut]);
+      s = bestCut;
     }
 
-    // ── 각 청크 저장 ──
+    // 각 청크 저장
     for (let i = 0; i < ranges.length; i++) {
       const [y0, y1] = ranges[i];
-      const sliceH = (y1 - y0) * SCALE;
+      const h      = y1 - y0;
       const slice  = document.createElement('canvas');
       slice.width  = full.width;
-      slice.height = sliceH;
-      slice.getContext('2d').drawImage(full, 0, y0 * SCALE, full.width, sliceH, 0, 0, full.width, sliceH);
+      slice.height = h;
+      slice.getContext('2d').drawImage(full, 0, y0, full.width, h, 0, 0, full.width, h);
       const suffix = ranges.length > 1 ? `_${i + 1}` : '';
       dlCanvas(slice, `hq-partners-채용공고${suffix}.png`);
       if (i < ranges.length - 1) await new Promise(r => setTimeout(r, 300));
