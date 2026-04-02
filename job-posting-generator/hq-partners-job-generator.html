@@ -184,9 +184,21 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
   font-family: "Pretendard", sans-serif;
 }
 .pos-toggle-item input[type="checkbox"] {
-  width: 14px; height: 14px; accent-color: #1010FF; cursor: pointer;
+  width: 14px; height: 14px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0;
 }
 .pos-toggle-item label { cursor: pointer; flex: 1; }
+.pos-del {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0;
+}
+.pos-del:hover { color: #e00; }
+.btn-add-pos {
+  width: 100%; background: none; border: 1.5px dashed #1010FF;
+  color: #1010FF; border-radius: 6px; padding: 8px 0;
+  font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif;
+  cursor: pointer; margin-top: 6px; letter-spacing: -0.02em;
+}
+.btn-add-pos:hover { background: #f0f0ff; }
 
 /* 복리후생 토글 */
 .benefit-toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
@@ -567,40 +579,49 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
     <div class="ctrl-section">
       <div class="ctrl-label">모집 포지션 표시/숨김</div>
       <div class="ctrl-body">
-        <ul class="pos-toggle-list">
-          <li class="pos-toggle-item">
+        <ul class="pos-toggle-list" id="pos-toggle-list">
+          <li class="pos-toggle-item" data-tog="tog-sangdam">
             <input type="checkbox" checked id="tog-sangdam">
             <label for="tog-sangdam">상담실장</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-longlasting">
             <input type="checkbox" checked id="tog-longlasting">
             <label for="tog-longlasting">롱래스팅 상담실장</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-coordinator">
             <input type="checkbox" checked id="tog-coordinator">
             <label for="tog-coordinator">코디네이터</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-nurse">
             <input type="checkbox" checked id="tog-nurse">
             <label for="tog-nurse">간호조무사</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-skin">
             <input type="checkbox" checked id="tog-skin">
             <label for="tog-skin">피부&amp;바디관리사</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-language">
             <input type="checkbox" checked id="tog-language">
             <label for="tog-language">언어 코디네이터</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-manual">
             <input type="checkbox" checked id="tog-manual">
             <label for="tog-manual">도수치료사</label>
+            <button class="pos-del">✕</button>
           </li>
-          <li class="pos-toggle-item">
+          <li class="pos-toggle-item" data-tog="tog-nail">
             <input type="checkbox" checked id="tog-nail">
             <label for="tog-nail">발톱치료사</label>
+            <button class="pos-del">✕</button>
           </li>
         </ul>
+        <button class="btn-add-pos" id="btn-add-pos">+ 포지션 추가</button>
       </div>
     </div>
 
@@ -765,6 +786,16 @@ function renderHistoryList() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // 기존 포지션 삭제 버튼 바인딩
+  bindPosDelButtons();
+
+  // 포지션 추가 버튼
+  document.getElementById('btn-add-pos')?.addEventListener('click', () => {
+    const name = prompt('포지션 이름을 입력하세요');
+    if (!name?.trim()) return;
+    addPosition(name.trim());
+  });
+
   document.getElementById('btn-save-history')?.addEventListener('click', () => {
     const now = new Date();
     const label = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
@@ -799,6 +830,67 @@ document.querySelectorAll('.ctrl-label').forEach(label => {
     label.closest('.ctrl-section').classList.toggle('collapsed');
   });
 });
+
+// 포지션 삭제
+function bindPosDelButtons() {
+  document.querySelectorAll('.pos-del').forEach(btn => {
+    btn.replaceWith(btn.cloneNode(true)); // 중복 바인딩 방지
+  });
+  document.querySelectorAll('.pos-del').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const li = btn.closest('.pos-toggle-item');
+      const togId = li.dataset.tog;
+      const rowId = posMap[togId];
+      if (!confirm('이 포지션을 삭제할까요?')) return;
+      document.getElementById(rowId)?.remove();
+      li.remove();
+      delete posMap[togId];
+      saveState();
+    });
+  });
+}
+
+// 포지션 추가
+function addPosition(name) {
+  const uid = 'pos-' + Date.now();
+  const rowId = 'row-' + uid;
+  const togId = 'tog-' + uid;
+  posMap[togId] = rowId;
+
+  // 테이블에 행 추가
+  const row = document.createElement('div');
+  row.className = 'recruit-row';
+  row.id = rowId;
+  row.innerHTML = `
+    <div class="col-pos">
+      <span contenteditable="true">${name}</span>
+      <span contenteditable="true">0명</span>
+    </div>
+    <div class="col-duties" contenteditable="true">· </div>
+    <div class="col-req">
+      <span class="req-label">자격요건</span>
+      <div contenteditable="true">· </div>
+      <span class="req-label">우대사항</span>
+      <div contenteditable="true">· </div>
+    </div>`;
+  document.querySelector('.recruit-table').appendChild(row);
+
+  // 사이드바에 토글 추가
+  const li = document.createElement('li');
+  li.className = 'pos-toggle-item';
+  li.dataset.tog = togId;
+  li.innerHTML = `
+    <input type="checkbox" checked id="${togId}">
+    <label for="${togId}">${name}</label>
+    <button class="pos-del">✕</button>`;
+  li.querySelector('input').addEventListener('change', e => {
+    document.getElementById(rowId)?.classList.toggle('hidden', !e.target.checked);
+    saveState();
+  });
+  document.getElementById('pos-toggle-list').appendChild(li);
+  bindPosDelButtons();
+  saveState();
+}
 
 // 포지션 토글
 const posMap = {
