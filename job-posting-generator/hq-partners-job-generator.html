@@ -220,7 +220,7 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
   <div id="poster-canvas">
 
     <!-- 상단 이미지 -->
-    <img src="https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_new_members_v260402_top.jpg" style="width:100%; display:block; vertical-align:top;">
+    <img class="poster-edge-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_new_members_v260402_top.jpg" style="width:100%; display:none; vertical-align:top;">
 
     <!-- 모집분야 -->
     <div class="poster-section" style="padding-bottom:0;">
@@ -524,7 +524,7 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
     </div><!-- /복리후생 -->
 
     <!-- 하단 이미지 -->
-    <img src="https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_new_members_v260402_bottom.jpg" style="width:100%; display:block; vertical-align:top;">
+    <img class="poster-edge-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/oblivseoul_new_members_v260402_bottom.jpg" style="width:100%; display:none; vertical-align:top;">
 
   </div><!-- /poster-canvas -->
   </div><!-- /preview-area -->
@@ -666,6 +666,10 @@ document.getElementById('btn-export').addEventListener('click', async () => {
   btn.disabled = true;
   btn.textContent = '내보내는 중…';
   try {
+    // 내보내기 시 top/bottom 이미지 잠시 표시
+    const edgeImgs = document.querySelectorAll('.poster-edge-img');
+    edgeImgs.forEach(img => img.style.display = 'block');
+
     const canvas = document.getElementById('poster-canvas');
     const result = await html2canvas(canvas, {
       scale: 2,
@@ -703,6 +707,8 @@ document.getElementById('btn-export').addEventListener('click', async () => {
       }
     }
   } finally {
+    // 캡처 후 다시 숨기기
+    document.querySelectorAll('.poster-edge-img').forEach(img => img.style.display = 'none');
     btn.disabled = false;
     btn.textContent = '이미지로 내보내기';
   }
