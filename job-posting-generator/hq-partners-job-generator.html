@@ -18,6 +18,7 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
 /* ── 섹션 공통 ── */
 .poster-section { padding: 60px 60px 0; }
 .poster-section:last-child { padding-bottom: 72px; }
+#section-benefits { padding-bottom: 80px; }
 
 .section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
 .section-icon {
@@ -496,7 +497,7 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
     </div>
 
     <!-- 복리후생 -->
-    <div class="poster-section">
+    <div class="poster-section" id="section-benefits">
       <div class="section-header">
         <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
         <div class="section-title">복리후생</div>
@@ -1010,54 +1011,108 @@ document.getElementById('btn-export').addEventListener('click', async () => {
   const btn = document.getElementById('btn-export');
   btn.disabled = true;
   btn.textContent = '내보내는 중…';
+
+  const edgeImgs = document.querySelectorAll('.poster-edge-img');
   try {
-    // 내보내기 시 top/bottom 이미지 잠시 표시
-    const edgeImgs = document.querySelectorAll('.poster-edge-img');
+    // top/bottom 이미지 표시
     edgeImgs.forEach(img => img.style.display = 'block');
 
-    const canvas = document.getElementById('poster-canvas');
-    const result = await html2canvas(canvas, {
-      scale: 2,
+    const posterEl = document.getElementById('poster-canvas');
+    const SCALE = 2;
+    const MAX_H = 5000; // 화면 px 기준 최대 높이
+
+    // ── DOM 위치 측정 (html2canvas 캡처 전) ──
+    const posterTop = posterEl.getBoundingClientRect().top;
+    const totalScreenH = posterEl.offsetHeight;
+
+    const topImg  = edgeImgs[0];
+    const botImg  = edgeImgs[edgeImgs.length - 1];
+    const topH    = topImg  ? topImg.offsetHeight  : 0;
+    const botH    = botImg  ? botImg.offsetHeight  : 0;
+    const contentStart = topH;
+    const contentEnd   = totalScreenH - botH;
+
+    // ── 안전 분할 지점 수집 (섹션 경계 & 행 경계) ──
+    const safeCutsSet = new Set();
+    posterEl.querySelectorAll('.poster-section').forEach(sec => {
+      // 섹션 시작점
+      const secTop = Math.round(sec.getBoundingClientRect().top - posterTop);
+      if (secTop > contentStart && secTop < contentEnd) safeCutsSet.add(secTop);
+
+      // 섹션 끝점
+      const secBot = Math.round(sec.getBoundingClientRect().bottom - posterTop);
+      if (secBot > contentStart && secBot < contentEnd) safeCutsSet.add(secBot);
+
+      // 모집분야 행 경계
+      sec.querySelectorAll('.recruit-row:not(.hidden)').forEach(row => {
+        const rowBot = Math.round(row.getBoundingClientRect().bottom - posterTop);
+        if (rowBot > contentStart && rowBot < contentEnd) safeCutsSet.add(rowBot);
+      });
+    });
+    const safeCuts = [...safeCutsSet].sort((a, b) => a - b);
+
+    // ── html2canvas 전체 캡처 ──
+    const full = await html2canvas(posterEl, {
+      scale: SCALE,
       useCORS: true,
       allowTaint: true,
       backgroundColor: '#ffffff',
     });
 
-    const MAX_HEIGHT = 9000;
-    const CHUNK_HEIGHT = 5000;
-
-    if (result.height <= MAX_HEIGHT) {
-      // 9000px 이하 → 단일 파일
-      const link = document.createElement('a');
-      link.download = 'hq-partners-채용공고.png';
-      link.href = result.toDataURL('image/png');
-      link.click();
-    } else {
-      // 9000px 초과 → 5000px 단위로 분할
-      const totalHeight = result.height;
-      const chunks = Math.ceil(totalHeight / CHUNK_HEIGHT);
-      for (let i = 0; i < chunks; i++) {
-        const offsetY = i * CHUNK_HEIGHT;
-        const sliceHeight = Math.min(CHUNK_HEIGHT, totalHeight - offsetY);
-        const slice = document.createElement('canvas');
-        slice.width = result.width;
-        slice.height = sliceHeight;
-        const ctx = slice.getContext('2d');
-        ctx.drawImage(result, 0, offsetY, result.width, sliceHeight, 0, 0, result.width, sliceHeight);
-        const link = document.createElement('a');
-        link.download = `hq-partners-채용공고_${i + 1}.png`;
-        link.href = slice.toDataURL('image/png');
-        link.click();
-        await new Promise(r => setTimeout(r, 300)); // 다운로드 간 딜레이
-      }
+    // ── 단일 파일로 충분하면 바로 저장 ──
+    if (totalScreenH <= MAX_H) {
+      dlCanvas(full, 'hq-partners-채용공고.png');
+      return;
     }
+
+    // ── 청크 계획: top/bottom은 건드리지 않고, 내용 영역만 분할 ──
+    // 분할 기준 → safeCuts 중 MAX_H 이하에서 가장 가까운 지점
+    const ranges = [];
+    let start = 0;
+    while (start < totalScreenH) {
+      const idealEnd = start + MAX_H;
+      if (idealEnd >= totalScreenH) {
+        ranges.push([start, totalScreenH]);
+        break;
+      }
+      // idealEnd 이하 & start 초과 & 콘텐츠 범위 내의 가장 가까운 안전점 탐색
+      let bestCut = null;
+      for (let i = safeCuts.length - 1; i >= 0; i--) {
+        const c = safeCuts[i];
+        if (c <= idealEnd && c > start) { bestCut = c; break; }
+      }
+      // 안전점이 없으면 어쩔 수 없이 강제 분할
+      if (bestCut === null) bestCut = idealEnd;
+      ranges.push([start, bestCut]);
+      start = bestCut;
+    }
+
+    // ── 각 청크 저장 ──
+    for (let i = 0; i < ranges.length; i++) {
+      const [y0, y1] = ranges[i];
+      const sliceH = (y1 - y0) * SCALE;
+      const slice  = document.createElement('canvas');
+      slice.width  = full.width;
+      slice.height = sliceH;
+      slice.getContext('2d').drawImage(full, 0, y0 * SCALE, full.width, sliceH, 0, 0, full.width, sliceH);
+      const suffix = ranges.length > 1 ? `_${i + 1}` : '';
+      dlCanvas(slice, `hq-partners-채용공고${suffix}.png`);
+      if (i < ranges.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
+
   } finally {
-    // 캡처 후 다시 숨기기
-    document.querySelectorAll('.poster-edge-img').forEach(img => img.style.display = 'none');
+    edgeImgs.forEach(img => img.style.display = 'none');
     btn.disabled = false;
     btn.textContent = '이미지로 내보내기';
   }
 });
+
+function dlCanvas(canvas, filename) {
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
 </script>
 </body>
 </html>
