@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>르샤인 AI 진료일정 생성기</title>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --navy: #1a2744;
+    --gold: #c9a84c;
+    --gold-light: #e8d08a;
+    --cream: #faf8f3;
+    --panel-bg: #f5f3ee;
+    --border: #e0dbd0;
+    --text: #2c2c2c;
+    --muted: #888;
+    --chat-bg: #fff;
+    --user-bubble: #1a2744;
+    --ai-bubble: #f0ede6;
+  }
+
+  body {
+    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+    background: var(--cream);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── 상단 헤더 ── */
+  .app-header {
+    background: var(--navy);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  }
+  .app-header .logo-svg { flex-shrink: 0; }
+  .app-header .title-wrap h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    color: var(--gold-light);
+    letter-spacing: 0.03em;
+    line-height: 1.2;
+  }
+  .app-header .title-wrap p {
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+    letter-spacing: 0.06em;
+  }
+  .header-badge {
+    margin-left: auto;
+    background: rgba(201,168,76,0.2);
+    border: 1px solid rgba(201,168,76,0.4);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 11px;
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .header-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: #4caf7d;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── 메인 레이아웃 ── */
+  .main-layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 56px);
+  }
+
+  /* ── 왼쪽: AI 채팅 패널 ── */
+  .chat-panel {
+    background: var(--chat-bg);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-header {
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-bg);
+  }
+  .chat-header h2 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .chat-header p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.5;
+  }
+
+  /* 예시 프롬프트 칩 */
+  .prompt-chips {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-bg);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: var(--navy);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .chip:hover {
+    background: var(--navy);
+    color: #fff;
+    border-color: var(--navy);
+  }
+
+  /* 채팅 메시지 영역 */
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .msg {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    animation: fadeUp 0.3s ease;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .msg.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .msg.ai .msg-avatar { background: var(--navy); color: var(--gold); }
+  .msg.user .msg-avatar { background: var(--gold); color: var(--navy); font-weight: 700; }
+
+  .msg-bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .msg.ai .msg-bubble {
+    background: var(--ai-bubble);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .msg.user .msg-bubble {
+    background: var(--user-bubble);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  /* 타이핑 인디케이터 */
+  .typing-indicator {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: var(--ai-bubble);
+    border-radius: 14px;
+    border-bottom-left-radius: 4px;
+    width: fit-content;
+  }
+  .typing-indicator.visible { display: flex; }
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--navy);
+    border-radius: 50%;
+    opacity: 0.4;
+    animation: typing 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing {
+    0%, 60%, 100% { opacity: 0.4; transform: scale(1); }
+    30% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* 입력창 */
+  .chat-input-wrap {
+    padding: 12px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--panel-bg);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .chat-input-wrap textarea {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: none;
+    line-height: 1.5;
+    max-height: 100px;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .chat-input-wrap textarea:focus { border-color: var(--navy); }
+  .send-btn {
+    width: 40px; height: 40px;
+    background: var(--navy);
+    border: none;
+    border-radius: 12px;
+    color: var(--gold);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .send-btn:hover { background: #243460; }
+  .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* API 키 설정 */
+  .api-key-bar {
+    padding: 8px 16px;
+    background: #fff8e1;
+    border-bottom: 1px solid #ffe082;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+  }
+  .api-key-bar span { color: #795548; flex-shrink: 0; }
+  .api-key-bar input {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid #ffe082;
+    border-radius: 6px;
+    font-size: 11px;
+    font-family: monospace;
+    background: #fff;
+    outline: none;
+  }
+  .api-key-bar button {
+    padding: 4px 10px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* ── 오른쪽: 달력 미리보기 ── */
+  .preview-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--cream);
+  }
+
+  .preview-toolbar {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-bg);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .preview-toolbar h3 { font-size: 13px; font-weight: 700; color: var(--navy); flex: 1; }
+
+  .toolbar-btn {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    background: #fff;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+  .toolbar-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .toolbar-btn.primary { background: var(--navy); color: var(--gold-light); border-color: var(--navy); }
+  .toolbar-btn.primary:hover { background: #243460; }
+
+  /* 배경 조정 */
+  .bg-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 8px 20px;
+    border-bottom: 1px solid var(--border);
+    background: #fff;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .bg-controls label { white-space: nowrap; }
+  .bg-controls input[type=range] { width: 70px; cursor: pointer; }
+
+  .preview-scroll {
+    flex: 1;
+    overflow: auto;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  /* ── 달력 본체 ── */
+  #calendar {
+    width: 560px;
+    min-width: 560px;
+    background: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    position: relative;
+  }
+
+  .cal-bg-wrap {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    overflow: hidden;
+    background: var(--navy);
+  }
+  #cal-bg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 50%;
+    transform-origin: center center;
+    display: block;
+  }
+  .cal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.30);
+  }
+  .cal-logo {
+    position: absolute;
+    top: 18px; left: 22px;
+    z-index: 10;
+  }
+  .cal-title-wrap {
+    position: absolute;
+    bottom: 64px; left: 0; right: 0;
+    text-align: center;
+    z-index: 10;
+    padding: 0 20px;
+  }
+  .cal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    color: #fff;
+    letter-spacing: 0.04em;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .cal-subtitle {
+    font-size: 10px;
+    color: rgba(255,255,255,0.65);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  /* 진료시간 바 */
+  .hours-bar {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    z-index: 20;
+    padding: 0 24px;
+  }
+  .hi { text-align: center; }
+  .hi .lb { display: block; font-size: 7.5px; color: rgba(255,255,255,0.65); margin-bottom: 2px; letter-spacing: 0.05em; }
+  .hi .tm { display: block; font-size: 10.5px; color: #fff; font-weight: 600; white-space: nowrap; }
+  .hdiv { width: 1px; height: 20px; background: rgba(255,255,255,0.25); }
+
+  /* 캘린더 그리드 */
+  .cal-body {
+    padding: 0 0 16px;
+    background: #fff;
+  }
+  .cal-notice {
+    background: var(--navy);
+    color: rgba(255,255,255,0.85);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    padding: 6px 20px;
+    text-align: center;
+  }
+  .dow-row {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--navy);
+    padding: 0 12px;
+    margin-bottom: 4px;
+  }
+  .dow-row span {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.75);
+    padding: 8px 0;
+  }
+  .dow-row span:first-child { color: #ef8a8a; }
+
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 0 12px;
+  }
+  .dc {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding-top: 7px;
+    position: relative;
+    border-radius: 4px;
+    transition: background 0.15s;
+  }
+  .dc:not(:empty):hover { background: rgba(26,39,68,0.05); }
+  .dn {
+    width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+  .dc.sun .dn { color: #c0392b; }
+  .dc.hol .dn { color: #c0392b; background: #fdecea; }
+
+  .hlabel {
+    font-size: 7px;
+    color: #c0392b;
+    text-align: center;
+    margin-top: 2px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .hujin {
+    font-size: 6.5px;
+    color: #e74c3c;
+    background: #fdecea;
+    border-radius: 3px;
+    padding: 1px 3px;
+    margin-top: 1px;
+    display: inline-block;
+  }
+
+  /* 애니메이션: 달력 업데이트 시 */
+  @keyframes calFlash {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+  .cal-updated { animation: calFlash 0.4s ease; }
+
+  /* 인쇄 */
+  @media print {
+    .chat-panel, .preview-toolbar, .bg-controls, .app-header { display: none !important; }
+    .main-layout { display: block; height: auto; }
+    .preview-scroll { padding: 0; }
+    #calendar { box-shadow: none; width: 100%; min-width: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<div class="app-header">
+  <svg class="logo-svg" width="90" height="32" viewBox="0 0 90 32" fill="none">
+    <text x="0" y="24" font-family="'DM Serif Display', serif" font-size="22" fill="#c9a84c">LE</text>
+    <text x="30" y="24" font-family="'DM Serif Display', serif" font-size="22" fill="white">CHINE</text>
+    <line x1="0" y1="28" x2="90" y2="28" stroke="#c9a84c" stroke-width="0.7" opacity="0.5"/>
+    <text x="0" y="32" font-family="'Pretendard', sans-serif" font-size="7" fill="rgba(255,255,255,0.45)" letter-spacing="3">DENTAL CLINIC</text>
+  </svg>
+  <div class="title-wrap">
+    <h1>AI 진료일정 생성기</h1>
+    <p>자연어로 말하면 달력이 완성됩니다</p>
+  </div>
+  <div class="header-badge">AI 연결됨</div>
+</div>
+
+<!-- ── 메인 레이아웃 ── -->
+<div class="main-layout">
+
+  <!-- 왼쪽: 채팅 패널 -->
+  <div class="chat-panel">
+
+    <!-- API 키 설정 바 -->
+    <div class="api-key-bar" id="api-key-bar">
+      <span>🔑 API Key</span>
+      <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off">
+      <button onclick="saveApiKey()">저장</button>
+    </div>
+
+    <div class="chat-header">
+      <h2>💬 AI 진료일정 도우미</h2>
+      <p>자연어로 일정을 말씀해 주세요.<br>예: "5월 진료일정, 어린이날 휴진" 또는 "6월, 6/1 현충일 포함해서"</p>
+    </div>
+
+    <!-- 예시 프롬프트 -->
+    <div class="prompt-chips">
+      <div class="chip" onclick="useChip(this)">5월 진료일정 만들어줘</div>
+      <div class="chip" onclick="useChip(this)">6월, 현충일 포함해서</div>
+      <div class="chip" onclick="useChip(this)">7월 여름방학 일정</div>
+      <div class="chip" onclick="useChip(this)">8월 광복절 포함</div>
+      <div class="chip" onclick="useChip(this)">12월 크리스마스 연휴</div>
+    </div>
+
+    <!-- 메시지 영역 -->
+    <div class="chat-messages" id="chat-messages">
+      <!-- 초기 메시지 -->
+      <div class="msg ai">
+        <div class="msg-avatar">✦</div>
+        <div class="msg-bubble">안녕하세요! 르샤인 치과 진료일정 도우미입니다. 😊
+
+원하시는 월과 휴진일을 자연어로 말씀해 주시면 달력을 자동으로 만들어 드립니다.
+
+예시:
+• "5월 진료일정, 어린이날 휴진"
+• "6월 달력, 6/1 현충일이랑 6/20-21 원장님 학회"
+• "다음 달 달력 만들어줘"
+
+위의 예시 버튼을 클릭하거나 직접 입력해 보세요!</div>
+      </div>
+
+      <div class="msg ai" id="typing-row" style="display:none;">
+        <div class="msg-avatar">✦</div>
+        <div class="typing-indicator visible">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 입력창 -->
+    <div class="chat-input-wrap">
+      <textarea id="chat-input" placeholder="예: 5월 진료일정, 어린이날 5월 5일 휴진" rows="2"
+        onkeydown="handleKey(event)"></textarea>
+      <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+    </div>
+  </div>
+
+  <!-- 오른쪽: 달력 미리보기 -->
+  <div class="preview-panel">
+    <div class="preview-toolbar">
+      <h3>📅 달력 미리보기</h3>
+      <div class="ctrl-upload toolbar-btn" style="position:relative;overflow:hidden;">
+        🖼 배경 변경
+        <input type="file" id="inp-bg" accept="image/*" onchange="changeBg(this)"
+          style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+      </div>
+      <button class="toolbar-btn" onclick="saveImage()">⬇ PNG 저장</button>
+      <button class="toolbar-btn primary" onclick="savePDF()">📄 PDF 저장</button>
+    </div>
+
+    <div class="bg-controls">
+      <label>배경 확대/축소</label>
+      <input type="range" id="bg-scale" min="50" max="200" value="100" oninput="updateBg()">
+      <span id="bg-scale-val" style="width:32px;">100%</span>
+      <label>좌우</label>
+      <input type="range" id="bg-x" min="0" max="100" value="50" oninput="updateBg()">
+      <label>상하</label>
+      <input type="range" id="bg-y" min="0" max="100" value="50" oninput="updateBg()">
+      <button onclick="resetBg()" style="padding:3px 8px;border:1px solid var(--border);border-radius:5px;font-size:10px;cursor:pointer;background:#fff;">↺</button>
+    </div>
+
+    <div class="preview-scroll">
+      <div id="calendar">
+        <!-- 배경 이미지 영역 -->
+        <div class="cal-bg-wrap">
+          <img id="cal-bg" src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800&q=80"
+            alt="배경" onerror="this.style.display='none'">
+          <div class="cal-overlay"></div>
+
+          <!-- 로고 -->
+          <div class="cal-logo">
+            <svg width="80" height="28" viewBox="0 0 80 28" fill="none">
+              <text x="0" y="21" font-family="'DM Serif Display', serif" font-size="19" fill="#c9a84c">LE</text>
+              <text x="26" y="21" font-family="'DM Serif Display', serif" font-size="19" fill="white">CHINE</text>
+              <line x1="0" y1="24" x2="80" y2="24" stroke="#c9a84c" stroke-width="0.6" opacity="0.5"/>
+              <text x="0" y="28" font-family="sans-serif" font-size="6" fill="rgba(255,255,255,0.4)" letter-spacing="2.5">DENTAL CLINIC</text>
+            </svg>
+          </div>
+
+          <!-- 제목 -->
+          <div class="cal-title-wrap">
+            <div class="cal-title" id="cal-title">진료일정</div>
+            <div class="cal-subtitle" id="cal-year-label">2026</div>
+          </div>
+
+          <!-- 진료시간 바 -->
+          <div class="hours-bar">
+            <div class="hi"><span class="lb">평일</span><span class="tm">09:00–18:00</span></div>
+            <div class="hdiv"></div>
+            <div class="hi"><span class="lb">점심</span><span class="tm">13:00–14:00</span></div>
+            <div class="hdiv"></div>
+            <div class="hi"><span class="lb">토요일</span><span class="tm">09:00–14:00</span></div>
+            <div class="hdiv"></div>
+            <div class="hi"><span class="lb">일·공휴일</span><span class="tm">휴진</span></div>
+          </div>
+        </div>
+
+        <!-- 달력 본체 -->
+        <div class="cal-body">
+          <div class="cal-notice" id="cal-notice">☎ 02-000-0000 &nbsp;|&nbsp; 서울시 강남구 르샤인치과</div>
+          <div class="dow-row">
+            <span>SUN</span><span>MON</span><span>TUE</span><span>WED</span>
+            <span>THU</span><span>FRI</span><span>SAT</span>
+          </div>
+          <div class="day-grid" id="day-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- html2canvas / jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+// ────────────────────────────────────────────
+//  상태
+// ────────────────────────────────────────────
+let calState = {
+  year: 2026,
+  month: 5,
+  holidays: {}
+};
+let apiKey = '';
+let isLoading = false;
+
+// ────────────────────────────────────────────
+//  API Key
+// ────────────────────────────────────────────
+function saveApiKey() {
+  const val = document.getElementById('api-key-input').value.trim();
+  if (!val.startsWith('sk-ant')) {
+    alert('올바른 Anthropic API 키를 입력해 주세요 (sk-ant-...)');
+    return;
+  }
+  apiKey = val;
+  const bar = document.getElementById('api-key-bar');
+  bar.style.background = '#e8f5e9';
+  bar.style.borderBottomColor = '#a5d6a7';
+  bar.innerHTML = `<span style="color:#2e7d32;">✅ API 키가 저장되었습니다</span>
+    <button onclick="resetApiKey()" style="padding:4px 10px;background:#2e7d32;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;margin-left:auto;">변경</button>`;
+}
+function resetApiKey() {
+  apiKey = '';
+  const bar = document.getElementById('api-key-bar');
+  bar.style.background = '#fff8e1';
+  bar.style.borderBottomColor = '#ffe082';
+  bar.innerHTML = `<span style="color:#795548;flex-shrink:0;">🔑 API Key</span>
+    <input type="password" id="api-key-input" placeholder="sk-ant-api03-..." autocomplete="off"
+      style="flex:1;padding:4px 8px;border:1px solid #ffe082;border-radius:6px;font-size:11px;font-family:monospace;background:#fff;outline:none;">
+    <button onclick="saveApiKey()" style="padding:4px 10px;background:#1a2744;color:#fff;border:none;border-radius:6px;font-size:11px;cursor:pointer;white-space:nowrap;">저장</button>`;
+}
+
+// ────────────────────────────────────────────
+//  채팅 UI
+// ────────────────────────────────────────────
+function addMessage(role, text) {
+  const container = document.getElementById('chat-messages');
+  const typingRow = document.getElementById('typing-row');
+
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.innerHTML = `
+    <div class="msg-avatar">${role === 'ai' ? '✦' : '나'}</div>
+    <div class="msg-bubble">${text}</div>
+  `;
+  container.insertBefore(div, typingRow);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping(show) {
+  document.getElementById('typing-row').style.display = show ? 'flex' : 'none';
+  const container = document.getElementById('chat-messages');
+  container.scrollTop = container.scrollHeight;
+}
+
+function setLoading(v) {
+  isLoading = v;
+  document.getElementById('send-btn').disabled = v;
+  showTyping(v);
+}
+
+function useChip(el) {
+  document.getElementById('chat-input').value = el.textContent;
+  sendMessage();
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// ────────────────────────────────────────────
+//  Claude API 호출
+// ────────────────────────────────────────────
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || isLoading) return;
+
+  if (!apiKey) {
+    alert('먼저 Anthropic API 키를 입력하고 저장해 주세요.');
+    return;
+  }
+
+  input.value = '';
+  addMessage('user', text);
+  setLoading(true);
+
+  const today = new Date();
+  const systemPrompt = `당신은 한국 치과의원(르샤인치과)의 진료일정 달력을 만들어주는 도우미입니다.
+사용자의 자연어 요청을 분석해서 다음 JSON 형태로만 응답하세요. 다른 텍스트는 절대 포함하지 마세요.
+
+{
+  "year": 숫자,
+  "month": 숫자(1-12),
+  "holidays": {"날짜숫자": "공휴일명", ...},
+  "message": "한 줄 확인 메시지 (예: 2026년 5월 진료일정을 생성했습니다. 어린이날(5일) 휴진으로 설정했습니다.)"
+}
+
+규칙:
+- 오늘 날짜는 ${today.getFullYear()}년 ${today.getMonth()+1}월 ${today.getDate()}일입니다.
+- "다음 달"은 ${today.getMonth()+2}월입니다.
+- 공휴일은 한국 법정 공휴일을 자동으로 인식하세요 (삼일절, 어린이날, 현충일, 광복절, 추석, 한글날, 크리스마스 등).
+- 사용자가 별도로 언급한 날짜도 holidays에 포함하세요.
+- 일요일은 자동으로 빨간색 처리되므로 holidays에 포함하지 않아도 됩니다.
+- holidays 키는 반드시 숫자 문자열로 ("5" 형식).
+- JSON만 출력하고 마크다운 백틱(\`\`\`)은 사용하지 마세요.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: text }]
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `API 오류 (${res.status})`);
+    }
+
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '';
+
+    // JSON 파싱
+    const clean = raw.replace(/```json|```/g, '').trim();
+    let parsed;
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e) {
+      throw new Error('응답 파싱 실패: ' + raw.slice(0, 100));
+    }
+
+    // 달력 업데이트
+    calState.year = parsed.year || today.getFullYear();
+    calState.month = parsed.month || (today.getMonth() + 1);
+    calState.holidays = parsed.holidays || {};
+
+    renderCalendar();
+
+    // AI 응답 메시지
+    addMessage('ai', parsed.message || `${calState.year}년 ${calState.month}월 달력을 생성했습니다.`);
+
+  } catch (err) {
+    addMessage('ai', `⚠️ 오류가 발생했습니다.\n${err.message}\n\nAPI 키를 확인하거나 다시 시도해 주세요.`);
+    console.error(err);
+  }
+
+  setLoading(false);
+}
+
+// ────────────────────────────────────────────
+//  달력 렌더링
+// ────────────────────────────────────────────
+function renderCalendar() {
+  const { year, month, holidays } = calState;
+
+  // 제목 업데이트
+  document.getElementById('cal-title').textContent = month + '월 진료일정';
+  document.getElementById('cal-year-label').textContent = year + '';
+
+  const firstDay = new Date(year, month - 1, 1).getDay();
+  const lastDate = new Date(year, month, 0).getDate();
+
+  let html = '';
+  for (let i = 0; i < firstDay; i++) html += '<div class="dc"></div>';
+
+  for (let d = 1; d <= lastDate; d++) {
+    const dow = (firstDay + d - 1) % 7;
+    const isSun = dow === 0;
+    const isHol = holidays[String(d)] !== undefined;
+    let cls = 'dc';
+    if (isSun) cls += ' sun';
+    if (isHol) cls += ' hol';
+
+    let label = '';
+    if (isHol) {
+      label = `<span class="hlabel">${holidays[String(d)]}<br><span class="hujin">휴진</span></span>`;
+    }
+    html += `<div class="${cls}"><span class="dn">${d}</span>${label}</div>`;
+  }
+
+  const total = firstDay + lastDate;
+  const rem = total % 7;
+  if (rem !== 0) for (let i = 0; i < 7 - rem; i++) html += '<div class="dc"></div>';
+
+  const grid = document.getElementById('day-grid');
+  grid.innerHTML = html;
+
+  // 플래시 애니메이션
+  const cal = document.getElementById('calendar');
+  cal.classList.remove('cal-updated');
+  void cal.offsetWidth;
+  cal.classList.add('cal-updated');
+}
+
+// ────────────────────────────────────────────
+//  배경 이미지 조정
+// ────────────────────────────────────────────
+function updateBg() {
+  const scale = document.getElementById('bg-scale').value;
+  const x = document.getElementById('bg-x').value;
+  const y = document.getElementById('bg-y').value;
+  document.getElementById('bg-scale-val').textContent = scale + '%';
+  const bg = document.getElementById('cal-bg');
+  bg.style.transform = `scale(${scale / 100})`;
+  bg.style.objectPosition = `${x}% ${y}%`;
+}
+
+function resetBg() {
+  document.getElementById('bg-scale').value = 100;
+  document.getElementById('bg-x').value = 50;
+  document.getElementById('bg-y').value = 50;
+  updateBg();
+}
+
+function changeBg(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('cal-bg');
+    img.style.display = 'block';
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ────────────────────────────────────────────
+//  저장
+// ────────────────────────────────────────────
+async function saveImage() {
+  const btn = event.target;
+  btn.textContent = '저장 중...';
+  try {
+    const canvas = await html2canvas(document.getElementById('calendar'), { scale: 2, useCORS: true, allowTaint: true });
+    const link = document.createElement('a');
+    link.download = `르샤인_${calState.year}년${calState.month}월_진료일정.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  } catch(e) { alert('저장 실패: ' + e.message); }
+  btn.textContent = '⬇ PNG 저장';
+}
+
+async function savePDF() {
+  const btn = event.target;
+  btn.textContent = '변환 중...';
+  try {
+    const { jsPDF } = window.jspdf;
+    const canvas = await html2canvas(document.getElementById('calendar'), { scale: 2, useCORS: true, allowTaint: true });
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = (canvas.height / canvas.width) * pdfW;
+    pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+    pdf.save(`르샤인_${calState.year}년${calState.month}월_진료일정.pdf`);
+  } catch(e) { alert('저장 실패: ' + e.message); }
+  btn.textContent = '📄 PDF 저장';
+}
+
+// ────────────────────────────────────────────
+//  초기화
+// ────────────────────────────────────────────
+(function init() {
+  const now = new Date();
+  calState.year = now.getFullYear();
+  calState.month = now.getMonth() + 1;
+  renderCalendar();
+})();
+</script>
+</body>
+</html>
