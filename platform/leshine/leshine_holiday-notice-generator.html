@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>르샤인 공휴일 안내 자동생성기</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+:root {
+  --accent: #1010FF;
+  --accent-dim: rgba(16,16,255,0.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Pretendard', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  color: #111;
+  background: transparent;
+}
+.main-layout {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 1400px;
+  position: relative;
+}
+
+/* ══ 미리보기 ══ */
+.preview-wrap {
+  flex: 1;
+  overflow: auto;
+  padding: 28px 28px 40px;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.size-tabs {
+  display: flex; gap: 0;
+  margin-bottom: 22px;
+  background: #f2f2f2;
+  border-radius: 9px;
+  padding: 4px;
+  align-self: flex-start;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.size-tab {
+  padding: 7px 16px;
+  border: none; background: none;
+  border-radius: 6px;
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  color: #999; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.size-tab.active { background: var(--accent); color: #fff; }
+
+.canvas-outer { transform-origin: top left; position: relative; }
+
+/* ══ 공통 캔버스 ══ */
+.canvas {
+  position: relative;
+  overflow: hidden;
+  display: none;
+  font-family: 'Pretendard', sans-serif;
+}
+.canvas.active { display: block; }
+
+/* 기본 배경 (악센트 그라데이션) */
+.c-bg-ph {
+  position: absolute; inset: 0;
+  background: linear-gradient(150deg,
+    #6060ff 0%, #3535ee 25%,
+    #1010FF 55%, #0808cc 80%, #000488 100%);
+  z-index: 0;
+}
+/* 미리보기 전용: 저장 시에는 원본 그라데이션 유지 */
+body:not(.exporting) .c-bg-ph {
+  background: #d4d4d4;
+}
+/* 배경 이미지 */
+.c-bg-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+  z-index: 1;
+  display: none;
+}
+/* 배경 이미지 위 어두운 오버레이 */
+.c-bg-ov {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.32);
+  z-index: 2;
+  display: none;
+}
+
+/* 하단 바 */
+.c-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(14,14,28,0.82);
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 20;
+}
+.c-bar .bhi { text-align: center; }
+.c-bar .bhi .lb { display: block; color: rgba(255,255,255,0.5); font-weight: 400; }
+.c-bar .bhi .tm { display: block; color: #fff; font-weight: 700; white-space: nowrap; }
+.c-bar .bdiv { background: rgba(255,255,255,0.18); width: 1px; }
+
+/* 날짜 카드 */
+.day-card {
+  background: rgba(255,255,255,0.88);
+  display: flex;
+  align-items: stretch;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+.day-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+.day-col + .day-col::before {
+  content: '';
+  position: absolute; left: 0;
+  width: 1px;
+  background: rgba(160,180,200,0.45);
+  top: 8%; bottom: 8%;
+}
+
+.dc-dow  { color: #555; font-weight: 500; font-family: 'Pretendard', sans-serif; }
+.dc-date { font-weight: 800; line-height: 1; font-family: 'Pretendard', sans-serif; }
+.dc-name { color: #444; font-weight: 500; font-family: 'Pretendard', sans-serif; }
+.dc-badge {
+  border-radius: 100px; font-weight: 700; color: #fff;
+  display: inline-block; text-align: center;
+  font-family: 'Pretendard', sans-serif;
+}
+.type-hujin  .dc-date { color: #c0392b; }
+.type-normal .dc-date { color: #AE8D4A; }
+.type-danchu .dc-date { color: #4552EF; }
+.badge-hujin  { background: #c0392b; }
+.badge-normal { background: #AE8D4A; }
+.badge-danchu { background: #4552EF; }
+.dc-time { font-weight: 600; font-family: 'Pretendard', sans-serif; }
+.type-hujin  .dc-time { color: #c0392b; }
+.type-normal .dc-time { color: #AE8D4A; }
+.type-danchu .dc-time { color: #4552EF; }
+
+/* 텍스트 공통 */
+.c-logo  { position: relative; z-index: 10; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.c-logo img { filter: brightness(0) invert(1); }
+.c-sub   {
+  position: relative; z-index: 10; text-align: center; flex-shrink: 0;
+  font-family: 'New York', 'NewYork', 'Georgia', 'Times New Roman', serif;
+  font-style: italic;
+  color: #fff;
+}
+.c-title {
+  position: relative; z-index: 10;
+  font-weight: 700; color: #fff;
+  text-align: center; line-height: 1.2; letter-spacing: -0.5px;
+  font-family: 'Pretendard', sans-serif; flex-shrink: 0;
+}
+
+/* ══ 공통 inner ══ */
+.c-inner {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center;
+}
+
+/* ══ PC 800×600 — 콘텐츠를 살짝 위로 ══ */
+#cv-pc { width: 800px; height: 600px; }
+#cv-pc .c-inner    { padding: 0 0 44px; padding-top: 0; justify-content: center; margin-top: -30px; }
+#cv-pc .c-logo img { height: 24px; margin-bottom: 50px;}
+#cv-pc .c-sub      { font-size: 21px; margin-top: 10px; }
+#cv-pc .c-title    { font-size: 40px; margin-top: 10px; margin-bottom: 20px; }
+#cv-pc .day-card   { border-radius: 0px; padding: 20px 0; margin-top: 30px; margin-bottom: 50px; }
+#cv-pc .day-col    { padding: 0 20px; }
+#cv-pc .dc-dow     { font-size: 13px; margin-bottom: 6px; }
+#cv-pc .dc-date    { font-size: 50px; }
+#cv-pc .dc-name    { font-size: 13px; margin-top: 7px; }
+#cv-pc .dc-badge   { font-size: 11px; padding: 4px 13px; margin-top: 7px; }
+#cv-pc .dc-time    { font-size: 11px; margin-top: 4px; }
+#cv-pc .c-bar      { height: 44px; }
+#cv-pc .c-bar .bhi .lb { font-size: 10px; margin-bottom: 4px; }
+#cv-pc .c-bar .bhi .tm { font-size: 13px; }
+#cv-pc .c-bar .bdiv    { height: 18px; }
+
+/* ══ 모바일 428×540 ══ */
+#cv-mo { width: 428px; height: 540px; }
+#cv-mo .c-inner    { padding: 0 0 40px; justify-content: center; }
+#cv-mo .c-sub      { font-size: 16px; }
+#cv-mo .c-title    { font-size: 31px; margin-top: 10px; }
+
+/* 1~2개: 가로 1행 */
+#cv-mo .day-card   { border-radius: 0px; padding: 15px 0; margin-top: 14px; }
+#cv-mo .day-col    { padding: 0 12px; }
+#cv-mo .dc-dow     { font-size: 11px; margin-bottom: 4px; }
+#cv-mo .dc-date    { font-size: 35px; }
+#cv-mo .dc-name    { font-size: 11px; margin-top: 5px; }
+#cv-mo .dc-badge   { font-size: 10px; padding: 3px 11px; margin-top: 5px; }
+#cv-mo .dc-time    { font-size: 10px; margin-top: 3px; }
+
+/* 3~4개: 2×2 그리드 레이아웃 */
+#cv-mo .day-card.grid2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  padding: 0;
+  gap: 0;
+  width: 360px !important;
+}
+#cv-mo .day-card.grid2x2 .day-col {
+  padding: 14px 12px;
+  flex: unset;
+  border-bottom: 1px solid rgba(160,180,200,0.35);
+  border-right: 1px solid rgba(160,180,200,0.35);
+}
+/* 오른쪽 열 border-right 제거 */
+#cv-mo .day-card.grid2x2 .day-col:nth-child(2n) { border-right: none; }
+/* 마지막 행 border-bottom 제거 */
+#cv-mo .day-card.grid2x2 .day-col:nth-last-child(-n+2) { border-bottom: none; }
+/* 구분선 가상요소 덮어쓰기 (grid에서 불필요) */
+#cv-mo .day-card.grid2x2 .day-col + .day-col::before { display: none; }
+/* 그리드일 때 날짜 폰트 더 키워서 가독성↑ */
+#cv-mo .day-card.grid2x2 .dc-date  { font-size: 35px; }
+#cv-mo .day-card.grid2x2 .dc-dow   { font-size: 12px; }
+#cv-mo .day-card.grid2x2 .dc-name  { font-size: 11px; }
+#cv-mo .day-card.grid2x2 .dc-badge { font-size: 10px; padding: 3px 10px; margin-top: 6px; }
+#cv-mo .day-card.grid2x2 .dc-time  { font-size: 10px; }
+
+/* 모바일: 로고를 하단 바 바로 위로 */
+#cv-mo .c-logo     { position: absolute; bottom: 48px; left: 0; right: 0; z-index: 10; }
+#cv-mo .c-logo img { height: 8px; margin-bottom: 20px; margin-top: 10px; }
+#cv-mo .c-bar      { height: 40px; }
+#cv-mo .c-bar .bhi .lb { font-size: 9px; margin-bottom: 3px; }
+#cv-mo .c-bar .bhi .tm { font-size: 9px; }
+#cv-mo .c-bar .bdiv    { height: 14px; }
+
+/* ══ 카톡 800×800 ══ */
+#cv-kt { width: 800px; height: 800px; }
+#cv-kt .c-inner    { padding: 0; justify-content: flex-start; align-items: center; }
+#cv-kt .c-logo     { padding-top: 40px; flex-shrink: 0; }
+#cv-kt .c-logo img { height: 13px; width: auto;}
+#cv-kt .c-content-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 52px;
+  width: 100%;
+}
+#cv-kt .c-sub      { font-size: 32px; margin-top: 0px; }
+#cv-kt .c-title    { font-size: 64px; margin-top: 10px; }
+#cv-kt .day-card   { border-radius: 0px; padding: 26px 0; margin-top: 24px; }
+#cv-kt .day-col    { padding: 0 24px; }
+#cv-kt .dc-dow     { font-size: 18px; margin-bottom: 8px; }
+#cv-kt .dc-date    { font-size: 60px; }
+#cv-kt .dc-name    { font-size: 18px; margin-top: 9px; }
+#cv-kt .dc-badge   { font-size: 15px; padding: 6px 20px; margin-top: 9px; }
+#cv-kt .dc-time    { font-size: 14px; margin-top: 6px; }
+#cv-kt .c-bar      { height: 52px; }
+#cv-kt .c-bar .bhi .lb { font-size: 12px; margin-bottom: 5px; }
+#cv-kt .c-bar .bhi .tm { font-size: 15px; }
+#cv-kt .c-bar .bdiv    { height: 22px; }
+
+/* 카톡 4개: 2×2 그리드 */
+#cv-kt .day-card.grid2x2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  padding: 0;
+  gap: 0;
+  width: 560px !important;
+}
+#cv-kt .day-card.grid2x2 .day-col {
+  padding: 16px 16px;
+  flex: unset;
+  border-bottom: 1px solid rgba(160,180,200,0.35);
+  border-right: 1px solid rgba(160,180,200,0.35);
+}
+#cv-kt .day-card.grid2x2 .day-col:nth-child(2n) { border-right: none; }
+#cv-kt .day-card.grid2x2 .day-col:nth-last-child(-n+2) { border-bottom: none; }
+#cv-kt .day-card.grid2x2 .day-col + .day-col::before { display: none; }
+#cv-kt .day-card.grid2x2 .dc-date  { font-size: 56px; }
+#cv-kt .day-card.grid2x2 .dc-dow   { font-size: 13px; margin-bottom: 5px; }
+#cv-kt .day-card.grid2x2 .dc-name  { font-size: 13px; margin-top: 6px; }
+#cv-kt .day-card.grid2x2 .dc-badge { font-size: 11px; padding: 4px 13px; margin-top: 6px; }
+#cv-kt .day-card.grid2x2 .dc-time  { font-size: 11px; margin-top: 4px; }
+
+/* ══ 사이드바 ══ */
+.sidebar {
+  width: 272px;
+  flex-shrink: 0;
+  background: transparent;
+  border-left: 1px solid #e4e4e4;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  align-self: flex-start;
+}
+.sb-section { padding: 16px 18px; border-bottom: 1px solid #f0f0f0; }
+.sb-section:last-child { border-bottom: none; }
+.sb-title { font-size: 12px; font-weight: 700; color: #444; letter-spacing: 0.3px; margin-bottom: 12px; }
+
+.sidebar input[type=text],
+.sidebar input[type=number],
+.sidebar select {
+  width: 100%; padding: 7px 10px;
+  border: 1px solid #e0e0e0; border-radius: 6px;
+  font-size: 12px; font-family: inherit;
+  background: #fafafa; color: #111; outline: none;
+  transition: border-color 0.15s;
+}
+.sidebar input:focus, .sidebar select:focus { border-color: var(--accent); }
+
+/* ── 날짜 항목 아코디언 ── */
+.day-items-wrap {
+  display: flex; flex-direction: column; gap: 6px;
+  margin-bottom: 8px;
+}
+.day-item {
+  background: #f8f8f8;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.day-item-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 9px 11px;
+  cursor: pointer;
+  user-select: none;
+}
+.day-item-head:hover { background: #f2f2f2; }
+.day-item-label { font-size: 12px; font-weight: 700; color: #333; }
+.day-item-badge {
+  font-size: 10px; font-weight: 600; padding: 2px 8px;
+  border-radius: 100px; color: #fff; margin-left: 6px;
+}
+.day-item-right { display: flex; align-items: center; gap: 4px; }
+.day-item-arrow {
+  font-size: 10px; color: #bbb;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.day-item.open .day-item-arrow { transform: rotate(180deg); }
+.day-item-del {
+  background: none; border: none; cursor: pointer;
+  color: #ccc; font-size: 15px; line-height: 1;
+  transition: color 0.15s; padding: 0 2px;
+}
+.day-item-del:hover { color: #888; }
+
+.day-item-body {
+  display: none;
+  padding: 0 11px 10px;
+  border-top: 1px solid #eeee;
+}
+.day-item.open .day-item-body { display: block; }
+
+.fi-row { display: flex; gap: 5px; margin-bottom: 5px; align-items: center; margin-top: 8px; }
+.fi-row label { font-size: 10px; color: #999; white-space: nowrap; min-width: 26px; }
+.fi-row input, .fi-row select {
+  flex: 1; padding: 5px 8px; font-size: 11px;
+  border: 1px solid #e4e4e4; border-radius: 5px;
+  font-family: inherit; background: #fff; outline: none;
+}
+
+/* 추가 버튼 / 최대 도달 경고 */
+.btn-add {
+  width: 100%; padding: 8px; background: var(--accent); color: #fff;
+  border: none; border-radius: 6px; font-size: 12px; font-family: inherit;
+  font-weight: 700; cursor: pointer; transition: all 0.15s;
+}
+.btn-add:hover { opacity: 0.85; }
+.btn-add.maxed {
+  background: #f0f0f0;
+  color: #bbb;
+  cursor: not-allowed;
+  border: 1.5px solid #e0e0e0;
+  animation: shake 0.3s ease;
+}
+@keyframes shake {
+  0%,100%{ transform: translateX(0); }
+  20%{ transform: translateX(-4px); }
+  60%{ transform: translateX(4px); }
+  80%{ transform: translateX(-2px); }
+}
+.max-notice {
+  text-align: center; font-size: 10px;
+  color: #f04040; margin-top: 5px;
+  display: none;
+}
+.max-notice.show { display: block; }
+
+/* 배경 */
+.upload-wrap { position: relative; overflow: hidden; width: 100%; margin-bottom: 12px; }
+.btn-upload {
+  width: 100%; padding: 8px;
+  background: #fafafa; border: 1.5px dashed #ddd;
+  border-radius: 7px; font-size: 12px; font-family: inherit;
+  cursor: pointer; color: #666;
+}
+.upload-wrap input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.sl-group { margin-bottom: 10px; }
+.sl-group label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+.sl-row { display: flex; align-items: center; gap: 8px; }
+.sl-row input[type=range] { flex: 1; height: 3px; accent-color: var(--accent); cursor: pointer; }
+.sl-val { font-size: 11px; color: #aaa; width: 34px; text-align: right; flex-shrink: 0; }
+.btn-reset {
+  width: 100%; padding: 7px; background: #fafafa;
+  border: 1px solid #e0e0e0; border-radius: 6px;
+  font-size: 11px; font-family: inherit; cursor: pointer; color: #777;
+  transition: background 0.15s;
+}
+.btn-reset:hover { background: #f0f0f0; }
+
+/* 저장 */
+.btn-save {
+  width: 100%; padding: 10px; background: #111; color: #fff;
+  border: none; border-radius: 7px; font-size: 12px; font-weight: 700;
+  font-family: inherit; cursor: pointer; margin-bottom: 7px; transition: background 0.15s;
+}
+.btn-save:hover { background: #333; }
+.btn-pdf {
+  width: 100%; padding: 10px; background: #fff; color: #111;
+  border: 1.5px solid #d4d4d4; border-radius: 7px;
+  font-size: 12px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-pdf:hover { background: #f5f5f5; border-color: #aaa; }
+.drag-hint { font-size: 10px; color: #ccc; text-align: center; margin-top: 8px; line-height: 1.6; }
+.sub-label { font-size: 10px; color: #aaa; margin-bottom: 4px; display: block; margin-top: 10px; }
+.sub-label:first-child { margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="main-layout">
+
+  <div class="preview-wrap">
+    <div class="size-tabs">
+      <button class="size-tab active" onclick="switchSize('pc')">PC 팝업  800×600</button>
+      <button class="size-tab"        onclick="switchSize('mo')">모바일  428×540</button>
+      <button class="size-tab"        onclick="switchSize('kt')">카톡 플친  800×800</button>
+    </div>
+
+    <div class="canvas-outer" id="canvas-outer">
+
+      <!-- PC 800×600 -->
+      <div class="canvas active" id="cv-pc">
+        <div class="c-bg-ph"></div>
+        <img class="c-bg-img" id="bg-pc" src="" alt="">
+        <div class="c-bg-ov" id="ov-pc"></div>
+        <div class="c-inner">
+          <div class="c-logo"><img id="logo-pc" src="" alt="르샤인"></div>
+          <div class="c-sub"   id="sub-pc"></div>
+          <div class="c-title" id="title-pc"></div>
+          <div class="day-card" id="card-pc"></div>
+        </div>
+        <div class="c-bar">
+          <div class="bhi"><span class="lb">월 - 금</span><span class="tm">AM 10:00 - PM 9:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">토 - 일</span><span class="tm">AM 10:00 - PM 7:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">점심시간</span><span class="tm">PM 1:00 - PM 2:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">공휴일</span><span class="tm">AM 10:00 - PM 5:00</span></div>
+        </div>
+      </div>
+
+      <!-- 모바일 428×540 -->
+      <div class="canvas" id="cv-mo">
+        <div class="c-bg-ph"></div>
+        <img class="c-bg-img" id="bg-mo" src="" alt="">
+        <div class="c-bg-ov" id="ov-mo"></div>
+        <div class="c-inner">
+          <div class="c-sub"   id="sub-mo"></div>
+          <div class="c-title" id="title-mo"></div>
+          <div class="day-card" id="card-mo"></div>
+          <div class="c-logo"><img id="logo-mo" src="" alt="르샤인"></div>
+        </div>
+        <div class="c-bar">
+          <div class="bhi"><span class="lb">월 - 금</span><span class="tm">AM 10:00 - PM 9:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">토 - 일</span><span class="tm">AM 10:00 - PM 7:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">점심시간</span><span class="tm">PM 1:00 - PM 2:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">공휴일</span><span class="tm">AM 10:00 - PM 5:00</span></div>
+        </div>
+      </div>
+
+      <!-- 카톡 800×800 -->
+      <div class="canvas" id="cv-kt">
+        <div class="c-bg-ph"></div>
+        <img class="c-bg-img" id="bg-kt" src="" alt="">
+        <div class="c-bg-ov" id="ov-kt"></div>
+        <div class="c-inner">
+          <div class="c-logo"><img id="logo-kt" src="" alt="르샤인"></div>
+          <div class="c-content-wrap">
+            <div class="c-sub"   id="sub-kt"></div>
+            <div class="c-title" id="title-kt"></div>
+            <div class="day-card" id="card-kt"></div>
+          </div>
+        </div>
+        <div class="c-bar">
+          <div class="bhi"><span class="lb">월 - 금</span><span class="tm">AM 10:00 - PM 9:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">토 - 일</span><span class="tm">AM 10:00 - PM 7:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">점심시간</span><span class="tm">PM 1:00 - PM 2:00</span></div>
+          <div class="bdiv"></div>
+          <div class="bhi"><span class="lb">공휴일</span><span class="tm">AM 10:00 - PM 5:00</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 사이드바 -->
+  <div class="sidebar">
+
+    <div class="sb-section">
+      <div class="sb-title">월 선택</div>
+      <select id="inp-month" onchange="renderAll()">
+        <option value="1">1월 — January</option>
+        <option value="2" selected>2월 — February</option>
+        <option value="3">3월 — March</option>
+        <option value="4">4월 — April</option>
+        <option value="5">5월 — May</option>
+        <option value="6">6월 — June</option>
+        <option value="7">7월 — July</option>
+        <option value="8">8월 — August</option>
+        <option value="9">9월 — September</option>
+        <option value="10">10월 — October</option>
+        <option value="11">11월 — November</option>
+        <option value="12">12월 — December</option>
+      </select>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">날짜 항목</div>
+      <div class="day-items-wrap" id="day-list"></div>
+      <button class="btn-add" id="btn-add-day" onclick="addDay()">＋ 날짜 추가</button>
+      <div class="max-notice" id="max-notice">최대 4개까지 추가할 수 있어요</div>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">배경 이미지</div>
+      <div class="upload-wrap">
+        <button class="btn-upload">이미지 업로드</button>
+        <input type="file" accept="image/*" onchange="changeBg(this)">
+      </div>
+      <div class="sl-group">
+        <label>확대 / 축소</label>
+        <div class="sl-row">
+          <input type="range" id="sl-scale" min="50" max="200" value="100" oninput="applyBg()">
+          <span class="sl-val" id="val-scale">100%</span>
+        </div>
+      </div>
+      <div class="sl-group">
+        <label>좌우 위치</label>
+        <div class="sl-row">
+          <input type="range" id="sl-x" min="0" max="100" value="50" oninput="applyBg()">
+          <span class="sl-val" id="val-x">50%</span>
+        </div>
+      </div>
+      <div class="sl-group">
+        <label>상하 위치</label>
+        <div class="sl-row">
+          <input type="range" id="sl-y" min="0" max="100" value="50" oninput="applyBg()">
+          <span class="sl-val" id="val-y">50%</span>
+        </div>
+      </div>
+      <button class="btn-reset" onclick="resetBg()">↺ 배경 초기화</button>
+      <p class="drag-hint">이미지 업로드 후 슬라이더로<br>위치·크기 조정</p>
+    </div>
+
+    <div class="sb-section">
+      <div class="sb-title">저장</div>
+      <button class="btn-save" onclick="saveImg()">PNG 저장</button>
+      <button class="btn-pdf"  onclick="savePdf()">PDF 저장</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const LOGO_B64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjk4IiBoZWlnaHQ9IjQzIiB2aWV3Qm94PSIwIDAgMjk4IDQzIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cGF0aCBkPSJNMTUuODQ2OSAxLjI4NTAyQzE2LjEzMzkgMS43ODMxOCAxNi4zMDI4IDIuNDE3MTkgMTYuMzQ3OCAzLjE4MTQxQzE2LjM5MjggMy44ODkwMiAxNi40MTUzIDQuNzcyMTIgMTYuNDE1MyA1LjgwODA2VjI2Ljc4NzNDMTYuNTQ0NyAyNy41MjMyIDE2LjgzMTcgMjguMDc3OSAxNy4yOTMyIDI4LjQ5MTJDMTcuNzQ5IDI4LjkwNDQgMTguMjc4IDI5LjEwMjYgMTguODk3IDI5LjEwMjZIMzIuOTc2OFYyOC40NjI5SDI1LjkyQzIxLjI5NDMgMjguNDYyOSAyMC40ODk1IDI4LjExNzYgMjAuMzcxNCAyNy42MzY0QzIwLjEzNSAyNy4zNDIgMTkuOTg4NyAyNi45MjMxIDE5LjkyNjggMjYuMzY4NEMxOS44NjQ5IDI1LjgxOTMgMTkuODM2OCAyNS4xNCAxOS44MzY4IDI0LjI3OTVWMEgxMy44MDk4QzE0LjA0NjIgMC4wNDUyODcgMTQuMjU0NCAwLjA5NjIzNDkgMTQuNDQ1NyAwLjE2NDE2NUMxNS4wNzYgMC4zNzkyNzkgMTUuNTQ4NyAwLjc1ODU1NyAxNS44NTI2IDEuMjg1MDJIMTUuODQ2OVoiIGZpbGw9ImJsYWNrIi8+CjxwYXRoIGQ9Ik0yNC4yNzY5IDE3LjYyODJDMjQuOTUyMiAxOC4yOTYyIDI1LjgwMiAxOC45NDcyIDI2Ljc5OCAxOS41NzU2QzI3LjgyMjIgMjAuMjIwOSAyOC45ODcxIDIwLjkxNzIgMzAuMjU4OSAyMS42NTg4QzMxLjIxNTUgMjIuMjI0OCAzMi4xMDQ3IDIyLjc0NTYgMzIuOTA5NCAyMy4yMDQyQzMzLjczMSAyMy42NzQgMzQuNDQgMjQuMTgzNSAzNS4wMzA5IDI0LjcxNTZDMzUuNjM4NyAyNS4yNjQ3IDM2LjEwNTggMjUuODkzMSAzNi40MjY1IDI2LjU4MzdDMzYuNzQ3MyAyNy4yOCAzNi45MTA1IDI4LjE0MDUgMzYuOTEwNSAyOS4xMzY4QzM2LjkxMDUgMzIuNzY1NCAzNC41NzUxIDM0LjYxMDggMjkuOTcxOSAzNC42MTA4QzI3LjU1NzcgMzQuNjEwOCAyNS4wODE3IDMzLjcxNjQgMjIuNiAzMS45NTU5QzIyLjQ2NDkgMzEuODU5NyAyMi4zNDY3IDMxLjgxNDQgMjIuMjI4NiAzMS44MTQ0QzIyLjE5NDggMzEuODE0NCAyMi4wOTkxIDMxLjgxNDQgMjEuOTU4NSAzMS45NjcyQzIxLjg1MTUgMzIuMDgwNCAyMS44MDY1IDMyLjIxMDYgMjEuODA2NSAzMi4zNjkxQzIxLjgwNjUgMzIuNTg5OSAyMS45NDcyIDMyLjgyMiAyMi4yMjI5IDMzLjA1OThMMjIuMjM0MiAzMy4wNzExTDIyLjI0NTUgMzMuMDgyNEMyMy4yMDIxIDM0LjAxNjUgMjQuMzYxNCAzNC43NDEgMjUuNzA2MyAzNS4yMzM1QzI3LjA1NjkgMzUuNzMxNyAyOC41MzY5IDM1Ljk4NjQgMzAuMTA2OSAzNS45ODY0QzMxLjY3NyAzNS45ODY0IDMzLjAyNzYgMzUuNzg4MyAzNC4yNzEyIDM1LjQwMzRDMzUuNDk4IDM1LjAxODQgMzYuNTUwMyAzNC40NjkzIDM3LjM5NDQgMzMuNzczQzM4LjIyNzMgMzMuMDgyNCAzOC44ODU3IDMyLjIzMzMgMzkuMzQxNSAzMS4yNTk2QzM5Ljc5NzMgMzAuMjgwMyA0MC4wMzM3IDI5LjE4MjEgNDAuMDMzNyAyNy45ODJDNDAuMDMzNyAyNy4wNTM2IDM5LjkwOTkgMjYuMjI3MSAzOS42Njc5IDI1LjUyNTFDMzkuNDI1OSAyNC44Mjg4IDM5LjA2MDEgMjQuMTgzNSAzOC41ODE4IDIzLjYwMDRDMzguMDkyMiAyMy4wMTE3IDM3LjQ3MzIgMjIuNDQ1NiAzNi43NDczIDIxLjkyNDhDMzUuOTk4OCAyMS4zODcgMzUuMTIxIDIwLjgwOTYgMzQuMTQxOCAyMC4yMjA5QzMyLjg0NzUgMTkuNDU2NyAzMS42NjAxIDE4LjgyODMgMzAuNjAyMiAxOC4zNDcxQzI5LjUxMDQgMTcuODQ5IDI4LjYwNDQgMTcuMzI4MiAyNy45MDEgMTYuODAxN0MyNy4wMDYyIDE2LjEzOTQgMjYuMzI1MyAxNS40MDkyIDI1Ljg4NjQgMTQuNjMzNkMyNS40NDE4IDEzLjg0NjggMjUuMjE2NyAxMi45MzUzIDI1LjIxNjcgMTEuOTIyMUMyNS4yMTY3IDEwLjI5MTcgMjUuNzU3IDguOTc4NCAyNi44MjA1IDguMDE2MDVDMjcuODcyOSA3LjA2NTAyIDI5LjMzNiA2LjU4Mzg1IDMxLjE3MDUgNi41ODM4NUMzMy4yMTg5IDYuNTgzODUgMzQuODg0NiA3LjA5MzMyIDM2LjEyMjYgOC4wODk2NEMzNi45NTU1IDguNzYzMjggMzcuNTE4MiA5LjYwMTA5IDM3Ljc5OTYgMTAuNTg2MVY3LjgyOTI0QzM2LjgzNzMgNy4xNjY5MiAzNS44NDEzIDYuNjg1NzQgMzQuODQ1MiA2LjM4NTcyQzMzLjc4NzMgNi4wNjg3MSAzMi42MzM2IDUuOTA0NTQgMzEuNDIzOCA1LjkwNDU0QzI4LjQxODcgNS45MDQ1NCAyNi4wOTQ2IDYuNTQ5ODggMjQuNTE4OSA3LjgxNzkyQzIyLjk0ODkgOS4wODU5NSAyMi4xODM2IDEwLjczODkgMjIuMTgzNiAxMi44NzMxQzIyLjE4MzYgMTMuODY5NCAyMi4zNjM2IDE0Ljc1ODIgMjIuNzIzOCAxNS40OTk3QzIzLjA4OTYgMTYuMjU4MyAyMy42MDczIDE2Ljk3NzIgMjQuMjcxMyAxNy42MjgySDI0LjI3NjlaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNNTAuMjE5MiAxNi4wNTQxSDUwLjAxMUM0OS45OTk4IDE5LjMyNjEgNDkuMzUyNiAyMi41OTI0IDQ4LjA5NzcgMjUuNjA0QzQ2Ljg0ODQgMjguNjIxMyA0NC45OTcgMzEuMzc4MSA0Mi43MDEgMzMuNjgyMUM0MC4zOTk0IDM1Ljk4NjEgMzcuNjQ3NiAzNy44MjU4IDM0LjY1MzggMzkuMDY1NkMzMS42NjAxIDQwLjMxMSAyOC40MTg3IDQwLjkzOTMgMjUuMTc3MyA0MC45MzM3QzIxLjk0MTUgNDAuOTM5MyAxOC43MDAyIDQwLjMxMSAxNS43MDA3IDM5LjA2NTZDMTIuNzAxMyAzNy44MjU4IDkuOTQ5NTQgMzUuOTg2MSA3LjY1MzU2IDMzLjY4MjFDNS4zNTE5NSAzMS4zNzgxIDMuNTA2MTYgMjguNjIxMyAyLjI1Njg3IDI1LjYwNEMxLjIyNzA2IDIzLjEzMDIgMC42MTM2NzIgMjAuNDgwOSAwLjQxNjcxMyAxNy44MDMzSDEyLjY1NjNWMTUuNzMxNEgwLjAwMDI4NDk2M1YxNy44MDMzSDAuMDExNTM5OEMtMC4wNzg0OTg3IDIwLjU1NDUgMC4zNjA0MzkgMjMuMzUxIDEuMjU1MiAyNi4wMjI5QzEuODA2NjggMjcuNjM2MyAyLjUzODI0IDI5LjE5ODcgMy40MTA0OSAzMC42ODc1QzQuMjgyNzQgMzIuMTc2MyA1LjM0NjMyIDMzLjU1MTkgNi41MTExOSAzNC44MzEyTDcuNDE3MiAzNS43NjUzTDguMzY4MjQgMzYuNjU5N0M4LjY5NDYzIDM2Ljk0MjcgOS4wMzIyNyAzNy4yMjAxIDkuMzY5OTEgMzcuNDkxOUM5LjcxODgxIDM3Ljc1MjMgMTAuMDYyMSAzOC4wMTgzIDEwLjQxNjYgMzguMjczMUMxMS44NDAzIDM5LjI4MDcgMTMuMzY1NCA0MC4xNDY4IDE0Ljk2MzYgNDAuODYwMUMxOC4xNzEyIDQyLjI2NCAyMS42ODI3IDQyLjk2NTkgMjUuMTc3MyA0Mi45OTk5QzI4LjY3NzUgNDIuOTcxNiAzMi4xODM0IDQyLjI2NCAzNS4zOTY3IDQwLjg2NTdDMzYuOTk0OCA0MC4xNTI1IDM4LjUxOTkgMzkuMjg2NCAzOS45NDM2IDM4LjI3ODdDNDAuMjk4MSAzOC4wMjQgNDAuNjQxNCAzNy43NTc5IDQwLjk5MDMgMzcuNDk3NUM0MS4zMjc5IDM3LjIyNTggNDEuNjY1NiAzNi45NDg0IDQxLjk5NzYgMzYuNjY1NEw0Mi45NDg2IDM1Ljc3MDlMNDMuODU0NyAzNC44MzY5QzQ1LjAyNTIgMzMuNTU3NSA0Ni4wODMxIDMyLjE3NjMgNDYuOTU1NCAzMC42OTMxQzQ3LjgyNzYgMjkuMjA0MyA0OC41NTkyIDI3LjY0MTkgNDkuMTEwNiAyNi4wMjg2QzUwLjE5MTEgMjIuNzkwNiA1MC42MDc1IDE5LjM2MDEgNTAuMjE5MiAxNi4wNTk4VjE2LjA1NDFaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNODcuNTI5MiAzMy43NTI5SDcwLjg4NTVDNzEuMDMxOCAzMy4zMzQgNzEuMDk5MyAzMi44Njk5IDcxLjA5OTMgMzIuMzcxOFY1LjY2NzMyQzcxLjA5OTMgNS4xNDY1OSA3MS4wMzE4IDQuNjcxMTQgNzAuODg1NSA0LjI0MDk3SDc2Ljc5MzVDNzYuNjQ3MiA0LjY3MTE0IDc2LjU3OTcgNS4xNDY1OSA3Ni41Nzk3IDUuNjY3MzJWMzEuMzc1Nkg4NS44NzQ5Qzg2LjU4MzkgMzEuMzY0MyA4Ny4xMzUzIDMxLjI5NjQgODcuNTI5MiAzMS4xODMyVjMzLjc1MjlaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMTAwLjI0NSA0LjI0MDk3SDExNy4yNDlWNi42NDA4NkMxMTYuNzU0IDYuNDkzNyAxMTYuMjM2IDYuNDI1NzggMTE1LjcwNyA2LjQyNTc4SDEwNS45NFYxNy42NjY4SDExNS40NDlDMTE2LjEzNSAxNy42NjY4IDExNi43MzEgMTcuNTk4OSAxMTcuMjQ5IDE3LjQ3NDNWMTkuODc0MkMxMTYuODIyIDE5Ljc4MzcgMTE2LjIzNiAxOS43NDk3IDExNS40OTQgMTkuNzQ5N0gxMDUuOTRWMzEuMzc1NkgxMTUuNDI2QzExNS45NTUgMzEuMzc1NiAxMTYuNTYzIDMxLjMwNzcgMTE3LjI0OSAzMS4xNjA1VjMzLjc1MjlIMTAwLjI2OEMxMDAuMzkyIDMzLjMyMjcgMTAwLjQ1OSAzMi44NDczIDEwMC40NTkgMzIuMzQ5MlY1LjY2NzMyQzEwMC40NTkgNS4wNzg2NyAxMDAuMzkyIDQuNjAzMjIgMTAwLjI0NSA0LjI0MDk3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTE0MS4yMyAzMS45MDc3TDE0Mi4zMzMgMjguNDA5N0MxNDMuMjExIDI5LjA4ODkgMTQzLjk0MiAyOS42MDk3IDE0NC41MTYgMjkuOTYwNkMxNDYuMjQ5IDMxLjAzNiAxNDguMTE3IDMxLjU3OTQgMTUwLjEzMSAzMS41Nzk0QzE1Mi4xNDYgMzEuNTc5NCAxNTMuNzEgMzEuMDQ3MyAxNTQuODU4IDI5Ljk4MzJDMTU1Ljg4MiAyOS4wMzIzIDE1Ni4zOTkgMjcuODY2MyAxNTYuMzk5IDI2LjQ4NTNDMTU2LjM5OSAyNC44NjY1IDE1NS42NjggMjMuNTY0NiAxNTQuMjE2IDIyLjU2ODVDMTUzLjU0MSAyMi4xMDQzIDE1MS44ODcgMjEuMzExOSAxNDkuMjQyIDIwLjE5MTJDMTQ2LjUwOCAxOS4wMjUyIDE0NC41NzIgMTcuODU5MiAxNDMuNDU4IDE2LjcxNTlDMTQyLjEzIDE1LjM1NzUgMTQxLjQ2NiAxMy43NzI2IDE0MS40NjYgMTEuOTYxNEMxNDEuNDY2IDEwLjY1OTUgMTQxLjgwNCA5LjQ0ODI4IDE0Mi40NjggOC4zMjc1N0MxNDMuMTMyIDcuMjA2ODcgMTQ0LjA2NiA2LjI2NzI5IDE0NS4yNyA1LjUyMDE1QzE0Ny4wOTMgNC4zNzY4IDE0OS40NTYgMy44MTA3OSAxNTIuMzQ4IDMuODEwNzlDMTU0LjgxMyAzLjgxMDc5IDE1Ny4zNTYgNC4zMzE1MiAxNTkuOTg5IDUuMzg0MzFMMTU4Ljk1NCA4LjUyMDAyQzE1Ni40MjIgNi45NDY1IDE1NC4xMTUgNi4xNjU0IDE1Mi4wMTEgNi4xNjU0QzE1MC4zNDUgNi4xNjU0IDE0OC45OTUgNi42NDA4NiAxNDcuOTQ4IDcuNTkxNzZDMTQ3LjA3IDguNDE4MTQgMTQ2LjYzMiA5LjQwMyAxNDYuNjMyIDEwLjU1NzdDMTQ2LjYzMiAxMS45Mjc0IDE0Ny4yODQgMTMuMDcwOCAxNDguNTc4IDEzLjk3NjRDMTQ5LjQxMSAxNC41NjUgMTUxLjAzMiAxNS4zNTc1IDE1My40MjkgMTYuMzUzNkMxNTYuNDU2IDE3LjU5ODkgMTU4LjUwNCAxOC43OTg4IDE1OS41NzMgMTkuOTg3NEMxNjAuOTEyIDIxLjQ4MTcgMTYxLjU4NyAyMy4yMjUgMTYxLjU4NyAyNS4xOTQ4QzE2MS41ODcgMjYuNTMwNSAxNjEuMjYxIDI3LjgyMTEgMTYwLjYxOSAyOS4wNTVDMTU5Ljk2NyAzMC4yODg5IDE1OS4wNjcgMzEuMzE5IDE1Ny44OTYgMzIuMTU2N0MxNTYuMDI4IDMzLjUxNTIgMTUzLjQ5NiAzNC4xODMgMTUwLjMxMSAzNC4xODNDMTQ3LjgwMiAzNC4xODMgMTQ1LjQwNSAzMy43MTg5IDE0My4xMzIgMzIuODAyQzE0Mi42MTQgMzIuNTg2OSAxNDEuOTg0IDMyLjI5MjYgMTQxLjIzIDMxLjkxOVYzMS45MDc3WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTE4MC45MDkgMTkuNTY4NlYzMi4zNDkyQzE4MC45MDkgMzIuODY5OSAxODAuOTc3IDMzLjMzNCAxODEuMTIzIDMzLjc1MjlIMTc1LjIxNUMxNzUuMzYxIDMzLjM2OCAxNzUuNDI5IDMyLjg5MjUgMTc1LjQyOSAzMi4zNDkyVjUuNjQ0NjhDMTc1LjQyOSA1LjEyMzk1IDE3NS4zNjEgNC42NTk4MiAxNzUuMjE1IDQuMjQwOTdIMTgxLjEyM0MxODAuOTc3IDQuNzE2NDIgMTgwLjkwOSA1LjE5MTg3IDE4MC45MDkgNS42NjczMlYxNy40MDY0SDE5NS4zMTRWNS42NjczMkMxOTUuMzE0IDUuMTkxODcgMTk1LjI0NiA0LjcxNjQyIDE5NS4xIDQuMjQwOTdIMjAxLjAwOEMyMDAuODYxIDQuNjU5ODIgMjAwLjc5NCA1LjEyMzk1IDIwMC43OTQgNS42NDQ2OFYzMi4zMzc4QzIwMC43OTQgMzIuODU4NiAyMDAuODYxIDMzLjMyMjcgMjAxLjAwOCAzMy43NDE2SDE5NS4xQzE5NS4yNDYgMzMuMzIyNyAxOTUuMzE0IDMyLjg1ODYgMTk1LjMxNCAzMi4zMzc4VjE5LjU1NzNIMTgwLjkwOVYxOS41Njg2WiIgZmlsbD0iYmxhY2siLz4KPHBhdGggZD0iTTIxNy4wNjYgNC4yNDA5N0gyMjIuOTc0QzIyMi44NSA0LjU5MTg5IDIyMi43NzIgNS4wNTYwMyAyMjIuNzYgNS42NDQ2OFYzMi4zMjY1QzIyMi43NzIgMzIuOTI2NSAyMjIuODUgMzMuNDAyIDIyMi45NzQgMzMuNzUyOUgyMTcuMDY2QzIxNy4yMTIgMzMuMzIyNyAyMTcuMjggMzIuODQ3MyAyMTcuMjggMzIuMzI2NVY1LjY0NDY4QzIxNy4yOCA1LjEzNTI3IDIxNy4yMTIgNC42NzExNCAyMTcuMDY2IDQuMjQwOTdaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMjQxLjYyMSA5LjY4NjAxVjMyLjMxNTJDMjQxLjYyMSAzMi44NDczIDI0MS42ODggMzMuMzIyNyAyNDEuODM1IDMzLjc0MTZIMjM4LjkwOUMyMzkuMDU1IDMzLjMxMTQgMjM5LjEyMyAzMi44MzU5IDIzOS4xMjMgMzIuMzE1MlY1LjY2NzMyQzIzOS4xMjMgNS4xMjM5NSAyMzkuMDU1IDQuNjQ4NSAyMzguOTA5IDQuMjQwOTdIMjQ0LjExOUMyNDQuMTk4IDQuNTIzOTcgMjQ0LjM4OSA0Ljg2MzU4IDI0NC42OTMgNS4yNTk3OUwyNjIuNjA4IDI3LjgwOTdWNS42NjczMkMyNjIuNjA4IDUuMTU3OTEgMjYyLjU0MSA0LjY4MjQ2IDI2Mi4zOTUgNC4yNDA5N0gyNjUuMzJDMjY1LjE5NyA0LjU2OTI1IDI2NS4xMTggNS4wNDQ3IDI2NS4xMDcgNS42NDQ2OFYzMi40Mjg0QzI2NS4xMTggMzMuMDA1NyAyNjUuMjA4IDMzLjQ0NzIgMjY1LjM0MyAzMy43NDE2SDI2MC41NkMyNjAuNDU5IDMzLjQ5MjUgMjYwLjIyMyAzMy4xMzAzIDI1OS44NCAzMi42NDM1TDI0MS42MSA5LjY4NjAxSDI0MS42MjFaIiBmaWxsPSJibGFjayIvPgo8cGF0aCBkPSJNMjgwLjk5NiA0LjI0MDk3SDI5OFY2LjY0MDg2QzI5Ny41MDUgNi40OTM3IDI5Ni45ODcgNi40MjU3OCAyOTYuNDU4IDYuNDI1NzhIMjg2LjY5MVYxNy42NjY4SDI5Ni4yQzI5Ni44ODYgMTcuNjY2OCAyOTcuNDgyIDE3LjU5ODkgMjk4IDE3LjQ3NDNWMTkuODc0MkMyOTcuNTcyIDE5Ljc4MzcgMjk2Ljk4NyAxOS43NDk3IDI5Ni4yNDUgMTkuNzQ5N0gyODYuNjkxVjMxLjM3NTZIMjk2LjE3N0MyOTYuNzA2IDMxLjM3NTYgMjk3LjMxNCAzMS4zMDc3IDI5OCAzMS4xNjA1VjMzLjc1MjlIMjgxLjAxOUMyODEuMTQzIDMzLjMyMjcgMjgxLjIxIDMyLjg0NzMgMjgxLjIxIDMyLjM0OTJWNS42NjczMkMyODEuMjEgNS4wNzg2NyAyODEuMTQzIDQuNjAzMjIgMjgwLjk5NiA0LjI0MDk3WiIgZmlsbD0iYmxhY2siLz4KPC9zdmc+Cg==';
+
+const MAX_DAYS = 4;
+let currentSize = 'pc';
+const SIZES = {
+  pc: { w:800, h:600, sc:0.74, label:'PC팝업_800x600' },
+  mo: { w:428, h:540, sc:0.90, label:'모바일팝업_428x540' },
+  kt: { w:800, h:800, sc:0.74, label:'카톡플친_800x800' },
+};
+// 카드 가로 너비 (날짜 개수별, 사이즈별)
+const CARD_W = {
+  pc: { 1:280, 2:420, 3:580, 4:700 },
+  mo: { 1:220, 2:310, 3:370, 4:400 },
+  kt: { 1:320, 2:500, 3:670, 4:740 },
+};
+
+let days = [
+  { dow:'월요일', date:'16', name:'설 연휴', type:'hujin',  time:'' },
+  { dow:'화요일', date:'17', name:'설날',    type:'hujin',  time:'' },
+  { dow:'수요일', date:'18', name:'설 연휴', type:'normal', time:'AM 10시 - PM 9시' },
+];
+
+const BADGE     = { hujin:'휴진', normal:'정상진료', danchu:'단축진료' };
+const BCLS      = { hujin:'badge-hujin', normal:'badge-normal', danchu:'badge-danchu' };
+const BADGE_COL = { hujin:'#c0392b', normal:'#AE8D4A', danchu:'#4552EF' };
+const LOGO_H    = { pc:'24px', mo:'18px', kt:'20px' };
+const MONTH_EN  = ['January','February','March','April','May','June',
+                   'July','August','September','October','November','December'];
+
+/* ── 사이즈 전환 ── */
+function switchSize(s) {
+  currentSize = s;
+  document.querySelectorAll('.canvas').forEach(c => c.classList.remove('active'));
+  document.getElementById('cv-' + s).classList.add('active');
+  document.querySelectorAll('.size-tab').forEach((b,i) => {
+    b.classList.toggle('active', ['pc','mo','kt'][i] === s);
+  });
+  applyScale();
+}
+function applyScale() {
+  const cfg = SIZES[currentSize];
+  const outer = document.getElementById('canvas-outer');
+  outer.style.transform = `scale(${cfg.sc})`;
+  outer.style.width  = cfg.w + 'px';
+  outer.style.height = cfg.h + 'px';
+  outer.parentElement.style.minHeight = Math.ceil(cfg.h * cfg.sc + 20) + 'px';
+}
+
+/* ── 전체 렌더 ── */
+function renderAll() {
+  const month = +document.getElementById('inp-month').value;
+  const sub = MONTH_EN[month - 1] + ' schedule';
+  const t1  = month + '월 공휴일';
+  const t2  = '진료일정 안내';
+  ['pc','mo','kt'].forEach(s => {
+    document.getElementById('sub-' + s).textContent = sub;
+    document.getElementById('title-' + s).innerHTML = (s === 'pc') ? (t1 + ' ' + t2) : (t1 + '<br>' + t2);
+    const logoEl = document.getElementById('logo-' + s);
+    logoEl.src = LOGO_B64;
+    logoEl.style.height = LOGO_H[s];
+    logoEl.style.width = 'auto';
+    buildCard(s);
+  });
+}
+
+function buildCard(s) {
+  const card = document.getElementById('card-' + s);
+  const n = days.length;
+
+  // 모바일·카톡에서 4개일 때만 2×2 그리드 전환
+  const useGrid = ((s === 'mo' || s === 'kt') && n === 4);
+  card.classList.toggle('grid2x2', useGrid);
+
+  // 너비: 그리드 모드는 CSS !important로 고정, 그 외 동적 적용
+  if (!useGrid) {
+    card.style.width = (CARD_W[s][n] || CARD_W[s][4]) + 'px';
+  } else {
+    card.style.width = '';
+  }
+
+  card.innerHTML = '';
+  days.forEach(d => {
+    const col = document.createElement('div');
+    col.className = 'day-col type-' + d.type;
+    col.innerHTML =
+      `<div class="dc-dow">${d.dow}</div>` +
+      `<div class="dc-date">${d.date}</div>` +
+      `<div class="dc-name">${d.name}</div>` +
+      `<span class="dc-badge ${BCLS[d.type]}">${BADGE[d.type]}</span>` +
+      (d.time ? `<div class="dc-time">${d.time}</div>` : '');
+    card.appendChild(col);
+  });
+}
+
+/* ── 날짜 항목 아코디언 UI ── */
+function renderDayList() {
+  const list = document.getElementById('day-list');
+  list.innerHTML = '';
+  days.forEach((d, i) => {
+    const item = document.createElement('div');
+    item.className = 'day-item' + (i === days.length - 1 ? ' open' : '');
+    item.innerHTML = `
+      <div class="day-item-head" onclick="toggleItem(${i})">
+        <span class="day-item-label">
+          ${i+1}번째 날짜 · ${d.date}일
+          <span class="day-item-badge" style="background:${BADGE_COL[d.type]}">${BADGE[d.type]}</span>
+        </span>
+        <div class="day-item-right">
+          <button class="day-item-del" onclick="removeDay(event,${i})" title="삭제">×</button>
+          <span class="day-item-arrow">▼</span>
+        </div>
+      </div>
+      <div class="day-item-body">
+        <div class="fi-row"><label>요일</label><input type="text" value="${d.dow}" oninput="setDay(${i},'dow',this.value)" placeholder="월요일"></div>
+        <div class="fi-row"><label>날짜</label><input type="text" value="${d.date}" oninput="setDay(${i},'date',this.value)" placeholder="16"></div>
+        <div class="fi-row"><label>이름</label><input type="text" value="${d.name}" oninput="setDay(${i},'name',this.value)" placeholder="설날"></div>
+        <div class="fi-row"><label>유형</label>
+          <select onchange="setDay(${i},'type',this.value)">
+            <option value="hujin"  ${d.type==='hujin' ?'selected':''}>휴진</option>
+            <option value="normal" ${d.type==='normal'?'selected':''}>정상진료</option>
+            <option value="danchu" ${d.type==='danchu'?'selected':''}>단축진료</option>
+          </select>
+        </div>
+        <div class="fi-row"><label>시간</label><input type="text" value="${d.time}" oninput="setDay(${i},'time',this.value)" placeholder="AM 10시 - PM 9시"></div>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+  updateAddBtn();
+}
+
+function toggleItem(i) {
+  const items = document.querySelectorAll('.day-item');
+  items[i].classList.toggle('open');
+}
+
+function setDay(i, k, v) {
+  days[i][k] = v;
+  // 헤더 라벨 실시간 업데이트
+  const items = document.querySelectorAll('.day-item');
+  if (items[i]) {
+    const label = items[i].querySelector('.day-item-label');
+    label.innerHTML = `${i+1}번째 날짜 · ${days[i].date}일 <span class="day-item-badge" style="background:${BADGE_COL[days[i].type]}">${BADGE[days[i].type]}</span>`;
+  }
+  renderAll();
+}
+
+function addDay() {
+  if (days.length >= MAX_DAYS) {
+    // 흔들기 애니메이션
+    const btn = document.getElementById('btn-add-day');
+    btn.classList.add('maxed');
+    document.getElementById('max-notice').classList.add('show');
+    setTimeout(() => { btn.classList.remove('maxed'); }, 400);
+    return;
+  }
+  days.push({ dow:'요일', date:'1', name:'일정명', type:'hujin', time:'' });
+  renderDayList();
+  renderAll();
+}
+
+function removeDay(e, i) {
+  e.stopPropagation();
+  if (days.length <= 1) return;
+  days.splice(i, 1);
+  renderDayList();
+  renderAll();
+}
+
+function updateAddBtn() {
+  const btn = document.getElementById('btn-add-day');
+  const notice = document.getElementById('max-notice');
+  if (days.length >= MAX_DAYS) {
+    btn.textContent = '최대 4개 도달';
+    btn.classList.add('maxed');
+    notice.classList.add('show');
+  } else {
+    btn.textContent = '＋ 날짜 추가';
+    btn.classList.remove('maxed');
+    notice.classList.remove('show');
+  }
+}
+
+/* ── 배경 ── */
+function changeBg(input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    ['pc','mo','kt'].forEach(s => {
+      const img = document.getElementById('bg-' + s);
+      img.src = e.target.result; img.style.display = 'block';
+      document.getElementById('ov-' + s).style.display = 'block';
+    });
+    applyBg();
+  };
+  r.readAsDataURL(f);
+}
+function applyBg() {
+  const sc = +document.getElementById('sl-scale').value;
+  const x  = +document.getElementById('sl-x').value;
+  const y  = +document.getElementById('sl-y').value;
+  document.getElementById('val-scale').textContent = sc + '%';
+  document.getElementById('val-x').textContent = x + '%';
+  document.getElementById('val-y').textContent = y + '%';
+  const tx = (x-50)*0.5, ty = (y-50)*0.5;
+  ['pc','mo','kt'].forEach(s => {
+    const img = document.getElementById('bg-' + s);
+    if (img) img.style.transform = `scale(${sc/100}) translate(${tx}%, ${ty}%)`;
+  });
+}
+function resetBg() {
+  document.getElementById('sl-scale').value = 100;
+  document.getElementById('sl-x').value = 50;
+  document.getElementById('sl-y').value = 50;
+  applyBg();
+  ['pc','mo','kt'].forEach(s => {
+    const img = document.getElementById('bg-' + s);
+    img.style.display = 'none'; img.src = '';
+    document.getElementById('ov-' + s).style.display = 'none';
+  });
+}
+
+/* ── 저장 ── */
+function saveImg() {
+  const el = document.getElementById('cv-' + currentSize);
+  const outer = document.getElementById('canvas-outer');
+  const prev = outer.style.transform;
+  outer.style.transform = 'scale(1)';
+  document.body.classList.add('exporting');
+  html2canvas(el, { scale:2, useCORS:true, allowTaint:true }).then(canvas => {
+    document.body.classList.remove('exporting');
+    outer.style.transform = prev;
+    const a = document.createElement('a');
+    a.download = `르샤인_${SIZES[currentSize].label}.png`;
+    a.href = canvas.toDataURL('image/png');
+    a.click();
+  });
+}
+function savePdf() {
+  const el = document.getElementById('cv-' + currentSize);
+  const cfg = SIZES[currentSize];
+  const outer = document.getElementById('canvas-outer');
+  const prev = outer.style.transform;
+  outer.style.transform = 'scale(1)';
+  document.body.classList.add('exporting');
+  html2canvas(el, { scale:2, useCORS:true, allowTaint:true }).then(canvas => {
+    document.body.classList.remove('exporting');
+    outer.style.transform = prev;
+    const { jsPDF } = window.jspdf;
+    const mW = cfg.w*0.2646, mH = cfg.h*0.2646;
+    const pdf = new jsPDF({ orientation: mW>mH?'landscape':'portrait', unit:'mm', format:[mW,mH] });
+    pdf.addImage(canvas.toDataURL('image/png'),'PNG',0,0,mW,mH);
+    pdf.save(`르샤인_${cfg.label}.pdf`);
+  });
+}
+
+// 초기화
+applyScale();
+renderDayList();
+renderAll();
+</script>
+</body>
+</html>

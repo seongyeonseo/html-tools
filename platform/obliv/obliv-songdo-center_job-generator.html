@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오블리브의원 재활의학센터 채용공고 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Brush+Script&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="assets/assets.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 100vh; }
+
+/* ── 레이아웃 ── */
+.app-wrapper { display: flex; width: 1260px; margin: 0 auto; padding: 32px 0; align-items: flex-start; gap: 28px; }
+.preview-area { flex: 1; min-width: 0; }
+#poster-canvas { width: 860px; background: #fff; }
+
+/* ── 엣지 이미지 ── */
+.poster-edge-img { width: 100%; display: none; vertical-align: top; }
+
+/* ── 메인 타이틀 섹션 ── */
+.title-section { padding: 80px 50px 0; background: #fff; }
+.title-line {
+  font-family: "Pretendard", sans-serif;
+  font-size: 90px; line-height: 110px; color: #212121;
+  letter-spacing: -2.7px; white-space: nowrap;
+}
+.title-line .t-bold { font-weight: 700; }
+.title-line .t-reg  { font-weight: 400; }
+.title-job {
+  font-family: "Nanum Brush Script", cursive;
+  font-weight: 400; font-size: 76px; line-height: 118px;
+  color: #9a9a9a; letter-spacing: -0.76px;
+  display: inline-block;
+  border-bottom: 2px solid #9a9a9a;
+  padding-bottom: 0px;
+  margin-bottom: -6px;
+}
+
+/* ── 모집분야/자격요건 뱃지 ── */
+.recruit-badges { display: flex; flex-direction: column; gap: 70px; padding: 120px 0 120px; }
+.recruit-badge-item { display: inline-block; }
+.badge-label {
+  display: inline-block; background: #d79d64; color: #fff;
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 29px; line-height: 44px; padding: 3px 11px;
+  letter-spacing: -0.58px; white-space: nowrap; position: relative; z-index: 1;
+}
+.badge-content {
+  display: block; font-family: "Pretendard", sans-serif; font-weight: 600;
+  font-size: 50px; line-height: 60px; color: #212121;
+  letter-spacing: -1.5px; margin-top: 16px; white-space: nowrap;
+}
+
+/* ── 띠배너 ── */
+.obliv-band {
+  background: #d79d64; height: 39px; display: flex;
+  align-items: center; overflow: hidden; white-space: nowrap;
+  padding: 0 23px; gap: 140px;
+}
+.obliv-band img {
+  height: 22px; object-fit: contain; flex-shrink: 0; filter: brightness(0) invert(1);
+}
+
+/* ── 클리닉 내부 사진 ── */
+.clinic-photo-wrap { width: 100%; height: 450px; overflow: hidden; background: #ddd; }
+.clinic-photo-wrap img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+
+/* ── 공통 콘텐츠 섹션 ── */
+.content-section { padding: 60px 100px; background: #fff; }
+.section-title-h2 {
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 42px; line-height: 66px; color: #222;
+  letter-spacing: -0.84px; margin-bottom: 20px;
+}
+.section-bullets {
+  font-family: "Pretendard", sans-serif; font-weight: 400;
+  font-size: 28px; line-height: 44px; color: #222;
+  letter-spacing: -0.56px; white-space: pre-wrap;
+}
+
+/* ── 성장 차트 ── */
+.growth-chart { margin-top: 40px; }
+.growth-row { display: flex; align-items: center; margin-bottom: 14px; }
+.growth-year {
+  font-family: "Pretendard", sans-serif; font-weight: 400;
+  font-size: 18px; color: #222; width: 90px; text-align: right;
+  letter-spacing: -0.36px; flex-shrink: 0; padding-right: 10px;
+}
+.growth-year.gold { font-weight: 800; font-size: 23px; color: #d79d64; letter-spacing: -0.46px; }
+.growth-bar-wrap { flex: 1; height: 22px; margin: 0 10px; }
+.growth-bar { height: 22px; background: rgba(215,157,100,0.59); }
+.growth-bar.gold { background: #d79d64; }
+.growth-value { font-family: "Pretendard", sans-serif; font-weight: 700; font-size: 16px; color: #d79d64; flex-shrink: 0; letter-spacing: -0.32px; min-width: 90px; }
+.growth-value.big { font-size: 20px; letter-spacing: -0.4px; }
+.growth-note { font-family: "Pretendard", sans-serif; font-size: 14px; color: #222; letter-spacing: -0.28px; text-align: right; margin-top: 6px; }
+
+/* ── 하이라이트 박스 ── */
+.highlight-box { background: #f2f2f2; border-radius: 20px; padding: 22px 30px; margin-top: 20px; }
+.highlight-box-text {
+  font-family: "Pretendard", sans-serif; font-weight: 500;
+  font-size: 28px; line-height: 40px; color: #222;
+  letter-spacing: -0.56px; white-space: pre-wrap;
+}
+.highlight-box-sub {
+  font-family: "Pretendard", sans-serif; font-weight: 400;
+  font-size: 18px; line-height: 45px; color: #222; letter-spacing: -0.36px;
+}
+
+/* ── 근무 여건 서브 섹션 ── */
+.work-cond-row { margin-bottom: 28px; }
+.work-cond-row:last-child { margin-bottom: 0; }
+.wc-subtitle-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.wc-subtitle { font-family: "Pretendard", sans-serif; font-weight: 400; font-size: 28px; line-height: 44px; color: #222; letter-spacing: -0.56px; flex: 1; }
+.wc-delete-btn { background: none; border: 1px solid #ddd; border-radius: 50%; width: 30px; height: 30px; font-size: 13px; color: #bbb; cursor: pointer; flex-shrink: 0; line-height: 1; padding: 0; transition: all 0.15s; margin-left: 8px; }
+.wc-delete-btn:hover { background: #fff0f0; border-color: #e00; color: #e00; }
+.wc-add-row-btn { width: 100%; margin-top: 16px; background: none; border: 1.5px dashed #ccc; border-radius: 14px; padding: 10px 0; font-size: 15px; font-weight: 600; font-family: "Pretendard", sans-serif; color: #aaa; cursor: pointer; letter-spacing: -0.04em; transition: all 0.15s; }
+.wc-add-row-btn:hover { border-color: #1010FF; color: #1010FF; background: #f0f0ff; }
+.exporting .wc-delete-btn, .exporting .wc-add-row-btn { display: none !important; }
+.wc-box { background: #f2f2f2; border-radius: 20px; padding: 14px 30px; }
+.wc-box-text { font-family: "Pretendard", sans-serif; font-weight: 500; font-size: 28px; line-height: 40px; color: #222; letter-spacing: -0.56px; white-space: pre-wrap; }
+.wc-box-text-detail { font-family: "Pretendard", sans-serif; font-weight: 500; font-size: 28px; line-height: 40px; color: #222; letter-spacing: -0.56px; white-space: pre-wrap; }
+
+/* ── 근무 시간 ── */
+.work-time-table { margin-top: 20px; }
+.wt-row { display: flex; align-items: flex-start; padding: 10px 0; }
+.wt-label { font-family: "Pretendard", sans-serif; font-weight: 800; font-size: 28px; color: #d79d64; letter-spacing: -0.56px; width: 130px; flex-shrink: 0; line-height: 44px; }
+.wt-val { font-family: "Pretendard", sans-serif; font-weight: 400; font-size: 28px; color: #222; letter-spacing: -0.56px; line-height: 44px; flex: 1; white-space: pre-wrap; }
+
+/* ── 채용 프로세스 ── */
+.process-steps {
+  display: flex; align-items: flex-start; flex-wrap: wrap;
+  margin-top: 30px; gap: 0;
+}
+.process-step { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.step-num {
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 20px; color: #d79d64; letter-spacing: -0.4px; line-height: 1.6;
+}
+.step-name {
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 28px; color: #222; letter-spacing: -0.56px;
+  line-height: 1.3; min-width: 100px;
+}
+.step-arrow {
+  font-size: 26px; color: #d79d64;
+  margin: 28px 16px 0; line-height: 1.6; flex-shrink: 0;
+}
+
+/* ── 탭 패널 ── */
+.tab-panel { display: block; }
+.tab-panel.hidden { display: none; }
+.tab-btn {
+  flex: 1; padding: 7px 4px; font-size: 11px; font-weight: 700;
+  font-family: "Pretendard", sans-serif; cursor: pointer;
+  border: 1.5px solid #ccc; border-radius: 6px;
+  background: #fff; color: #888; letter-spacing: -0.03em; transition: all 0.15s;
+}
+.tab-btn.active { background: #1010FF; color: #fff; border-color: #1010FF; }
+
+/* ── 피부/데스크 섹션 ── */
+.skin-section { padding: 50px 50px 0; background: #fff; }
+.skin-section:last-of-type { padding-bottom: 50px; }
+.skin-box { border: 1px solid #6e6e6e; border-radius: 20px; padding: 36px 40px; }
+.skin-box-title {
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 42px; line-height: 66px; color: #222;
+  letter-spacing: -0.84px; margin-bottom: 16px;
+}
+.skin-box-bullets {
+  font-family: "Pretendard", sans-serif; font-weight: 400;
+  font-size: 28px; line-height: 44px; color: #222; letter-spacing: -0.56px;
+}
+.skin-box-bullets .gold { font-weight: 700; color: #d79d64; }
+.skin-wt-row { display: flex; align-items: flex-start; gap: 24px; margin-bottom: 16px; }
+.skin-wt-row:last-child { margin-bottom: 0; }
+.skin-wt-label {
+  font-family: "Pretendard", sans-serif; font-weight: 800;
+  font-size: 28px; line-height: 44px; color: #d79d64;
+  letter-spacing: -0.56px; white-space: nowrap; min-width: 100px;
+}
+.skin-wt-val {
+  font-family: "Pretendard", sans-serif; font-weight: 400;
+  font-size: 28px; line-height: 44px; color: #222; letter-spacing: -0.56px;
+}
+
+/* ── 복리후생 섹션 ── */
+.benefits-section { background: #d79d64; padding: 72px 50px; }
+.benefits-inner { background: #fff; border-radius: 20px; overflow: hidden; }
+.benefits-title {
+  font-family: "Pretendard", sans-serif; font-weight: 700;
+  font-size: 42px; line-height: 66px; color: #212121;
+  letter-spacing: -0.84px; padding: 32px 50px 10px;
+}
+.benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+.benefit-cell {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 47px 40px; text-align: center;
+  border-bottom: 1px solid #f0f0f0;
+}
+.benefit-cell.hidden { display: none; }
+.benefit-cell.empty  { visibility: hidden; border-bottom: none; }
+.benefit-cell-icon { width: 60px; height: 60px; object-fit: contain; display: block; margin-bottom: 13px; }
+.benefit-cell-title { font-family: "Pretendard", sans-serif; font-weight: 600; font-size: 26px; line-height: 34px; color: #cd6d2e; letter-spacing: -0.52px; margin-bottom: 10px; }
+.benefit-cell-desc { font-family: "Pretendard", sans-serif; font-weight: 400; font-size: 18px; line-height: 26px; color: #222; letter-spacing: -0.4px; }
+
+/* ── contenteditable ── */
+[contenteditable]:focus { outline: 2px solid rgba(16,16,255,0.25); border-radius: 3px; }
+
+/* ── 사이드바 ── */
+.sidebar { width: 310px; flex-shrink: 0; position: sticky; top: 32px; max-height: calc(100vh - 64px); overflow-y: auto; overflow-x: hidden; }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+.hint-box { font-size: 11px; color: #666; background: #f6f6ff; border: 1px solid #dcdcff; border-radius: 6px; padding: 8px 11px; margin-bottom: 14px; line-height: 1.7; letter-spacing: -0.02em; }
+.hint-box strong { color: #1010FF; font-weight: 700; }
+
+.ctrl-section { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e0e0e0; }
+.ctrl-section:last-of-type { border-bottom: none; }
+.ctrl-label { font-size: 12px; font-weight: 700; color: #1010FF; letter-spacing: -0.04em; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
+.ctrl-label::after { content: "▾"; font-size: 10px; transition: transform 0.2s; }
+.ctrl-section.collapsed .ctrl-label { margin-bottom: 0; }
+.ctrl-section.collapsed .ctrl-label::after { transform: rotate(-90deg); }
+.ctrl-section.collapsed .ctrl-body { display: none; }
+
+/* 복리후생 토글 */
+.benefit-toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.benefit-toggle-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
+  font-size: 11px; font-weight: 600; color: #333;
+  font-family: "Pretendard", sans-serif; cursor: pointer; letter-spacing: -0.02em;
+}
+.benefit-toggle-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0; }
+
+/* 이미지 URL 입력 */
+.img-input-wrap { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.img-input-label { font-size: 11px; color: #555; letter-spacing: -0.02em; }
+.img-input { width: 100%; font-size: 10px; padding: 5px 7px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; color: #333; }
+.img-input:focus { outline: 1px solid #1010FF; border-color: #1010FF; }
+.btn-apply-img { background: #f0f0ff; border: 1px solid #1010FF; color: #1010FF; border-radius: 4px; padding: 5px 0; font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; width: 100%; letter-spacing: -0.02em; }
+.btn-apply-img:hover { background: #e0e0ff; }
+
+.btn-export { width: 100%; background: #1010FF; color: #fff; border: none; border-radius: 7px; padding: 12px 0; font-size: 13px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 8px; transition: background 0.15s; letter-spacing: -0.04em; }
+.btn-export:hover { background: #0000cc; }
+.btn-export:disabled { background: #888; cursor: default; }
+
+.btn-save-history { width: 100%; background: #fff; border: 1.5px solid #1010FF; color: #1010FF; border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px; letter-spacing: -0.03em; transition: background 0.15s; }
+.btn-save-history:hover { background: #f0f0ff; }
+.btn-reset { width: 100%; background: #fff; border: 1.5px solid #e00; color: #e00; border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px; letter-spacing: -0.03em; transition: background 0.15s; }
+.btn-reset:hover { background: #fff0f0; }
+.history-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+.history-item { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 5px; }
+.history-item button.load { flex: 1; background: none; border: none; cursor: pointer; text-align: left; font-size: 11px; font-weight: 600; color: #333; font-family: "Pretendard", sans-serif; letter-spacing: -0.02em; }
+.history-item button.load:hover { color: #1010FF; }
+.history-item button.del { background: none; border: none; cursor: pointer; font-size: 13px; color: #ccc; line-height: 1; padding: 0; }
+.history-item button.del:hover { color: #e00; }
+.history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; letter-spacing: -0.02em; }
+</style>
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ── 포스터 ── -->
+  <div class="preview-area">
+  <div id="poster-canvas">
+
+    <!-- 상단 이미지 -->
+    <img id="top-edge-img" class="poster-edge-img" src="" style="width:100%;display:none;vertical-align:top">
+
+    <!-- ① 메인 타이틀 -->
+    <div class="title-section">
+      <div class="title-line"><span class="t-bold" id="clinic-name-span">도수 클리닉</span><span class="t-reg">에서</span></div>
+      <div class="title-line t-reg">경력을 쌓을</div>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <div class="title-job" contenteditable="true">도수 치료사</div>
+        <div class="title-line t-reg" style="margin-bottom:6px;">를 모십니다.</div>
+      </div>
+
+      <div class="recruit-badges">
+        <div class="recruit-badge-item">
+          <span class="badge-label">모집 분야</span>
+          <span class="badge-content" contenteditable="true">도수 클리닉 도수 치료사</span>
+        </div>
+        <div class="recruit-badge-item">
+          <span class="badge-label">자격 요건</span>
+          <span class="badge-content" contenteditable="true">경력 무관&#10;물리치료사 자격증 필수</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 띠배너 -->
+    <div class="obliv-band">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+      <img class="band-logo" src="" alt="Obliv Clinic">
+    </div>
+
+    <!-- ③ 클리닉 내부 사진 -->
+    <div class="clinic-photo-wrap">
+      <img id="clinic-interior-img" src="" alt="오블리브의원 재활의학센터 내부">
+    </div>
+
+    <!-- ══ 탭 패널 A: 재활의학센터 ══ -->
+    <div class="tab-panel" id="panel-rehab">
+
+    <!-- ④ 대규모 확장 -->
+    <div class="content-section">
+      <h2 class="section-title-h2" contenteditable="true">❗대규모 확장❗</h2>
+      <div class="section-bullets" contenteditable="true">・ 개원 이후, 꾸준히 성장!</div>
+      <div class="growth-chart">
+        <div class="growth-row">
+          <div class="growth-year" contenteditable="true">23년 4월</div>
+          <div class="growth-bar-wrap"><div class="growth-bar" style="width:31%"></div></div>
+          <div class="growth-value" contenteditable="true">600명</div>
+        </div>
+        <div class="growth-row">
+          <div class="growth-year" contenteditable="true">24년 1월</div>
+          <div class="growth-bar-wrap"><div class="growth-bar" style="width:59%"></div></div>
+          <div class="growth-value" contenteditable="true">1133명</div>
+        </div>
+        <div class="growth-row">
+          <div class="growth-year" contenteditable="true">24년 12월</div>
+          <div class="growth-bar-wrap"><div class="growth-bar" style="width:77%"></div></div>
+          <div class="growth-value" contenteditable="true">1386명</div>
+        </div>
+        <div class="growth-row">
+          <div class="growth-year gold" contenteditable="true">25년</div>
+          <div class="growth-bar-wrap"><div class="growth-bar gold" style="width:100%"></div></div>
+          <div class="growth-value big" contenteditable="true">최대 1500명~</div>
+        </div>
+        <div class="growth-note">*월 내원객 수</div>
+      </div>
+      <div class="section-bullets" contenteditable="true" style="margin-top:28px;">・ 25년 100평 추가 오픈! (총 규모 200평!) 개인치료룸 총 21개!
+・ 이에, 전문 도수 치료사 10명 추가 채용 중!</div>
+    </div>
+
+    <!-- ⑤ 최고의 급여 조건 -->
+    <div class="content-section">
+      <h2 class="section-title-h2">최고의 급여 조건</h2>
+      <div class="section-bullets" contenteditable="true">・ 최소 월 300만원 (세전) 보장
+・ 최대 30% 인센티브, 인천/경기권 최고 수준의 급여!</div>
+      <div class="highlight-box">
+        <div class="highlight-box-text" contenteditable="true">월 평균 <strong>500만원 ~ 최고 700만원까지도 가능!</strong></div>
+        <div class="highlight-box-sub" contenteditable="true">*위 급여는 개인차가 있으며, 최고 급여의 경우 개인 능력에 따라 달라집니다.</div>
+      </div>
+      <div id="salary-rows-container"></div>
+      <button class="wc-add-row-btn" onclick="addSalaryRow()">+ 항목 추가</button>
+    </div>
+
+    <!-- ⑥ 최고의 근무 여건 -->
+    <div class="content-section">
+      <h2 class="section-title-h2">최고의 근무 여건</h2>
+      <div id="wc-rows-container"></div>
+      <button class="wc-add-row-btn" onclick="addWcRow()">+ 항목 추가</button>
+    </div>
+
+    <!-- ⑦ 최고의 도수 교육 제공 -->
+    <div class="content-section">
+      <h2 class="section-title-h2">최고의 도수 교육 제공</h2>
+      <div class="section-bullets" contenteditable="true">・ 인천/경기권 1등 도수 클리닉의 차별화된 교육 시스템 제공</div>
+      <div class="highlight-box">
+        <div class="highlight-box-text" contenteditable="true">체육회 트레이너 출신 센터장님께 받는 근막치료 교육
+입사 전 충분한 학습 시간과 교육을 통한 전문성 향상 기회!
+외부교육 희망시 교육 수강 지원</div>
+        <div class="highlight-box-sub" contenteditable="true">*오블리브 도수 클리닉은 치료사님의 성장을 지원합니다!</div>
+      </div>
+      <div id="edu-rows-container"></div>
+      <button class="wc-add-row-btn" onclick="addEduRow()">+ 항목 추가</button>
+    </div>
+
+    <!-- ⑧ 근무 시간 -->
+    <div class="content-section">
+      <h2 class="section-title-h2">근무 시간</h2>
+      <div class="work-time-table">
+        <div class="wt-row">
+          <div class="wt-label">근무일수</div>
+          <div class="wt-val" contenteditable="true">주 4일</div>
+        </div>
+        <div class="wt-row">
+          <div class="wt-label">근무시간</div>
+          <div class="wt-val" contenteditable="true">월 - 금&nbsp;&nbsp;&nbsp;10:00 - 21:00
+토&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10:00 - 17:00</div>
+        </div>
+        <div class="wt-row">
+          <div class="wt-label">휴게시간</div>
+          <div class="wt-val" contenteditable="true">점심 1시간, 저녁휴게 30분</div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /panel-rehab -->
+
+    <!-- ══ 탭 패널 B: 피부/데스크 ══ -->
+    <div class="tab-panel hidden" id="panel-skin">
+
+      <!-- 담당 업무 -->
+      <div class="skin-section">
+        <div class="skin-box">
+          <div class="skin-box-title">담당 업무</div>
+          <div class="skin-box-bullets" contenteditable="true">・ 접수/수납/예약
+・ 고객 응대</div>
+        </div>
+      </div>
+
+      <!-- 자격 요건 / 우대사항 -->
+      <div class="skin-section">
+        <div class="skin-box">
+          <div class="skin-box-title">자격 요건 / 우대사항</div>
+          <div class="skin-box-bullets" contenteditable="true">・ 실비보험 데스크 업무 경력자 우대
+・ 간호조무사 자격증 소유자 우대
+・ 실무 경력 우대
+・ 친절한 서비스 마인드 소유자 우대
+・ 장기근속자 우대
+・ 즉시 출근 가능자 우대</div>
+        </div>
+      </div>
+
+      <!-- 근무 조건 -->
+      <div class="skin-section">
+        <div class="skin-box">
+          <div class="skin-box-title">근무 조건</div>
+          <div class="skin-box-bullets" contenteditable="true">・ 3개월 계약직 (평가에 따라 정규직 전환 가능)
+・ 월급 235만원 <span class="gold">(정규직 전환시 250만원으로 인상!)</span></div>
+        </div>
+      </div>
+
+      <!-- 근무 시간 -->
+      <div class="skin-section" style="padding-bottom:50px;">
+        <div class="skin-box">
+          <div class="skin-box-title">근무 시간</div>
+          <div class="skin-wt-row">
+            <div class="skin-wt-label">근무시간</div>
+            <div class="skin-wt-val" contenteditable="true">월 - 목&nbsp;&nbsp;9:30 - 20:00<br>금&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9:30 - 21:00<br>토&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;9:30 - 16:00</div>
+          </div>
+          <div class="skin-wt-row">
+            <div class="skin-wt-label">휴게시간</div>
+            <div class="skin-wt-val" contenteditable="true">점심 1시간 (금요일엔 30분 더 보장!)</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /panel-skin -->
+
+    <!-- ⑨ 복리후생 -->
+    <div class="benefits-section">
+      <div class="benefits-inner">
+        <div class="benefits-title">복리후생</div>
+        <div class="benefits-grid">
+
+          <div class="benefit-cell" id="bc-1" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-1-icon" src="" alt="">
+            <div class="benefit-cell-title">법적 연차제공</div>
+            <div class="benefit-cell-desc">1년 미만 11개<br>1년 이상 15개</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-2" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-2-icon" src="" alt="">
+            <div class="benefit-cell-title">공휴일은 다 휴무</div>
+            <div class="benefit-cell-desc">만약에라도 근무 시<br>일급 1.5배 지급</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-3" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-3-icon" src="" alt="">
+            <div class="benefit-cell-title">직원 할인혜택</div>
+            <div class="benefit-cell-desc">본인 및 가족시술 시<br>직원가 시술 혜택</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-4" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-4-icon" src="" alt="">
+            <div class="benefit-cell-title">직원 유니폼 제공</div>
+            <div class="benefit-cell-desc">몸만 오세요!</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-5" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-5-icon" src="" alt="">
+            <div class="benefit-cell-title">간식 제공</div>
+            <div class="benefit-cell-desc">직원 휴게실 리모델링 후<br>원내 스낵바 구비</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-6" style="border-bottom:1px solid #f0f0f0;">
+            <img class="benefit-cell-icon" id="bc-6-icon" src="" alt="">
+            <div class="benefit-cell-title">명절 선물</div>
+            <div class="benefit-cell-desc"></div>
+          </div>
+
+          <div class="benefit-cell" id="bc-7" style="border-bottom:none;">
+            <img class="benefit-cell-icon" id="bc-7-icon" src="" alt="">
+            <div class="benefit-cell-title">지인스카웃<br>인센티브</div>
+            <div class="benefit-cell-desc">직원 소개시<br>포상급 지급</div>
+          </div>
+
+          <div class="benefit-cell" id="bc-8" style="border-bottom:none;">
+            <img class="benefit-cell-icon" id="bc-8-icon" src="" alt="">
+            <div class="benefit-cell-title">최고의 복지는<br>동료</div>
+            <div class="benefit-cell-desc">모두 친절한 직원들<br>적응 걱정 No!</div>
+          </div>
+
+          <!-- 9번째 자리 (빈 칸) -->
+          <div class="benefit-cell empty"></div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 하단 이미지 (근무위치 등 이미지 링크) -->
+    <img id="bottom-edge-img" class="poster-edge-img" src="" style="width:100%;display:none;vertical-align:top">
+
+  </div><!-- /poster-canvas -->
+  </div><!-- /preview-area -->
+
+  <!-- ── 사이드바 ── -->
+  <div class="sidebar">
+    <div class="hint-box">
+      <strong>📌 사용법</strong><br>
+      포스터 텍스트를 직접 클릭해 수정하세요.<br>
+      <strong>Ctrl+B</strong>: 굵게 &nbsp; <strong>Ctrl+Shift+X</strong>: 골드 컬러
+    </div>
+
+    <!-- 채용 유형 탭 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">채용 유형</div>
+      <div class="ctrl-body">
+        <div style="display:flex;gap:8px;">
+          <button class="tab-btn active" id="tab-rehab" onclick="switchTab('rehab')">재활의학센터</button>
+          <button class="tab-btn" id="tab-skin" onclick="switchTab('skin')">피부 / 발톱</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 피부/발톱 하단이미지 (skin탭만 표시) -->
+    <div class="ctrl-section" id="skin-bottom-section" style="display:none;">
+      <div class="ctrl-label">하단 이미지</div>
+      <div class="ctrl-body">
+        <div style="display:flex;gap:8px;">
+          <label class="benefit-toggle-item">
+            <input type="radio" name="skin-bottom-type" id="radio-skin-foot" value="foot" checked> 발톱
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="radio" name="skin-bottom-type" id="radio-skin-skin" value="skin"> 피부
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 채용 프로세스 -->
+    <div class="ctrl-section" id="rehab-process-section">
+      <div class="ctrl-label">채용 프로세스</div>
+      <div class="ctrl-body">
+        <div style="display:flex;gap:8px;">
+          <label class="benefit-toggle-item">
+            <input type="radio" name="bottom-type" id="radio-demo-y" value="demo" checked> 데모 진행
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="radio" name="bottom-type" id="radio-demo-n" value="nodemo"> 데모 없음
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 복리후생 표시 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">복리후생 표시</div>
+      <div class="ctrl-body">
+        <div class="benefit-toggle-grid">
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-1" data-bc="bc-1"> 법적 연차제공
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-2" data-bc="bc-2"> 공휴일 휴무
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-3" data-bc="bc-3"> 직원 할인
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-4" data-bc="bc-4"> 유니폼 제공
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-5" data-bc="bc-5"> 간식 제공
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-6" data-bc="bc-6"> 명절 선물
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-7" data-bc="bc-7"> 지인스카웃
+          </label>
+          <label class="benefit-toggle-item">
+            <input type="checkbox" checked id="btog-8" data-bc="bc-8"> 동료 복지
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 내보내기 -->
+    <div class="ctrl-section">
+      <div class="ctrl-label">내보내기</div>
+      <div class="ctrl-body">
+        <button class="btn-export" id="btn-export">이미지로 내보내기</button>
+      </div>
+    </div>
+
+    <!-- 히스토리 -->
+    <div class="ctrl-section collapsed">
+      <div class="ctrl-label">히스토리</div>
+      <div class="ctrl-body">
+        <button class="btn-save-history" id="btn-save-history">현재 상태 저장</button>
+        <ul class="history-list" id="history-list">
+          <li class="history-empty">저장된 히스토리가 없습니다</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- /sidebar -->
+</div><!-- /app-wrapper -->
+
+<script>
+const SAVE_KEY    = 'obliv-rehab-draft';
+const HISTORY_KEY = 'obliv-rehab-history';
+const IMG_KEY     = 'obliv-rehab-imgs';
+const MAX_HISTORY = 20;
+
+// ── 최고의 급여 조건 동적 행 ──
+const SALARY_DEFAULT_ROWS = [];
+
+function renderSalaryRows(rows) {
+  const container = document.getElementById('salary-rows-container');
+  if (!container) return;
+  container.innerHTML = '';
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'work-cond-row';
+    div.innerHTML =
+      '<div class="wc-subtitle-wrap">' +
+        '<div class="wc-subtitle" contenteditable="true">' + row.title + '</div>' +
+        '<button class="wc-delete-btn" onclick="deleteSalaryRow(this)" title="삭제">✕</button>' +
+      '</div>' +
+      '<div class="wc-box">' +
+        '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">' + row.content + '</div>' +
+      '</div>';
+    container.appendChild(div);
+  });
+}
+
+function getSalaryRows() {
+  const rows = [];
+  document.querySelectorAll('#salary-rows-container .work-cond-row').forEach(row => {
+    const title = row.querySelector('.wc-subtitle');
+    const content = row.querySelector('.wc-box-text');
+    rows.push({ title: title ? title.innerHTML : '', content: content ? content.innerHTML : '' });
+  });
+  return rows;
+}
+
+function addSalaryRow() {
+  const container = document.getElementById('salary-rows-container');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'work-cond-row';
+  div.innerHTML =
+    '<div class="wc-subtitle-wrap">' +
+      '<div class="wc-subtitle" contenteditable="true">・ 새 항목</div>' +
+      '<button class="wc-delete-btn" onclick="deleteSalaryRow(this)" title="삭제">✕</button>' +
+    '</div>' +
+    '<div class="wc-box">' +
+      '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">내용을 입력하세요</div>' +
+    '</div>';
+  container.appendChild(div);
+  const newTitle = div.querySelector('.wc-subtitle');
+  if (newTitle) { newTitle.focus(); const r = document.createRange(); r.selectNodeContents(newTitle); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  saveState();
+}
+
+function deleteSalaryRow(btn) {
+  const row = btn.closest('.work-cond-row');
+  if (row) { row.remove(); saveState(); }
+}
+
+// ── 최고의 도수 교육 제공 동적 행 ──
+const EDU_DEFAULT_ROWS = [];
+
+function renderEduRows(rows) {
+  const container = document.getElementById('edu-rows-container');
+  if (!container) return;
+  container.innerHTML = '';
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'work-cond-row';
+    div.innerHTML =
+      '<div class="wc-subtitle-wrap">' +
+        '<div class="wc-subtitle" contenteditable="true">' + row.title + '</div>' +
+        '<button class="wc-delete-btn" onclick="deleteEduRow(this)" title="삭제">✕</button>' +
+      '</div>' +
+      '<div class="wc-box">' +
+        '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">' + row.content + '</div>' +
+      '</div>';
+    container.appendChild(div);
+  });
+}
+
+function getEduRows() {
+  const rows = [];
+  document.querySelectorAll('#edu-rows-container .work-cond-row').forEach(row => {
+    const title = row.querySelector('.wc-subtitle');
+    const content = row.querySelector('.wc-box-text');
+    rows.push({ title: title ? title.innerHTML : '', content: content ? content.innerHTML : '' });
+  });
+  return rows;
+}
+
+function addEduRow() {
+  const container = document.getElementById('edu-rows-container');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'work-cond-row';
+  div.innerHTML =
+    '<div class="wc-subtitle-wrap">' +
+      '<div class="wc-subtitle" contenteditable="true">・ 새 항목</div>' +
+      '<button class="wc-delete-btn" onclick="deleteEduRow(this)" title="삭제">✕</button>' +
+    '</div>' +
+    '<div class="wc-box">' +
+      '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">내용을 입력하세요</div>' +
+    '</div>';
+  container.appendChild(div);
+  const newTitle = div.querySelector('.wc-subtitle');
+  if (newTitle) { newTitle.focus(); const r = document.createRange(); r.selectNodeContents(newTitle); const s = window.getSelection(); s.removeAllRanges(); s.addRange(r); }
+  saveState();
+}
+
+function deleteEduRow(btn) {
+  const row = btn.closest('.work-cond-row');
+  if (row) { row.remove(); saveState(); }
+}
+
+// ── 최고의 근무 여건 기본 행 데이터 ──
+const WC_DEFAULT_ROWS = [
+  { title: '・ 치료에만 집중!', content: '상담팀 &amp; 코디팀 : 환자 예약, 스케줄 관리 지원' },
+  { title: '・ 걱정없는 신환자 수!', content: '- 월 내원 2,000건 이상 / 신환의 경우 월 500명 이상 유입\n- 예약 대기 환자 상시 존재\n- 각 치료사 별 충분한 세션 배정 보장' },
+  { title: '・ 같이 일하기 좋은 동료들', content: '23년 4월 개원 이래, 평균 근속년수 약 2년' }
+];
+
+function renderWcRows(rows) {
+  const container = document.getElementById('wc-rows-container');
+  if (!container) return;
+  container.innerHTML = '';
+  rows.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'work-cond-row';
+    div.innerHTML =
+      '<div class="wc-subtitle-wrap">' +
+        '<div class="wc-subtitle" contenteditable="true">' + row.title + '</div>' +
+        '<button class="wc-delete-btn" onclick="deleteWcRow(this)" title="삭제">✕</button>' +
+      '</div>' +
+      '<div class="wc-box">' +
+        '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">' + row.content + '</div>' +
+      '</div>';
+    container.appendChild(div);
+  });
+}
+
+function getWcRows() {
+  const rows = [];
+  document.querySelectorAll('#wc-rows-container .work-cond-row').forEach(row => {
+    const title = row.querySelector('.wc-subtitle');
+    const content = row.querySelector('.wc-box-text');
+    rows.push({
+      title: title ? title.innerHTML : '',
+      content: content ? content.innerHTML : ''
+    });
+  });
+  return rows;
+}
+
+function addWcRow() {
+  const container = document.getElementById('wc-rows-container');
+  if (!container) return;
+  const div = document.createElement('div');
+  div.className = 'work-cond-row';
+  div.innerHTML =
+    '<div class="wc-subtitle-wrap">' +
+      '<div class="wc-subtitle" contenteditable="true">・ 새 항목</div>' +
+      '<button class="wc-delete-btn" onclick="deleteWcRow(this)" title="삭제">✕</button>' +
+    '</div>' +
+    '<div class="wc-box">' +
+      '<div class="wc-box-text" contenteditable="true" style="white-space:pre-wrap;">내용을 입력하세요</div>' +
+    '</div>';
+  container.appendChild(div);
+  const newTitle = div.querySelector('.wc-subtitle');
+  if (newTitle) {
+    newTitle.focus();
+    const range = document.createRange();
+    range.selectNodeContents(newTitle);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+  saveState();
+}
+
+function deleteWcRow(btn) {
+  const row = btn.closest('.work-cond-row');
+  if (row) { row.remove(); saveState(); }
+}
+
+// contenteditable 요소 중 동적 컨테이너 제외
+function getStaticEditables() {
+  return Array.from(document.querySelectorAll('#poster-canvas [contenteditable]'))
+    .filter(el => !el.closest('#wc-rows-container') && !el.closest('#salary-rows-container') && !el.closest('#edu-rows-container'));
+}
+
+// ── 복리후생 토글 ──
+const BENEFIT_IDS = ['bc-1','bc-2','bc-3','bc-4','bc-5','bc-6','bc-7','bc-8'];
+
+function getBenefitStates() {
+  const states = {};
+  BENEFIT_IDS.forEach(id => {
+    const cell = document.getElementById(id);
+    states[id] = cell ? !cell.classList.contains('hidden') : true;
+  });
+  return states;
+}
+
+function applyBenefitStates(states) {
+  BENEFIT_IDS.forEach((id, idx) => {
+    const cell = document.getElementById(id);
+    const cb   = document.querySelector(`[data-bc="${id}"]`);
+    const show = states[id] !== false;
+    if (cell) cell.classList.toggle('hidden', !show);
+    if (cb)   cb.checked = show;
+  });
+}
+
+document.querySelectorAll('.benefit-toggle-item input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', () => {
+    const bcId = cb.dataset.bc;
+    const cell = document.getElementById(bcId);
+    if (cell) cell.classList.toggle('hidden', !cb.checked);
+    saveState();
+  });
+});
+
+// ── localStorage 자동저장 ──
+function saveState() {
+  const editables = getStaticEditables();
+  const texts  = editables.map(el => el.innerHTML);
+  const bcShow = getBenefitStates();
+  const wcRows = getWcRows();
+  const salaryRows = getSalaryRows();
+  const eduRows = getEduRows();
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify({ texts, bcShow, wcRows, salaryRows, eduRows })); } catch(e) {}
+}
+
+function restoreState() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return;
+  try {
+    const { texts, bcShow, wcRows, salaryRows, eduRows } = JSON.parse(raw);
+    if (wcRows && wcRows.length) renderWcRows(wcRows);
+    if (salaryRows && salaryRows.length) renderSalaryRows(salaryRows);
+    if (eduRows && eduRows.length) renderEduRows(eduRows);
+    const editables = getStaticEditables();
+    editables.forEach((el, i) => { if (texts[i] != null) el.innerHTML = texts[i]; });
+    if (bcShow) applyBenefitStates(bcShow);
+  } catch(e) {}
+}
+
+// ── 이미지 URL 저장/복원 ──
+function gv(id) { return document.getElementById(id)?.value.trim() || ''; }
+function sv(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; }
+
+// ── 하단 이미지 URL 상수 ──
+const BOTTOM_URLS = {
+  demo:   IMG_ASSETS.bottomDemo,
+  nodemo: IMG_ASSETS.bottomNoDemo,
+};
+
+// ── 초기 이미지 세팅 (data URL → canvas taint 없음) ──
+function initAssets() {
+  document.getElementById('top-edge-img').src    = IMG_ASSETS.top;
+  document.getElementById('clinic-interior-img').src = IMG_ASSETS.mid;
+  document.querySelectorAll('.band-logo').forEach(el => el.src = IMG_ASSETS.logo);
+  document.getElementById('bc-1-icon').src = IMG_ASSETS.bc1;
+  document.getElementById('bc-2-icon').src = IMG_ASSETS.bc2;
+  document.getElementById('bc-3-icon').src = IMG_ASSETS.bc3;
+  document.getElementById('bc-4-icon').src = IMG_ASSETS.bc4;
+  document.getElementById('bc-5-icon').src = IMG_ASSETS.bc5;
+  document.getElementById('bc-6-icon').src = IMG_ASSETS.bc6;
+  document.getElementById('bc-7-icon').src = IMG_ASSETS.bc7;
+  document.getElementById('bc-8-icon').src = IMG_ASSETS.bc8;
+}
+
+function getBottomType() {
+  return document.querySelector('input[name="bottom-type"]:checked')?.value || 'demo';
+}
+
+function applyBottomImg() {
+  const url = BOTTOM_URLS[getBottomType()];
+  const el = document.getElementById('bottom-edge-img');
+  if (el) el.src = url;
+}
+
+// 라디오 변경 시 즉시 반영 (저장용)
+document.querySelectorAll('input[name="bottom-type"]').forEach(r => {
+  r.addEventListener('change', () => {
+    applyBottomByTab(localStorage.getItem('obliv-tab') || 'rehab');
+    saveImgs();
+  });
+});
+
+// ── 피부/발톱 하단 이미지 ──
+const SKIN_BOTTOM_URLS = {
+  foot: IMG_ASSETS.bottomFoot,
+  skin: IMG_ASSETS.bottomSkin,
+};
+function getSkinBottomType() {
+  return document.querySelector('input[name="skin-bottom-type"]:checked')?.value || 'foot';
+}
+function applyBottomByTab(tab) {
+  const el = document.getElementById('bottom-edge-img');
+  if (!el) return;
+  if (tab === 'skin') {
+    el.src = SKIN_BOTTOM_URLS[getSkinBottomType()];
+  } else {
+    el.src = BOTTOM_URLS[getBottomType()];
+  }
+}
+document.querySelectorAll('input[name="skin-bottom-type"]').forEach(r => {
+  r.addEventListener('change', () => applyBottomByTab('skin'));
+});
+
+// ── 탭 전환 ──
+function switchTab(tab) {
+  document.getElementById('panel-rehab').classList.toggle('hidden', tab !== 'rehab');
+  document.getElementById('panel-skin').classList.toggle('hidden', tab !== 'skin');
+  document.getElementById('tab-rehab').classList.toggle('active', tab === 'rehab');
+  document.getElementById('tab-skin').classList.toggle('active', tab === 'skin');
+  // 채용 프로세스: rehab만 표시
+  const rehabProc = document.getElementById('rehab-process-section');
+  if (rehabProc) rehabProc.style.display = tab === 'rehab' ? '' : 'none';
+  // 피부/발톱 하단이미지 선택: skin만 표시
+  const skinBot = document.getElementById('skin-bottom-section');
+  if (skinBot) skinBot.style.display = tab === 'skin' ? '' : 'none';
+  // mid 이미지: rehab만 표시
+  const midImg = document.querySelector('.clinic-photo-wrap');
+  if (midImg) midImg.style.display = tab === 'rehab' ? '' : 'none';
+  // '도수 클리닉' 편집: skin탭만 허용
+  const clinicSpan = document.getElementById('clinic-name-span');
+  if (clinicSpan) {
+    if (tab === 'skin') {
+      clinicSpan.contentEditable = 'true';
+      clinicSpan.style.outline = '1.5px dashed #d79d64';
+      clinicSpan.style.borderRadius = '3px';
+    } else {
+      clinicSpan.contentEditable = 'false';
+      clinicSpan.style.outline = '';
+      clinicSpan.style.borderRadius = '';
+    }
+  }
+  // 하단 이미지 적용
+  applyBottomByTab(tab);
+  localStorage.setItem('obliv-tab', tab);
+}
+
+function saveImgs() {
+  const data = { bottomType: getBottomType() };
+  try { localStorage.setItem(IMG_KEY, JSON.stringify(data)); } catch(e) {}
+}
+
+function applyImgs(data) {
+  if (!data) return;
+  // 하단 이미지: 저장된 타입으로 복원
+  const bType = data.bottomType || 'demo';
+  const rdEl = document.getElementById(bType === 'nodemo' ? 'radio-demo-n' : 'radio-demo-y');
+  if (rdEl) rdEl.checked = true;
+  applyBottomImg();
+}
+
+// ── 히스토리 ──
+function getSnapshot() {
+  return { texts: getStaticEditables().map(el => el.innerHTML), bcShow: getBenefitStates(), wcRows: getWcRows(), salaryRows: getSalaryRows(), eduRows: getEduRows() };
+}
+
+function applySnapshot(snap) {
+  if (snap.wcRows && snap.wcRows.length) renderWcRows(snap.wcRows);
+  if (snap.salaryRows && snap.salaryRows.length) renderSalaryRows(snap.salaryRows);
+  if (snap.eduRows && snap.eduRows.length) renderEduRows(snap.eduRows);
+  const editables = getStaticEditables();
+  editables.forEach((el, i) => { if (snap.texts[i] != null) el.innerHTML = snap.texts[i]; });
+  if (snap.bcShow) applyBenefitStates(snap.bcShow);
+}
+
+function loadHistory() { try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; } }
+function saveHistory(list) { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch {} }
+
+function renderHistoryList() {
+  const list = loadHistory();
+  const ul   = document.getElementById('history-list');
+  if (!ul) return;
+  ul.innerHTML = '';
+  if (!list.length) { ul.innerHTML = '<li class="history-empty">저장된 히스토리가 없습니다</li>'; return; }
+  list.forEach((item, i) => {
+    const li = document.createElement('li');
+    li.className = 'history-item';
+    li.innerHTML = `<button class="load">${item.label}</button><button class="del" title="삭제">✕</button>`;
+    li.querySelector('.load').addEventListener('click', () => {
+      if (!confirm(`"${item.label}" 상태로 불러올까요?`)) return;
+      applySnapshot(item.snap); saveState();
+    });
+    li.querySelector('.del').addEventListener('click', () => {
+      const updated = loadHistory().filter((_, idx) => idx !== i);
+      saveHistory(updated); renderHistoryList();
+    });
+    ul.appendChild(li);
+  });
+}
+
+// ── 사이드바 접기/펼치기 ──
+document.querySelectorAll('.ctrl-label').forEach(label => {
+  label.addEventListener('click', () => label.closest('.ctrl-section').classList.toggle('collapsed'));
+});
+
+// ── Ctrl+Shift+X: 골드 컬러 ──
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    const ancestor = sel.getRangeAt(0).commonAncestorContainer;
+    const inEditable = ancestor.nodeType === 3
+      ? ancestor.parentElement.closest('[contenteditable]')
+      : ancestor.closest?.('[contenteditable]');
+    if (!inEditable) return;
+    e.preventDefault();
+    document.execCommand('foreColor', false, '#d79d64');
+  }
+});
+
+// ── 텍스트 자동저장 ──
+let _saveTimer;
+document.getElementById('poster-canvas').addEventListener('input', () => {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 500);
+});
+
+// ── 밴드 로고 화이트 변환 (html2canvas는 CSS filter 미지원) ──
+function toWhiteDataURL(imgEl) {
+  return new Promise(resolve => {
+    const src = imgEl.src;
+    if (!src) return resolve(null);
+    const tmp = new Image();
+    tmp.onload = () => {
+      try {
+        const w = tmp.naturalWidth || 200;
+        const h = tmp.naturalHeight || 80;
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.drawImage(tmp, 0, 0, w, h);
+        const id = ctx.getImageData(0, 0, w, h);
+        for (let i = 0; i < id.data.length; i += 4) {
+          if (id.data[i + 3] > 0) { id.data[i] = 255; id.data[i+1] = 255; id.data[i+2] = 255; }
+        }
+        ctx.putImageData(id, 0, 0);
+        resolve(c.toDataURL('image/png'));
+      } catch(e) { resolve(null); }
+    };
+    tmp.onerror = () => resolve(null);
+    tmp.src = src;
+  });
+}
+
+// ── 이미지 내보내기 ──
+document.getElementById('btn-export').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-export');
+  btn.disabled = true; btn.textContent = '내보내는 중…';
+
+  const posterEl = document.getElementById('poster-canvas');
+  const edgeImgs = document.querySelectorAll('.poster-edge-img');
+  try {
+    posterEl.classList.add('exporting');
+    const SCALE = 1;
+    const MAX_H = 5000;
+
+    // 엣지 이미지 표시
+    edgeImgs.forEach(img => { if (img.getAttribute('src')) img.style.display = 'block'; });
+
+    // 밴드 로고 → 화이트 버전으로 교체 (CSS filter 우회)
+    const bandLogos = [...document.querySelectorAll('.band-logo')];
+    const origSrcs = bandLogos.map(el => el.src);
+    if (IMG_ASSETS.logoWhite) bandLogos.forEach(el => { el.src = IMG_ASSETS.logoWhite; });
+
+    // 이미지 로딩 대기
+    await Promise.all([...posterEl.querySelectorAll('img')].map(img =>
+      img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+    ));
+
+    const posterTop   = posterEl.getBoundingClientRect().top;
+    const totalH      = posterEl.offsetHeight;
+    const safeCutsSet = new Set();
+    posterEl.querySelectorAll('.content-section, .benefits-section').forEach(row => {
+      safeCutsSet.add(Math.round(row.getBoundingClientRect().bottom - posterTop));
+    });
+    const safeCuts = [...safeCutsSet].filter(c => c > 0 && c < totalH).sort((a, b) => a - b);
+
+    const full = await html2canvas(posterEl, {
+      scale: SCALE, useCORS: false, allowTaint: true, backgroundColor: '#ffffff',
+      imageTimeout: 15000,
+    });
+
+    const ranges = [];
+    let s = 0;
+    while (s < full.height) {
+      const idealEnd = s + MAX_H;
+      if (idealEnd >= full.height) { ranges.push([s, full.height]); break; }
+      let bestCut = null;
+      for (let i = safeCuts.length - 1; i >= 0; i--) {
+        const c = safeCuts[i];
+        if (c <= idealEnd && c > s) { bestCut = c; break; }
+      }
+      if (bestCut === null) bestCut = idealEnd;
+      ranges.push([s, bestCut]);
+      s = bestCut;
+    }
+
+    // 마지막 슬라이스가 너무 작거나 거의 흰색이면 이전 슬라이스에 합치기
+    const MIN_SLICE_H = 400;
+    if (ranges.length > 1) {
+      const last = ranges[ranges.length - 1];
+      const lastH = last[1] - last[0];
+      if (lastH < MIN_SLICE_H) {
+        // 마지막 조각 픽셀 샘플링 → 흰색 비율 확인
+        const testC = document.createElement('canvas');
+        testC.width = full.width; testC.height = lastH;
+        testC.getContext('2d').drawImage(full, 0, last[0], full.width, lastH, 0, 0, full.width, lastH);
+        const pixels = testC.getContext('2d').getImageData(0, 0, full.width, lastH).data;
+        let whiteCount = 0;
+        for (let p = 0; p < pixels.length; p += 4) {
+          if (pixels[p] > 240 && pixels[p+1] > 240 && pixels[p+2] > 240) whiteCount++;
+        }
+        const whiteRatio = whiteCount / (pixels.length / 4);
+        if (whiteRatio > 0.95) {
+          // 거의 흰색 → 이전 슬라이스와 합치기
+          ranges[ranges.length - 2][1] = last[1];
+          ranges.pop();
+        }
+      }
+    }
+
+    for (let i = 0; i < ranges.length; i++) {
+      const [y0, y1] = ranges[i];
+      const h = y1 - y0;
+      const slice = document.createElement('canvas');
+      slice.width = full.width; slice.height = h;
+      slice.getContext('2d').drawImage(full, 0, y0, full.width, h, 0, 0, full.width, h);
+      const now = new Date();
+      const dateStr = now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+      const timeStr = String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0');
+      const activeTab = localStorage.getItem('obliv-tab') || 'rehab';
+      const jobRaw = document.querySelector('.title-job')?.innerText.trim() || '';
+      const jobName = jobRaw.replace(/\s+/g, '') || activeTab;
+      const suffix = ranges.length > 1 ? `_${i + 1}` : '';
+      dlCanvas(slice, `obliv-songdo_${jobName}_${dateStr}_${timeStr}${suffix}.png`);
+      if (i < ranges.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
+  } catch(err) {
+    alert('❌ 내보내기 오류:\n' + (err && err.message ? err.message : String(err)));
+  } finally {
+    // 밴드 로고 원본 복원
+    if (typeof bandLogos !== 'undefined' && typeof origSrcs !== 'undefined') {
+      bandLogos.forEach((el, i) => { el.src = origSrcs[i] || ''; });
+    }
+    posterEl.classList.remove('exporting');
+    edgeImgs.forEach(img => img.style.display = 'none');
+    btn.disabled = false; btn.textContent = '이미지로 내보내기';
+  }
+});
+
+function dlCanvas(canvas, filename) {
+  const a = document.createElement('a');
+  a.download = filename; a.href = canvas.toDataURL('image/png'); a.click();
+}
+
+// ── 초기화 ──
+document.addEventListener('DOMContentLoaded', () => {
+  initAssets();
+  renderWcRows(WC_DEFAULT_ROWS);
+  renderSalaryRows(SALARY_DEFAULT_ROWS);
+  renderEduRows(EDU_DEFAULT_ROWS);
+  // 탭은 항상 재활의학센터로 시작
+  switchTab('rehab');
+  restoreState();
+  renderHistoryList();
+  try {
+    const imgData = JSON.parse(localStorage.getItem(IMG_KEY));
+    if (imgData) applyImgs(imgData);
+    else applyBottomImg(); // localStorage 없을 때 기본 데모 이미지 적용
+  } catch(e) { applyBottomImg(); }
+
+  document.getElementById('btn-reset')?.addEventListener('click', () => {
+    if (!confirm('모든 편집 내용이 초기화됩니다. 계속하시겠습니까?')) return;
+    localStorage.clear();
+    location.reload();
+  });
+
+  document.getElementById('btn-save-history')?.addEventListener('click', () => {
+    const now   = new Date();
+    const label = `${now.getMonth()+1}/${now.getDate()} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const list  = loadHistory();
+    list.unshift({ label, snap: getSnapshot() });
+    if (list.length > MAX_HISTORY) list.pop();
+    saveHistory(list); renderHistoryList();
+  });
+});
+</script>
+</body>
+</html>
