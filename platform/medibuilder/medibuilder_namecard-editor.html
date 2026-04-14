@@ -30,7 +30,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
 .back-name-en{font-family:'Poppins',sans-serif;font-size:26px;font-weight:400;letter-spacing:0;margin-left:14px;cursor:text;display:inline;color:#666}
 .back-position{font-family:'Pretendard',sans-serif;font-size:26px;font-weight:500;margin-top:16px;cursor:text;letter-spacing:-0.04em;color:#333}
 .back-dept{font-family:'Pretendard',sans-serif;font-size:28px;font-weight:700;margin-top:10px;cursor:text;letter-spacing:-0.04em;color:#111}
-.back-contact{flex:0 0 430px}
+.back-contact{flex:0 0 400px;margin-right:30px}
 .contact-item{display:flex;align-items:center;gap:14px;margin-bottom:5px}
 .contact-label{font-family:'Poppins',sans-serif;font-size:25px;font-weight:700;cursor:text;min-width:36px;letter-spacing:0;color:#111}
 .contact-value{font-family:'Poppins',sans-serif;font-size:25px;font-weight:400;cursor:text;letter-spacing:0;color:#333}
@@ -41,7 +41,6 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
 .addr-en{font-family:'Poppins',sans-serif;font-size:21px;font-weight:300;cursor:text;color:#666;letter-spacing:0;line-height:1.5}
 [contenteditable="true"]{outline:none}
 [contenteditable="true"]:focus{outline:2px dashed rgba(44,91,255,.4);outline-offset:2px;border-radius:3px}
-[contenteditable="true"] a{color:inherit;text-decoration:none;pointer-events:none}
 .sidebar{background:transparent;border-left:1px solid rgba(0,0,0,0.08);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;padding-bottom:20px}
 .sidebar-section{padding:18px 16px 16px;border-bottom:1px solid rgba(0,0,0,0.07)}
 .sidebar-label{font-size:13px;font-weight:700;color:#333;letter-spacing:0.02em;margin-bottom:12px}
@@ -58,6 +57,12 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
 .btn-primary:hover{background:#1a4bef}
 .toast{position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 22px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none}
 .toast.show{opacity:1}
+.team-item{display:flex;align-items:center;gap:10px;margin-top:24px;}
+.team-item-text{font-family:'Pretendard',sans-serif;font-size:28px;font-weight:700;color:#444;cursor:text;letter-spacing:-0.02em;outline:none;min-width:40px;}
+.team-item-text:focus{outline:2px dashed rgba(44,91,255,.4);outline-offset:2px;border-radius:3px;}
+.team-delete-btn{width:26px;height:26px;border-radius:50%;background:rgba(220,50,50,0.85);color:#fff;border:none;cursor:pointer;font-size:17px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;padding:0;}
+.team-delete-btn:hover{background:rgba(200,30,30,1);}
+.edit-only{display:inline-flex;}
 </style>
 </head>
 <body>
@@ -421,19 +426,20 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                   </svg>
                 </div>
                 <!-- 우상단: 이름 + 직함 -->
-                <div style="position:absolute;top:68px;right:35px;width:530px;text-align:left;">
+                <div style="position:absolute;top:68px;left:500px;text-align:left;">
                   <div style="display:flex;align-items:baseline;gap:18px;line-height:1;">
                     <div style="font-family:'Pretendard',sans-serif;font-size:46px;font-weight:700;letter-spacing:-0.04em;color:#395fa9;cursor:text;" contenteditable="true">성 연 서</div>
                     <div style="font-family:'Poppins',sans-serif;font-size:34px;font-weight:400;letter-spacing:0;color:#666;cursor:text;" contenteditable="true">Seong Yeonseo</div>
                   </div>
                   <div style="font-family:'Pretendard',sans-serif;font-size:28px;font-weight:700;margin-top:28px;color:#444;cursor:text;letter-spacing:-0.02em;" contenteditable="true">콘텐츠랩 · 디자인파트</div>
+                  <div id="medib-teams"></div>
                 </div>
                 <!-- 좌하단: 슬로건 -->
                 <div style="position:absolute;bottom:67px;left:62px;">
                   <div style="font-family:'Poppins',sans-serif;font-size:30px;font-weight:300;font-style:italic;color:#bbb;letter-spacing:0;cursor:text;white-space:nowrap;" contenteditable="true">"Aggregate &amp; Accelerate"</div>
                 </div>
                 <!-- 우하단: 연락처 -->
-                <div style="position:absolute;bottom:67px;right:35px;width:530px;text-align:left;">
+                <div style="position:absolute;bottom:67px;left:500px;text-align:left;">
                   <div style="display:flex;align-items:baseline;margin-bottom:9px;">
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:700;color:#395fa9;min-width:44px;text-align:center;">M</span>
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:400;color:#333;cursor:text;margin-left:16px;" contenteditable="true">010 9319 8065</span>
@@ -466,6 +472,10 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
         <button class="brand-tab" data-brand="medib">Medibuilder<span class="tab-sub">메디빌더</span></button>
       </div>
     </div>
+    <div class="sidebar-section" id="medib-team-section" style="display:none;">
+      <div class="sidebar-label">팀 설정</div>
+      <button class="btn btn-ghost" id="btn-add-team">+ 팀 추가</button>
+    </div>
     <div class="sidebar-section">
       <div class="sidebar-label">저장</div>
       <div class="export-btns">
@@ -483,17 +493,16 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
 (function(){
   var currentBrand='leshine';
   function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
-  function switchBrand(brand){currentBrand=brand;document.querySelectorAll('.brand-tab').forEach(function(t){t.classList.toggle('active',t.dataset.brand===brand);});document.querySelectorAll('.brand-section').forEach(function(s){s.classList.remove('active');});document.getElementById('section-'+brand).classList.add('active');}
-  async function captureCard(cardId){var original=document.getElementById(cardId);if(!original)return null;var tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:0;width:1039px;height:587px;overflow:hidden;z-index:-1;background:#fff;';var clone=original.cloneNode(true);clone.style.cssText='width:1039px;height:587px;transform:none;position:relative;font-family:Pretendard,-apple-system,sans-serif;letter-spacing:-0.03em;background:#fff;';tmp.appendChild(clone);document.body.appendChild(tmp);await new Promise(function(r){setTimeout(r,200);});var canvas=await html2canvas(tmp,{scale:3,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:1039,height:587,logging:false});document.body.removeChild(tmp);return canvas;}
-  async function exportPNG(face){showToast('저장 중...');await new Promise(function(r){setTimeout(r,60);});var canvas=await captureCard('card-'+face+'-'+currentBrand);if(!canvas)return;var brandNames={leshine:'르샤인',onlif:'온리프',obliv:'오블리브',medib:'메디빌더'};var filename=brandNames[currentBrand]+'_'+(face==='front'?'앞면':'뒷면')+'.png';var a=document.createElement('a');a.download=filename;a.href=canvas.toDataURL('image/png');a.click();showToast('저장 완료!');}
-  async function exportPDF(){showToast('저장 중...');await new Promise(function(r){setTimeout(r,60);});var jsPDF=window.jspdf.jsPDF;var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:[92,52]});var cf=await captureCard('card-front-'+currentBrand);var cb=await captureCard('card-back-'+currentBrand);if(!cf||!cb)return;pdf.addImage(cf.toDataURL('image/png'),'PNG',0,0,92,52);pdf.addPage([92,52],'landscape');pdf.addImage(cb.toDataURL('image/png'),'PNG',0,0,92,52);var brandNames={leshine:'르샤인',onlif:'온리프',obliv:'오블리브',medib:'메디빌더'};pdf.save(brandNames[currentBrand]+'_명함.pdf');showToast('저장 완료!');}
+  function switchBrand(brand){currentBrand=brand;document.querySelectorAll('.brand-tab').forEach(function(t){t.classList.toggle('active',t.dataset.brand===brand);});document.querySelectorAll('.brand-section').forEach(function(s){s.classList.remove('active');});document.getElementById('section-'+brand).classList.add('active');document.getElementById('medib-team-section').style.display=brand==='medib'?'block':'none';}
+  function addTeam(){var container=document.getElementById('medib-teams');var item=document.createElement('div');item.className='team-item';var text=document.createElement('div');text.className='team-item-text';text.contentEditable='true';text.textContent='팀 이름';var btn=document.createElement('button');btn.className='team-delete-btn edit-only';btn.innerHTML='&times;';btn.title='삭제';btn.addEventListener('click',function(){item.remove();});item.appendChild(text);item.appendChild(btn);container.appendChild(item);var range=document.createRange();range.selectNodeContents(text);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);text.focus();}
+  async function captureCard(cardId){var original=document.getElementById(cardId);if(!original)return null;var tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:0;width:1039px;height:587px;overflow:hidden;z-index:-1;background:#fff;';var clone=original.cloneNode(true);clone.style.cssText='width:1039px;height:587px;transform:none;position:relative;font-family:Pretendard,-apple-system,sans-serif;letter-spacing:-0.03em;background:#fff;';clone.querySelectorAll('.edit-only').forEach(function(el){el.style.display='none';});tmp.appendChild(clone);document.body.appendChild(tmp);await new Promise(function(r){setTimeout(r,200);});var canvas=await html2canvas(tmp,{scale:3,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:1039,height:587,logging:false});document.body.removeChild(tmp);return canvas;}
+  function getDateStr(){var d=new Date();return d.getFullYear().toString()+(('0'+(d.getMonth()+1)).slice(-2))+(('0'+d.getDate()).slice(-2));}
+  function getNameStr(){var brandMap={leshine:'card-front-leshine',onlif:'card-front-onlif',obliv:'card-front-obliv',medib:'card-back-medib'};var card=document.getElementById(brandMap[currentBrand]);if(!card)return'';var nameEl=card.querySelector('[data-label="이름"],[contenteditable]');if(!nameEl)return'';return nameEl.textContent.trim().replace(/\s+/g,'');}
+  async function exportPNG(face){showToast('저장 중...');await new Promise(function(r){setTimeout(r,60);});var canvas=await captureCard('card-'+face+'-'+currentBrand);if(!canvas)return;var brandNames={leshine:'르앤파',onlif:'온앤파',obliv:'오앤파',medib:'메디빌더'};var faceName=face==='front'?'앞면':'뒷면';var name=getNameStr();var filename=getDateStr()+'_'+brandNames[currentBrand]+'_'+faceName+(name?'_'+name:'')+'.png';var a=document.createElement('a');a.download=filename;a.href=canvas.toDataURL('image/png');a.click();showToast('저장 완료!');}
+  async function exportPDF(){showToast('저장 중...');await new Promise(function(r){setTimeout(r,60);});var jsPDF=window.jspdf.jsPDF;var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:[92,52]});var cf=await captureCard('card-front-'+currentBrand);var cb=await captureCard('card-back-'+currentBrand);if(!cf||!cb)return;pdf.addImage(cf.toDataURL('image/png'),'PNG',0,0,92,52);pdf.addPage([92,52],'landscape');pdf.addImage(cb.toDataURL('image/png'),'PNG',0,0,92,52);var brandNames={leshine:'르앤파',onlif:'온앤파',obliv:'오앤파',medib:'메디빌더'};var name=getNameStr();pdf.save(getDateStr()+'_'+brandNames[currentBrand]+'_양면'+(name?'_'+name:'')+'.pdf');showToast('저장 완료!');}
   document.addEventListener('DOMContentLoaded',function(){
-    document.querySelectorAll('[contenteditable]').forEach(function(el){
-      el.addEventListener('paste',function(e){e.preventDefault();var text=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,text);});
-      var observer=new MutationObserver(function(){el.querySelectorAll('a').forEach(function(a){var text=document.createTextNode(a.textContent);a.parentNode.replaceChild(text,a);});});
-      observer.observe(el,{childList:true,subtree:true});
-    });
     document.querySelectorAll('.brand-tab').forEach(function(tab){tab.addEventListener('click',function(){switchBrand(tab.dataset.brand);});});
+    document.getElementById('btn-add-team').addEventListener('click',function(){addTeam();});
     document.getElementById('sb-front-png').addEventListener('click',function(){exportPNG('front');});
     document.getElementById('sb-back-png').addEventListener('click',function(){exportPNG('back');});
     document.getElementById('sb-pdf').addEventListener('click',function(){exportPDF();});
