@@ -212,6 +212,71 @@ body {
   line-height: 1.5;
 }
 
+/* ── BRAND KEYWORDS ── */
+.brand-keywords {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 28px;
+  box-shadow: var(--card-shadow);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+  pointer-events: none;
+}
+.brand-keywords.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.brand-kw-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.brand-kw-row:last-child { margin-bottom: 0; }
+.brand-kw-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding-top: 3px;
+  min-width: 54px;
+  flex-shrink: 0;
+}
+.brand-kw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.brand-kw-chip {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  letter-spacing: -0.1px;
+  line-height: 1.6;
+}
+.brand-kw-chip.tone {
+  background: var(--kw-color, #0071e3) 14;
+  color: var(--kw-color, #0071e3);
+  border-color: var(--kw-color, #0071e3) 33;
+}
+.brand-kw-chip.subject {
+  background: rgba(0,0,0,0.04);
+  color: var(--text-secondary);
+  border-color: var(--border);
+}
+.brand-kw-chip.forbidden {
+  background: rgba(255,59,48,0.07);
+  color: #c0392b;
+  border-color: rgba(255,59,48,0.18);
+}
+
 /* ── OPTION GROUPS ── */
 .option-section {
   background: var(--surface);
@@ -549,6 +614,22 @@ body {
         <div class="brand-card-name">온리프</div>
         <div class="brand-card-en">Onlif</div>
         <div class="brand-card-desc">쿨 클리닉 톤. 프리미엄 의료 뷰티.</div>
+      </div>
+    </div>
+
+    <!-- 브랜드 키워드 미리보기 -->
+    <div class="brand-keywords" id="brand-keywords">
+      <div class="brand-kw-row">
+        <span class="brand-kw-label">톤</span>
+        <div class="brand-kw-chips" id="kw-tone"></div>
+      </div>
+      <div class="brand-kw-row">
+        <span class="brand-kw-label">비주얼</span>
+        <div class="brand-kw-chips" id="kw-subject"></div>
+      </div>
+      <div class="brand-kw-row">
+        <span class="brand-kw-label">금지</span>
+        <div class="brand-kw-chips" id="kw-forbidden"></div>
       </div>
     </div>
   </div>
@@ -1207,6 +1288,45 @@ function updateNavButtons() {
   }
 }
 
+// ── BRAND META (HANDOFF.md 원본 DB) ──
+const BRAND_META = {
+  leshine: {
+    tone: ['luxury', 'elegant', 'natural', 'refined', 'warm'],
+    subject: ['soft natural light', 'golden hour', 'minimal jewelry', 'fine fabric texture', 'editorial beauty'],
+    forbidden: ['harsh flash', 'neon colors', 'cold blue tone', 'oversaturated', 'heavy filter']
+  },
+  obliv: {
+    tone: ['warm', 'healing', 'earthy', 'stable', 'wood'],
+    subject: ['wood grain texture', 'warm earth tones', 'nature healing', 'matte skin glow', 'organic material'],
+    forbidden: ['cool gray tone', 'bright clinical white', 'high contrast harsh', 'cold blue filter']
+  },
+  onlif: {
+    tone: ['premium', 'trustworthy', 'natural', 'clean', 'sophisticated'],
+    subject: ['soft blue tone', 'natural result', 'clean minimal space', 'premium clinic', 'dewy skin'],
+    forbidden: ['warm yellow cast', 'dark moody filter', 'heavy dramatic makeup', 'oversaturated color']
+  }
+};
+
+function renderBrandKeywords(brand) {
+  const meta = BRAND_META[brand];
+  const color = DB[brand].color;
+  const box = document.getElementById('brand-keywords');
+
+  const render = (id, items, cls) => {
+    document.getElementById(id).innerHTML = items.map(k =>
+      `<span class="brand-kw-chip ${cls}" style="--kw-color:${color}">${k}</span>`
+    ).join('');
+  };
+
+  render('kw-tone',     meta.tone,     'tone');
+  render('kw-subject',  meta.subject,  'subject');
+  render('kw-forbidden',meta.forbidden,'forbidden');
+
+  // 한 프레임 뒤에 visible 추가 (애니메이션)
+  box.classList.remove('visible');
+  requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('visible')));
+}
+
 // ── BRAND SELECT ──
 function selectBrand(brand) {
   state.brand = brand;
@@ -1221,6 +1341,7 @@ function selectBrand(brand) {
   pill.style.borderColor = b.color + '55';
 
   applyBrandDefaults();
+  renderBrandKeywords(brand);
 }
 
 function applyBrandDefaults() {
@@ -1390,6 +1511,9 @@ const pill = document.getElementById('topbar-brand-pill');
 pill.style.background = initBrand.color + '22';
 pill.style.color = initBrand.color;
 pill.style.borderColor = initBrand.color + '55';
+
+// 초기 브랜드 키워드 표시
+renderBrandKeywords(state.brand);
 </script>
 </body>
 </html>
