@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brand Prompt Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #f5f5f7;
+  --surface:       #ffffff;
+  --near-black:    #1d1d1f;
+  --text-primary:  #1d1d1f;
+  --text-secondary:rgba(0,0,0,0.64);
+  --text-muted:    rgba(0,0,0,0.40);
+  --apple-blue:    #0071e3;
+  --border:        rgba(0,0,0,0.10);
+  --border-strong: rgba(0,0,0,0.18);
+  --card-shadow:   0px 2px 16px rgba(0,0,0,0.08);
+  --font-display: -apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  --font-text:    -apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:    'SF Mono', 'Menlo', 'Monaco', 'Courier New', monospace;
+}
+
+body {
+  font-family: var(--font-text);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.47;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.224px;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height: 48px;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-logo {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  color: #ffffff;
+  letter-spacing: -0.28px;
+}
+.topbar-divider { width: 1px; height: 14px; background: rgba(255,255,255,0.2); }
+.topbar-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255,255,255,0.44);
+  letter-spacing: 0;
+}
+.topbar-spacer { flex: 1; }
+.topbar-brand-pill {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  letter-spacing: -0.12px;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-wrap {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.progress-wrap::-webkit-scrollbar { display: none; }
+.progress-track {
+  display: flex;
+  align-items: center;
+  height: 52px;
+  gap: 0;
+  min-width: max-content;
+  margin: 0 auto;
+  max-width: 800px;
+}
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 0 10px;
+  position: relative;
+}
+.step-circle {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-strong);
+  background: var(--surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  font-family: var(--font-mono);
+}
+.step-node.active .step-circle {
+  background: var(--apple-blue);
+  border-color: var(--apple-blue);
+  color: #fff;
+}
+.step-node.done .step-circle {
+  background: var(--near-black);
+  border-color: var(--near-black);
+  color: #fff;
+}
+.step-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.step-node.active .step-label { color: var(--apple-blue); font-weight: 500; }
+.step-node.done .step-label  { color: var(--text-secondary); }
+.step-connector {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  min-width: 16px;
+  margin-bottom: 14px;
+  transition: background 0.2s;
+}
+.step-connector.done { background: var(--near-black); }
+
+/* ── WIZARD ── */
+.wizard-wrap {
+  min-height: calc(100vh - 48px - 52px - 72px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 24px 0;
+}
+.step-panel { display: none; width: 100%; max-width: 720px; }
+.step-panel.active { display: block; }
+
+.step-heading {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.44px;
+  color: var(--near-black);
+  margin-bottom: 6px;
+}
+.step-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  letter-spacing: -0.16px;
+}
+
+/* ── BRAND CARDS ── */
+.brand-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+.brand-card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 18px;
+  cursor: pointer;
+  transition: all 0.18s;
+  box-shadow: var(--card-shadow);
+}
+.brand-card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+.brand-card.active { border-color: var(--apple-blue); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.brand-swatch {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  margin-bottom: 12px;
+}
+.brand-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.32px;
+  margin-bottom: 2px;
+}
+.brand-card-en {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+.brand-card-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* ── OPTION GROUPS ── */
+.option-section {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  margin-bottom: 16px;
+  transition: opacity 0.2s;
+}
+.option-section.group-disabled {
+  opacity: 0.32;
+  pointer-events: none;
+}
+.option-section.group-disabled .section-label::after {
+  content: ' · 이 샷에서 미적용';
+  font-size: 10px;
+  color: var(--text-muted);
+  font-style: italic;
+  font-weight: 400;
+}
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+.section-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+.section-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px;
+}
+
+/* ── CHIPS ── */
+.chip {
+  font-family: var(--font-text);
+  font-size: 12px;
+  padding: 6px 13px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.14s;
+  letter-spacing: -0.12px;
+  position: relative;
+}
+.chip:hover { background: rgba(0,0,0,0.07); color: var(--text-primary); }
+.chip.selected {
+  background: var(--near-black);
+  border-color: var(--near-black);
+  color: #ffffff;
+}
+
+/* ── TOOLTIP ── */
+.chip[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1d1d1f;
+  color: #ffffff;
+  font-size: 11px;
+  border-radius: 7px;
+  padding: 6px 10px;
+  width: 176px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.45;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  z-index: 200;
+  letter-spacing: -0.1px;
+}
+.chip[data-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── RATIO BUTTONS ── */
+.ratio-row {
+  display: flex;
+  gap: 8px;
+  padding: 14px 16px;
+}
+.ratio-btn {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 6px 16px;
+  background: rgba(0,0,0,0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.14s;
+  letter-spacing: 0;
+}
+.ratio-btn:hover { background: rgba(0,0,0,0.07); }
+.ratio-btn.selected {
+  background: var(--near-black);
+  border-color: var(--near-black);
+  color: #ffffff;
+}
+
+/* ── STEP 8: OUTPUT ── */
+.generate-btn {
+  width: 100%;
+  height: 52px;
+  background: var(--apple-blue);
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.32px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: opacity 0.15s;
+}
+.generate-btn:hover { opacity: 0.88; }
+.output-card {
+  background: var(--surface);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.output-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.copy-btn {
+  font-family: var(--font-text);
+  font-size: 11px;
+  padding: 4px 10px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.14s;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.copy-btn:hover { background: rgba(0,0,0,0.09); }
+.output-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  padding: 14px 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  letter-spacing: 0;
+  min-height: 60px;
+}
+.output-empty {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* summary chips */
+.summary-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 16px;
+}
+.summary-tag {
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+/* ── NAV FOOTER ── */
+.nav-footer {
+  position: sticky;
+  bottom: 0;
+  background: rgba(245,245,247,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex;
+  justify-content: center;
+}
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 720px;
+  gap: 12px;
+}
+.nav-btn {
+  font-family: var(--font-text);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 0 24px;
+  height: 40px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.14px;
+  transition: all 0.15s;
+}
+.nav-btn.prev {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-primary);
+}
+.nav-btn.prev:hover { background: rgba(0,0,0,0.10); }
+.nav-btn.next {
+  background: var(--near-black);
+  color: #ffffff;
+}
+.nav-btn.next:hover { opacity: 0.82; }
+.nav-btn.next.finish {
+  background: var(--apple-blue);
+}
+.nav-step-info {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <span class="topbar-logo">Prompt Dashboard</span>
+  <div class="topbar-divider"></div>
+  <span class="topbar-sub">AI Image Generator</span>
+  <div class="topbar-spacer"></div>
+  <span class="topbar-brand-pill" id="topbar-brand-pill">Le Shine</span>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="step-node active" data-step="1" onclick="goToStep(1)">
+      <div class="step-circle">1</div>
+      <span class="step-label">브랜드</span>
+    </div>
+    <div class="step-connector" id="conn-1"></div>
+    <div class="step-node" data-step="2" onclick="goToStep(2)">
+      <div class="step-circle">2</div>
+      <span class="step-label">구도</span>
+    </div>
+    <div class="step-connector" id="conn-2"></div>
+    <div class="step-node" data-step="3" onclick="goToStep(3)">
+      <div class="step-circle">3</div>
+      <span class="step-label">조명 & 색감</span>
+    </div>
+    <div class="step-connector" id="conn-3"></div>
+    <div class="step-node" data-step="4" onclick="goToStep(4)">
+      <div class="step-circle">4</div>
+      <span class="step-label">모델</span>
+    </div>
+    <div class="step-connector" id="conn-4"></div>
+    <div class="step-node" data-step="5" onclick="goToStep(5)">
+      <div class="step-circle">5</div>
+      <span class="step-label">헤어</span>
+    </div>
+    <div class="step-connector" id="conn-5"></div>
+    <div class="step-node" data-step="6" onclick="goToStep(6)">
+      <div class="step-circle">6</div>
+      <span class="step-label">의상 & 배경</span>
+    </div>
+    <div class="step-connector" id="conn-6"></div>
+    <div class="step-node" data-step="7" onclick="goToStep(7)">
+      <div class="step-circle">7</div>
+      <span class="step-label">이펙트</span>
+    </div>
+    <div class="step-connector" id="conn-7"></div>
+    <div class="step-node" data-step="8" onclick="goToStep(8)">
+      <div class="step-circle">8</div>
+      <span class="step-label">생성</span>
+    </div>
+  </div>
+</div>
+
+<!-- WIZARD -->
+<div class="wizard-wrap">
+
+  <!-- STEP 1: 브랜드 -->
+  <div class="step-panel active" id="step-1">
+    <div class="step-heading">브랜드를 선택해주세요</div>
+    <div class="step-sub">브랜드 선택 시 조명, 색감, 포즈 등 기본값이 자동으로 적용됩니다.</div>
+    <div class="brand-cards">
+      <div class="brand-card active" data-brand="leshine" onclick="selectBrand('leshine')">
+        <div class="brand-swatch" style="background:#2D7D4E"></div>
+        <div class="brand-card-name">르샤인</div>
+        <div class="brand-card-en">Le Shine</div>
+        <div class="brand-card-desc">따뜻한 골든 톤. 럭셔리 에디토리얼 뷰티.</div>
+      </div>
+      <div class="brand-card" data-brand="obliv" onclick="selectBrand('obliv')">
+        <div class="brand-swatch" style="background:#7F4800"></div>
+        <div class="brand-card-name">오블리브</div>
+        <div class="brand-card-en">Obliv</div>
+        <div class="brand-card-desc">어시 앰버 톤. 자연스러운 힐링 무드.</div>
+      </div>
+      <div class="brand-card" data-brand="onlif" onclick="selectBrand('onlif')">
+        <div class="brand-swatch" style="background:#7CA4C8"></div>
+        <div class="brand-card-name">온리프</div>
+        <div class="brand-card-en">Onlif</div>
+        <div class="brand-card-desc">쿨 클리닉 톤. 프리미엄 의료 뷰티.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: 구도 -->
+  <div class="step-panel" id="step-2">
+    <div class="step-heading">구도를 설정해주세요</div>
+    <div class="step-sub">앵글, 카메라 샷, 이미지 비율을 선택하세요.</div>
+
+    <div class="option-section" id="group-angle">
+      <div class="section-header">
+        <span class="section-label">앵글 / Angle</span>
+        <span class="section-val" id="status-angle">eye_level</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="angle" data-val="eye_level" onclick="selectChip(this)">Eye Level</button>
+        <button class="chip" data-group="angle" data-val="slightly_high" onclick="selectChip(this)">Slightly High</button>
+        <button class="chip" data-group="angle" data-val="high_angle" onclick="selectChip(this)">High Angle</button>
+        <button class="chip" data-group="angle" data-val="low_angle" onclick="selectChip(this)">Low Angle</button>
+        <button class="chip" data-group="angle" data-val="dutch" onclick="selectChip(this)">Dutch Angle</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-shot">
+      <div class="section-header">
+        <span class="section-label">샷 / Shot</span>
+        <span class="section-val" id="status-shot">medium_closeup</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="shot" data-val="long" onclick="selectChip(this)">Long Shot</button>
+        <button class="chip" data-group="shot" data-val="medium_long" onclick="selectChip(this)">Medium Long</button>
+        <button class="chip" data-group="shot" data-val="medium" onclick="selectChip(this)">Medium Shot</button>
+        <button class="chip" data-group="shot" data-val="medium_closeup" onclick="selectChip(this)">Medium Close-Up</button>
+        <button class="chip" data-group="shot" data-val="closeup" onclick="selectChip(this)">Close-Up</button>
+        <button class="chip" data-group="shot" data-val="extreme_closeup" onclick="selectChip(this)">Extreme Close-Up</button>
+        <button class="chip" data-group="shot" data-val="macro" onclick="selectChip(this)">Macro Shot</button>
+      </div>
+    </div>
+
+    <div class="option-section">
+      <div class="section-header">
+        <span class="section-label">비율 / Ratio</span>
+        <span class="section-val" id="status-ratio">9:16</span>
+      </div>
+      <div class="ratio-row">
+        <button class="ratio-btn" data-group="ratio" data-val="9:16" onclick="selectRatio(this)">9:16</button>
+        <button class="ratio-btn" data-group="ratio" data-val="4:5" onclick="selectRatio(this)">4:5</button>
+        <button class="ratio-btn" data-group="ratio" data-val="1:1" onclick="selectRatio(this)">1:1</button>
+        <button class="ratio-btn" data-group="ratio" data-val="16:9" onclick="selectRatio(this)">16:9</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-space">
+      <div class="section-header">
+        <span class="section-label">여백 / Space</span>
+        <span class="section-val" id="status-space">none</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="space" data-val="none" onclick="selectChip(this)">없음</button>
+        <button class="chip" data-group="space" data-val="left" onclick="selectChip(this)">좌측</button>
+        <button class="chip" data-group="space" data-val="right" onclick="selectChip(this)">우측</button>
+        <button class="chip" data-group="space" data-val="top" onclick="selectChip(this)">상단</button>
+        <button class="chip" data-group="space" data-val="bottom" onclick="selectChip(this)">하단</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: 조명 & 색감 -->
+  <div class="step-panel" id="step-3">
+    <div class="step-heading">조명과 색감을 설정해주세요</div>
+    <div class="step-sub">조명 방식과 전체 색온도를 선택하세요.</div>
+
+    <div class="option-section" id="group-lighting">
+      <div class="section-header">
+        <span class="section-label">조명 / Lighting</span>
+        <span class="section-val" id="status-lighting">rembrandt</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="lighting" data-val="rembrandt" onclick="selectChip(this)">렘브란트</button>
+        <button class="chip" data-group="lighting" data-val="loop" onclick="selectChip(this)">루프</button>
+        <button class="chip" data-group="lighting" data-val="split" onclick="selectChip(this)">스플릿</button>
+        <button class="chip" data-group="lighting" data-val="butterfly" onclick="selectChip(this)">버터플라이</button>
+        <button class="chip" data-group="lighting" data-val="clamshell" onclick="selectChip(this)">클램셸</button>
+        <button class="chip" data-group="lighting" data-val="rim" onclick="selectChip(this)">림</button>
+        <button class="chip" data-group="lighting" data-val="broad" onclick="selectChip(this)">브로드</button>
+        <button class="chip" data-group="lighting" data-val="short" onclick="selectChip(this)">숏</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-color_grade">
+      <div class="section-header">
+        <span class="section-label">색감 / Color Grade</span>
+        <span class="section-val" id="status-color_grade">warm_golden</span>
+      </div>
+      <div class="section-chips" id="chips-grade">
+        <button class="chip" data-group="color_grade" data-val="warm_golden" onclick="selectChip(this)">Warm Golden</button>
+        <button class="chip" data-group="color_grade" data-val="soft_peach" onclick="selectChip(this)">Soft Peach</button>
+        <button class="chip" data-group="color_grade" data-val="bright_airy" onclick="selectChip(this)">Bright & Airy</button>
+        <button class="chip" data-group="color_grade" data-val="natural_neutral" onclick="selectChip(this)">Natural Neutral</button>
+        <button class="chip" data-group="color_grade" data-val="cool_clinical" onclick="selectChip(this)">Cool Clinical</button>
+        <button class="chip" data-group="color_grade" data-val="earthy_amber" onclick="selectChip(this)">Earthy Amber</button>
+        <button class="chip" data-group="color_grade" data-val="soft_blue_grey" onclick="selectChip(this)">Soft Blue Grey</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: 모델 -->
+  <div class="step-panel" id="step-4">
+    <div class="step-heading">포즈와 표정을 설정해주세요</div>
+    <div class="step-sub">모델의 자세와 표정을 선택하세요.</div>
+
+    <div class="option-section" id="group-pose">
+      <div class="section-header">
+        <span class="section-label">포즈 / Pose</span>
+        <span class="section-val" id="status-pose">hand_to_face</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="pose" data-val="hand_to_face" onclick="selectChip(this)">핸드 투 페이스</button>
+        <button class="chip" data-group="pose" data-val="straight_gaze" onclick="selectChip(this)">정면 스트레이트</button>
+        <button class="chip" data-group="pose" data-val="neck_elongated" onclick="selectChip(this)">목선 강조</button>
+        <button class="chip" data-group="pose" data-val="shoulder_touch" onclick="selectChip(this)">숄더 터치</button>
+        <button class="chip" data-group="pose" data-val="elbow_rest" onclick="selectChip(this)">엘보우 레스트</button>
+        <button class="chip" data-group="pose" data-val="body_side" onclick="selectChip(this)">바디 사이드</button>
+        <button class="chip" data-group="pose" data-val="chin_rest" onclick="selectChip(this)">친 레스트</button>
+        <button class="chip" data-group="pose" data-val="arms_crossed" onclick="selectChip(this)">암 크로스</button>
+        <button class="chip" data-group="pose" data-val="stool_side" onclick="selectChip(this)">스툴 사이드</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-expression">
+      <div class="section-header">
+        <span class="section-label">표정 / Expression</span>
+        <span class="section-val" id="status-expression">warm_calm</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="expression" data-val="warm_calm" onclick="selectChip(this)">차분 따뜻</button>
+        <button class="chip" data-group="expression" data-val="confident" onclick="selectChip(this)">자신감</button>
+        <button class="chip" data-group="expression" data-val="joyful_soft" onclick="selectChip(this)">밝고 부드러운</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5: 헤어 -->
+  <div class="step-panel" id="step-5">
+    <div class="step-heading">헤어를 설정해주세요</div>
+    <div class="step-sub">헤어 스타일과 색상을 선택하세요.</div>
+
+    <div class="option-section" id="group-hair">
+      <div class="section-header">
+        <span class="section-label">헤어 스타일 / Hair Style</span>
+        <span class="section-val" id="status-hair">low_bun</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="hair" data-val="low_bun" onclick="selectChip(this)">로우 번</button>
+        <button class="chip" data-group="hair" data-val="long_straight" onclick="selectChip(this)">롱 스트레이트</button>
+        <button class="chip" data-group="hair" data-val="low_ponytail" onclick="selectChip(this)">로우 포니테일</button>
+        <button class="chip" data-group="hair" data-val="high_ponytail" onclick="selectChip(this)">하이 포니테일</button>
+        <button class="chip" data-group="hair" data-val="half_up" onclick="selectChip(this)">하프업</button>
+        <button class="chip" data-group="hair" data-val="natural_wave" onclick="selectChip(this)">내추럴 웨이브</button>
+        <button class="chip" data-group="hair" data-val="slick_back" onclick="selectChip(this)">슬릭백</button>
+        <button class="chip" data-group="hair" data-val="side_braid" onclick="selectChip(this)">사이드 브레이드</button>
+        <button class="chip" data-group="hair" data-val="bubble_ponytail" onclick="selectChip(this)">버블 포니테일</button>
+        <button class="chip" data-group="hair" data-val="double_bun" onclick="selectChip(this)">더블 번</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-hair_color">
+      <div class="section-header">
+        <span class="section-label">헤어 색상 / Hair Color</span>
+        <span class="section-val" id="status-hair_color">black</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="hair_color" data-val="black" onclick="selectChip(this)">블랙</button>
+        <button class="chip" data-group="hair_color" data-val="dark_brown" onclick="selectChip(this)">다크 브라운</button>
+        <button class="chip" data-group="hair_color" data-val="brown" onclick="selectChip(this)">브라운</button>
+        <button class="chip" data-group="hair_color" data-val="ash_brown" onclick="selectChip(this)">애쉬 브라운</button>
+        <button class="chip" data-group="hair_color" data-val="caramel" onclick="selectChip(this)">카라멜</button>
+        <button class="chip" data-group="hair_color" data-val="ash_blonde" onclick="selectChip(this)">애쉬 블론드</button>
+        <button class="chip" data-group="hair_color" data-val="blonde" onclick="selectChip(this)">블론드</button>
+        <button class="chip" data-group="hair_color" data-val="burgundy" onclick="selectChip(this)">버건디</button>
+        <button class="chip" data-group="hair_color" data-val="rose_brown" onclick="selectChip(this)">로즈 브라운</button>
+        <button class="chip" data-group="hair_color" data-val="silver" onclick="selectChip(this)">실버</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6: 의상 & 배경 -->
+  <div class="step-panel" id="step-6">
+    <div class="step-heading">의상과 배경을 설정해주세요</div>
+    <div class="step-sub">의상, 배경, 텍스트 여백을 선택하세요.</div>
+
+    <div class="option-section" id="group-outfit">
+      <div class="section-header">
+        <span class="section-label">의상 / Outfit</span>
+        <span class="section-val" id="status-outfit">slip_white</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="outfit" data-val="slip_white" onclick="selectChip(this)">화이트 슬립</button>
+        <button class="chip" data-group="outfit" data-val="nude_shoulder" onclick="selectChip(this)">오프숄더</button>
+        <button class="chip" data-group="outfit" data-val="clinic_robe" onclick="selectChip(this)">클리닉 가운</button>
+        <button class="chip" data-group="outfit" data-val="casual_minimal" onclick="selectChip(this)">캐주얼 미니멀</button>
+        <button class="chip" data-group="outfit" data-val="turtleneck" onclick="selectChip(this)">터틀넥</button>
+        <button class="chip" data-group="outfit" data-val="satin_blouse" onclick="selectChip(this)">새틴 블라우스</button>
+        <button class="chip" data-group="outfit" data-val="crop_knit" onclick="selectChip(this)">크롭 니트</button>
+        <button class="chip" data-group="outfit" data-val="lace_camisole" onclick="selectChip(this)">레이스 캐미솔</button>
+        <button class="chip" data-group="outfit" data-val="backless_top" onclick="selectChip(this)">백리스 탑</button>
+        <button class="chip" data-group="outfit" data-val="oversized_shirt" onclick="selectChip(this)">오버사이즈 셔츠</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-background">
+      <div class="section-header">
+        <span class="section-label">배경 / Background</span>
+        <span class="section-val" id="status-background">pastel_gradient</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="background" data-val="pastel_gradient" onclick="selectChip(this)">파스텔 그라데이션</button>
+        <button class="chip" data-group="background" data-val="pure_white" onclick="selectChip(this)">퓨어 화이트</button>
+        <button class="chip" data-group="background" data-val="cream_warm" onclick="selectChip(this)">크림 웜</button>
+        <button class="chip" data-group="background" data-val="dark_elegant" onclick="selectChip(this)">다크 엘레강트</button>
+        <button class="chip" data-group="background" data-val="soft_grey" onclick="selectChip(this)">소프트 그레이</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 7: 이펙트 -->
+  <div class="step-panel" id="step-7">
+    <div class="step-heading">이펙트를 설정해주세요</div>
+    <div class="step-sub">피부 질감과 오버레이 이펙트를 선택하세요.</div>
+
+    <div class="option-section" id="group-effect">
+      <div class="section-header">
+        <span class="section-label">피부 질감 / Skin Texture</span>
+        <span class="section-val" id="status-effect">dewy_glass</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="effect" data-val="dewy_glass" onclick="selectChip(this)">듀이 글래스</button>
+        <button class="chip" data-group="effect" data-val="shimmer_highlight" onclick="selectChip(this)">쉬머 하이라이터</button>
+        <button class="chip" data-group="effect" data-val="light_refraction" onclick="selectChip(this)">빛 굴절</button>
+        <button class="chip" data-group="effect" data-val="luminous_moisture" onclick="selectChip(this)">루미너스 모이스처</button>
+        <button class="chip" data-group="effect" data-val="prism_scatter" onclick="selectChip(this)">프리즘 스캐터</button>
+        <button class="chip" data-group="effect" data-val="glass_skin" onclick="selectChip(this)">글래스 스킨</button>
+        <button class="chip" data-group="effect" data-val="matte_perfection" onclick="selectChip(this)">매트 퍼펙션</button>
+        <button class="chip" data-group="effect" data-val="velvet_skin" onclick="selectChip(this)">벨벳 스킨</button>
+        <button class="chip" data-group="effect" data-val="golden_glow" onclick="selectChip(this)">골든 글로우</button>
+        <button class="chip" data-group="effect" data-val="crystal_skin" onclick="selectChip(this)">크리스탈 스킨</button>
+        <button class="chip" data-group="effect" data-val="oil_shimmer" onclick="selectChip(this)">오일 시머</button>
+      </div>
+    </div>
+
+    <div class="option-section" id="group-overlay">
+      <div class="section-header">
+        <span class="section-label">오버레이 이펙트 / Overlay</span>
+        <span class="section-val" id="status-overlay">none</span>
+      </div>
+      <div class="section-chips">
+        <button class="chip" data-group="overlay" data-val="none" onclick="selectChip(this)">없음</button>
+        <button class="chip" data-group="overlay" data-val="constellation" onclick="selectChip(this)">별자리 패턴</button>
+        <button class="chip" data-group="overlay" data-val="face_mesh" onclick="selectChip(this)">페이스 메시</button>
+        <button class="chip" data-group="overlay" data-val="thread_lift" onclick="selectChip(this)">리프팅 실</button>
+        <button class="chip" data-group="overlay" data-val="scan_effect" onclick="selectChip(this)">스캔 이펙트</button>
+        <button class="chip" data-group="overlay" data-val="energy_wave" onclick="selectChip(this)">에너지 웨이브</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 8: 생성 -->
+  <div class="step-panel" id="step-8">
+    <div class="step-heading">프롬프트를 생성해주세요</div>
+    <div class="step-sub">선택한 옵션을 확인하고 Generate를 눌러 프롬프트를 완성하세요.</div>
+
+    <div class="output-card" style="margin-bottom:16px;">
+      <div class="output-label">선택 요약</div>
+      <div class="summary-grid" id="summary-grid"></div>
+    </div>
+
+    <button class="generate-btn" onclick="generatePrompt()">프롬프트 생성하기</button>
+
+    <div class="output-card">
+      <div class="output-label">
+        Positive Prompt
+        <button class="copy-btn" onclick="copyPrompt('positive')">Copy</button>
+      </div>
+      <div class="output-text" id="out-positive"><span class="output-empty">위 버튼을 눌러 프롬프트를 생성하세요.</span></div>
+    </div>
+
+    <div class="output-card">
+      <div class="output-label">
+        Negative Prompt
+        <button class="copy-btn" onclick="copyPrompt('negative')">Copy</button>
+      </div>
+      <div class="output-text" id="out-negative"><span class="output-empty">—</span></div>
+    </div>
+
+    <div class="output-card" style="margin-bottom:40px;">
+      <div class="output-label">
+        전체 복사
+        <button class="copy-btn" onclick="copyPrompt('all')">Copy All</button>
+      </div>
+      <div class="output-text" id="out-all"><span class="output-empty">생성 후 Positive + Negative 전체를 한번에 복사합니다.</span></div>
+    </div>
+  </div>
+
+</div><!-- /wizard-wrap -->
+
+<!-- NAV FOOTER -->
+<div class="nav-footer">
+  <div class="nav-inner">
+    <button class="nav-btn prev" id="btn-prev" onclick="prevStep()">이전</button>
+    <span class="nav-step-info" id="nav-step-info">1 / 8</span>
+    <button class="nav-btn next" id="btn-next" onclick="nextStep()">다음</button>
+  </div>
+</div>
+
+<script>
+// ── DATA ──
+const DB = {
+  leshine: {
+    label: 'Le Shine', color: '#2D7D4E',
+    prompt_base: 'warm tone, luxury editorial beauty, korean model, golden light, soft bokeh, high-end fashion magazine style',
+    defaults: {
+      angle: 'slightly_high', shot: 'medium_closeup',
+      lighting: 'butterfly', color_grade: 'warm_golden',
+      pose: 'hand_to_face', expression: 'warm_calm',
+      hair: 'low_bun', hair_color: 'black',
+      outfit: 'slip_white', background: 'pastel_gradient',
+      effect: 'dewy_glass', overlay: 'none', space: 'none'
+    }
+  },
+  obliv: {
+    label: 'Obliv', color: '#7F4800',
+    prompt_base: 'earth tone, warm amber light, healing atmosphere, korean model, wood texture background, matte skin, intimate cozy mood',
+    defaults: {
+      angle: 'eye_level', shot: 'medium_closeup',
+      lighting: 'rembrandt', color_grade: 'earthy_amber',
+      pose: 'neck_elongated', expression: 'warm_calm',
+      hair: 'natural_wave', hair_color: 'brown',
+      outfit: 'casual_minimal', background: 'cream_warm',
+      effect: 'golden_glow', overlay: 'none', space: 'none'
+    }
+  },
+  onlif: {
+    label: 'Onlif', color: '#7CA4C8',
+    prompt_base: 'soft blue-grey tone, premium plastic surgery clinic, korean model, natural result beauty, clean neutral light, minimal elegant background',
+    defaults: {
+      angle: 'slightly_high', shot: 'medium_closeup',
+      lighting: 'clamshell', color_grade: 'cool_clinical',
+      pose: 'straight_gaze', expression: 'confident',
+      hair: 'low_ponytail', hair_color: 'black',
+      outfit: 'clinic_robe', background: 'pure_white',
+      effect: 'glass_skin', overlay: 'none', space: 'none'
+    }
+  }
+};
+
+const PROMPT_TEMPLATES = {
+  angle: {
+    eye_level:      'eye level angle, straight-on camera perspective',
+    slightly_high:  'slightly elevated camera angle, subtly high perspective, flattering for face',
+    high_angle:     'high angle shot, camera positioned above subject looking down',
+    low_angle:      'low angle shot, camera positioned below looking up, powerful dynamic perspective',
+    dutch:          'dutch angle, tilted camera frame, dynamic diagonal composition'
+  },
+  shot: {
+    long:           'full body shot, entire figure visible from head to toe, full length portrait',
+    medium_long:    'medium long shot, knee shot, figure visible from knees up',
+    medium:         'medium shot, waist shot, figure visible from waist up',
+    medium_closeup: 'medium close-up shot, bust shot, framed from chest up',
+    closeup:        'close-up shot, face and neck, tight facial framing',
+    extreme_closeup:'extreme close-up portrait, face filling 85-95% of the frame, forehead edges and chin edges may be cropped, hair and shoulders pushed out of frame, background fully eliminated, tight facial framing, intense facial detail',
+    macro:          'macro detail shot, single facial feature filling the entire frame, extreme proximity, only one feature visible such as eye area or lips or skin pores, no surrounding context, no full face visible'
+  },
+  space: {
+    none:   '',
+    left:   'subject positioned right side of frame, generous negative space on left, text-ready composition, clean background',
+    right:  'subject positioned left side of frame, generous negative space on right, text-ready composition',
+    top:    'subject positioned lower in frame, generous negative space at top, text-ready composition',
+    bottom: 'subject positioned upper in frame, generous negative space at bottom, text-ready composition'
+  },
+  outfit: {
+    slip_white:      'simple white sleeveless slip dress with thin straps, soft silk material, minimal design, natural shoulder and collarbone exposure',
+    nude_shoulder:   'off-shoulder minimal top, skin-tone fabric, clean skincare ad look',
+    clinic_robe:     'clean white clinic robe, professional medical aesthetic',
+    casual_minimal:  'simple light-tone casual top, clean fresh look',
+    turtleneck:      'minimal turtleneck top, clean and intellectual',
+    satin_blouse:    'satin blouse, lustrous fabric, luxurious and elegant',
+    crop_knit:       'cropped soft knit top, cozy and casual',
+    lace_camisole:   'delicate lace camisole, feminine and intricate',
+    backless_top:    'minimal backless top, elegant and sensual',
+    oversized_shirt: 'oversized white button-up shirt, loose relaxed fit, natural casual look'
+  },
+  pose: {
+    hand_to_face:    'head slightly tilted, one hand softly raised beside face, fingertips lightly near cheek and jawline, fingers naturally relaxed, elbow gently bent in front, delicate feminine skincare ad pose',
+    straight_gaze:   'upright natural pose, both hands relaxed at sides, direct confident gaze',
+    neck_elongated:  'chin slightly lifted, neck elongated, elegant posture, hands relaxed',
+    shoulder_touch:  'body turned 20-30 degrees, one shoulder slightly forward, hand resting gently on shoulder, soft natural smile',
+    elbow_rest:      'hand resting on elbow, head turned to side profile, eyes gazing downward, calm introspective mood',
+    body_side:       'body turned sideways to the left, head rotated back toward camera nearly frontal, head very slightly tilted, both hands relaxed at sides',
+    chin_rest:       'sitting pose, body leaning slightly forward, right elbow resting on right thigh, right hand gently cradling chin, fingers naturally curved and relaxed',
+    arms_crossed:    'arms crossed in front of chest, hands naturally visible resting on arms, confident and professional pose',
+    stool_side:      'sitting on stool, body angled slightly to the left, head facing camera directly, calm confident neutral expression'
+  },
+  expression: {
+    warm_calm:   'calm warm expression facing camera, soft relaxed gentle smile, lips slightly closed, comfortable serene mood',
+    confident:   'confident direct gaze, neutral strong expression, lips closed, professional',
+    joyful_soft: 'bright soft joyful expression, natural open smile, warm approachable mood'
+  },
+  hair: {
+    low_bun:         'low bun hairstyle, neatly gathered at the nape, loose wispy strands framing the face, natural flyaways',
+    long_straight:   'long straight hair falling naturally, sleek and smooth',
+    low_ponytail:    'low ponytail, classic and neat, gathered at nape level',
+    high_ponytail:   'high ponytail, sleek and polished, gathered at crown',
+    half_up:         'half-up half-down style, upper section pulled back, lower hair flowing freely',
+    natural_wave:    'naturally wavy hair, soft loose waves, effortless and feminine',
+    slick_back:      'slicked back hair, gel-polished, sharp and sophisticated',
+    side_braid:      'side braid falling over one shoulder, bohemian and romantic',
+    bubble_ponytail: 'bubble ponytail, sectioned and tied at intervals, Y2K playful style',
+    double_bun:      'double buns on each side of the head, Y2K kitsch aesthetic'
+  },
+  hair_color: {
+    black:      'black hair',
+    dark_brown: 'dark brown hair',
+    brown:      'brown hair',
+    ash_brown:  'ash brown hair',
+    caramel:    'caramel hair',
+    ash_blonde: 'ash blonde hair',
+    blonde:     'blonde hair',
+    burgundy:   'burgundy hair',
+    rose_brown: 'rose brown hair',
+    silver:     'silver hair'
+  },
+  lighting: {
+    rembrandt: 'rembrandt lighting',
+    loop:      'loop lighting',
+    split:     'split lighting',
+    butterfly: 'butterfly lighting',
+    clamshell: 'clamshell lighting',
+    rim:       'rim lighting',
+    broad:     'broad lighting',
+    short:     'short lighting'
+  },
+  color_grade: {
+    warm_golden:     'warm golden tone',
+    soft_peach:      'soft peach tone',
+    bright_airy:     'bright and airy',
+    natural_neutral: 'natural neutral tone',
+    cool_clinical:   'cool clinical tone',
+    earthy_amber:    'earthy amber tone',
+    soft_blue_grey:  'soft blue grey tone'
+  },
+  background: {
+    pastel_gradient: 'smooth clean studio background, soft pastel light grey or pale sky blue gradient, no objects, minimal',
+    pure_white:      'pure white seamless studio backdrop, clean minimal',
+    cream_warm:      'warm cream off-white seamless background, soft warm tone',
+    dark_elegant:    'deep dark studio background, dramatic contrast, luxury editorial',
+    soft_grey:       'soft neutral grey seamless studio background, clean and minimal, versatile base for any text overlay'
+  },
+  effect: {
+    dewy_glass:        'dewy glass skin, luminous moisture sheen',
+    shimmer_highlight: 'subtle shimmer highlight on cheekbones',
+    light_refraction:  'soft light refraction on skin, prismatic luminosity',
+    luminous_moisture: 'luminous moisture effect, hydrated healthy skin glow',
+    prism_scatter:     'soft prism light scatter on skin, ethereal luminosity',
+    glass_skin:        'ultra-clear glass skin, hyper-transparent flawless complexion',
+    matte_perfection:  'flawless matte skin, zero shine, velvety smooth finish',
+    velvet_skin:       'soft velvet skin texture, smooth and powdery finish',
+    golden_glow:       'golden radiant glow on skin, warm luminous complexion',
+    crystal_skin:      'crystal clear skin, translucent and radiant complexion',
+    oil_shimmer:       'oily shimmer skin, high-gloss editorial skin finish'
+  },
+  overlay: {
+    none:          '',
+    constellation: 'constellation star pattern overlay on face, glowing dots connected by thin luminous lines, beauty tech visualization',
+    face_mesh:     'holographic 3D facial mesh grid overlay, face mapping grid lines, medical beauty scanning aesthetic',
+    thread_lift:   'thread lift visualization, fine glowing threads along facial contour lines, lifting procedure aesthetic',
+    scan_effect:   'digital face scanning effect, horizontal light scan lines, medical analysis visualization',
+    energy_wave:   'energy wave ripple effect on skin, soft light waves, RF beauty treatment visualization'
+  }
+};
+
+const QUALITY     = 'photorealistic, 8K resolution, shot on Sony A7R V, 85mm f/1.4 lens, RAW photo, hyperrealistic skin texture, professional retouching';
+const IDENTITY    = 'Preserve exact facial identity from reference image. Maintain face shape, eye contour, nose angle, lip thickness, jawline, cheekbone position, eyebrow shape without deviation. No facial redesign.';
+const SKIN_LOCKED = 'ultra-realistic skin, visible micro pores, soft peach fuzz, fine facial hair, no AI smoothing, no plastic texture, natural skin luminance, near-bare minimal transparent makeup';
+const NEGATIVE    = 'cartoon, illustration, CGI, anime, deformed face, asymmetric eyes, blurry, low quality, watermark, text overlay, multiple people, facial distortion, over-retouched plastic look, over-smoothed skin, excessive retouching, plastic skin, heavy makeup';
+
+const TOOLTIPS = {
+  eye_level:'카메라가 피사체와 같은 눈높이. 가장 자연스럽고 중립적인 시점.',
+  slightly_high:'눈높이보다 살짝 높은 위치. 얼굴을 갸름하고 부드럽게 표현. 뷰티 클로즈업에 가장 많이 사용.',
+  high_angle:'위에서 아래를 내려다보는 앵글. 피사체가 작고 부드럽게 보임.',
+  low_angle:'아래에서 위를 올려다보는 앵글. 강인하고 드라마틱한 느낌.',
+  dutch:'카메라를 기울인 앵글. 긴장감과 역동적인 분위기.',
+  long:'머리부터 발끝까지 전신이 보이는 샷.',
+  medium_long:'무릎 위로 신체가 보이는 샷.',
+  medium:'허리 위로 신체가 보이는 샷.',
+  medium_closeup:'가슴 위로 신체가 보이는 샷. 뷰티 광고에 가장 많이 사용.',
+  closeup:'얼굴과 목이 중심이 되는 샷.',
+  extreme_closeup:'얼굴이 화면을 가득 채우는 샷.',
+  macro:'피부 질감, 눈, 입술 등 특정 부위를 극도로 확대한 샷.',
+  rembrandt:'한쪽 뺨에 작은 역삼각형 빛이 생기는 조명. 고전적이고 차분한 분위기.',
+  loop:'코 옆에 짧은 고리 모양 그림자. 자연스럽고 부드러운 분위기.',
+  split:'얼굴을 빛과 그림자로 정확히 반반 나누는 조명. 강렬하고 극적인 분위기.',
+  butterfly:'코 밑에 나비 모양 그림자. 광대뼈 강조, 뷰티·패션 광고 대표 조명.',
+  clamshell:'위아래로 빛을 감싸는 조명. 그림자 최소화, 피부 매끄럽게 표현.',
+  rim:'뒤에서 비추는 조명으로 윤곽선이 빛으로 분리됨. 시네마틱한 분위기.',
+  broad:'넓은 쪽 면에 조명. 얼굴이 밝고 환해 보임.',
+  short:'좁은 쪽 면에 조명. 얼굴이 갸름하고 입체적으로 보임.',
+  warm_golden:'따뜻한 골든 톤. 럭셔리하고 고급스러운 뷰티 무드.',
+  soft_peach:'부드러운 피치 톤. 여성스럽고 포근한 분위기.',
+  bright_airy:'밝고 화사한 톤. 깨끗한 화장품 광고 느낌.',
+  natural_neutral:'자연스러운 중립 톤. 시술 전후 사실적인 표현에 적합.',
+  cool_clinical:'차가운 클리닉 톤. 의료·전문성 신뢰감.',
+  earthy_amber:'따뜻한 브라운 앰버 톤. 자연스럽고 포근한 무드.',
+  soft_blue_grey:'차갑고 세련된 블루그레이 톤. 프리미엄 클리닉 느낌.',
+  hand_to_face:'손끝이 볼·턱 라인에 가볍게 닿는 스킨케어 광고 대표 포즈.',
+  straight_gaze:'똑바로 서서 카메라를 정면으로 바라보는 자신감 있는 포즈.',
+  neck_elongated:'턱을 살짝 들어 목선을 길고 우아하게 강조하는 포즈.',
+  shoulder_touch:'몸을 20~30도 틀고 손을 어깨 위에 살짝 올린 자연스러운 포즈.',
+  elbow_rest:'팔꿈치에 손을 올리고 옆모습으로 시선을 아래로 향하는 포즈.',
+  body_side:'몸은 옆으로 돌리고 얼굴만 카메라 쪽으로 향하는 포즈.',
+  chin_rest:'앉아서 팔꿈치를 허벅지에 올리고 손으로 턱을 받치는 포즈.',
+  arms_crossed:'팔짱을 낀 자신감 있고 전문적인 포즈.',
+  stool_side:'스툴에 앉아 몸은 옆으로, 얼굴은 카메라를 정면으로 바라보는 포즈.',
+  dewy_glass:'촉촉하고 유리처럼 빛나는 피부 표현.',
+  shimmer_highlight:'광대뼈에 은은한 shimmer 하이라이터 효과.',
+  light_refraction:'빛이 굴절되는 프리즘 피부 광채 효과.',
+  luminous_moisture:'수분감 넘치는 발광 피부 표현.',
+  prism_scatter:'프리즘 빛 산란 효과, 몽환적인 광채.',
+  glass_skin:'듀이보다 더 강렬한 초투명 유리 피부.',
+  matte_perfection:'번들거림 없는 완벽한 매트 피부.',
+  velvet_skin:'파우더리하고 부드러운 벨벳 질감 피부.',
+  golden_glow:'황금빛 윤기가 흐르는 럭셔리 뷰티 피부.',
+  crystal_skin:'수정처럼 투명하고 맑은 피부 표현.',
+  oil_shimmer:'오일리한 강한 광택. 에디토리얼 느낌.',
+  constellation:'얼굴 위에 별자리처럼 빛나는 점과 선 패턴. 리프팅·뷰티 테크 시각화.',
+  face_mesh:'얼굴에 홀로그래픽 3D 메시 그리드 오버레이. 의료 페이셜 스캐닝 느낌.',
+  thread_lift:'얼굴 윤곽선을 따라 실처럼 가느다란 빛의 선. 리프팅 시술 시각화.',
+  scan_effect:'수평 스캔 라인이 얼굴을 분석하는 디지털 스캐닝 이펙트.',
+  energy_wave:'피부 위로 퍼지는 에너지 파동 효과. RF 시술 시각화.',
+  low_bun:'낮게 묶은 번. 잔머리와 흩날리는 느낌으로 자연스러운 분위기.',
+  long_straight:'긴 생머리. 깔끔하고 자연스럽게 내려오는 스타일.',
+  low_ponytail:'낮게 묶은 포니테일. 클래식하고 단정한 느낌.',
+  high_ponytail:'높게 묶은 포니테일. 시원하고 세련된 느낌.',
+  half_up:'반묶음. 위는 묶고 아래는 풀어 내린 스타일.',
+  natural_wave:'자연스러운 웨이브. 부드럽고 여성스러운 분위기.',
+  slick_back:'젤로 뒤로 넘긴 올백. 샤프하고 강한 느낌.',
+  side_braid:'한쪽으로 내려오는 땋은 머리. 보헤미안 느낌.',
+  bubble_ponytail:'구간마다 묶은 버블 포니. Y2K 키치 스타일.',
+  double_bun:'양쪽 더블 번. Y2K·키치 무드.',
+  black:'짙은 블랙. 자연스러운 동양 헤어.',
+  dark_brown:'자연스러운 다크 브라운.',
+  brown:'따뜻한 중간 브라운.',
+  ash_brown:'차갑고 세련된 애쉬 브라운.',
+  caramel:'따뜻하고 밝은 카라멜 브라운.',
+  ash_blonde:'차갑고 프리미엄한 애쉬 블론드.',
+  blonde:'밝고 화사한 금발.',
+  burgundy:'와인 레드 계열. 개성 있는 컬러.',
+  rose_brown:'트렌디한 핑크 브라운.',
+  silver:'에디토리얼·키치 무드의 실버.',
+  slip_white:'얇은 끈의 화이트 슬립 드레스. 어깨와 쇄골이 자연스럽게 드러남.',
+  nude_shoulder:'어깨가 드러나는 오프숄더 탑. 깨끗하고 여성스러운 느낌.',
+  clinic_robe:'클린한 화이트 클리닉 가운. 전문적인 의료 느낌.',
+  casual_minimal:'밝은 톤의 캐주얼 탑. 깔끔하고 자연스러운 느낌.',
+  turtleneck:'목이 높은 미니멀 니트. 클린하고 지적인 느낌.',
+  satin_blouse:'광택 있는 새틴 소재 블라우스. 럭셔리하고 우아한 느낌.',
+  crop_knit:'짧은 소프트 니트. 부드럽고 캐주얼한 느낌.',
+  lace_camisole:'섬세한 레이스 소재 캐미솔. 여성스럽고 섬세한 느낌.',
+  backless_top:'등이 파인 미니멀 탑. 우아하고 관능적인 느낌.',
+  oversized_shirt:'루즈한 화이트 셔츠. 자연스럽고 편안한 느낌.',
+  warm_calm:'차분하고 따뜻한 미소. 편안하고 친근한 분위기.',
+  confident:'자신감 있는 정면 시선. 강하고 전문적인 분위기.',
+  joyful_soft:'밝고 자연스러운 미소. 활기차고 친근한 분위기.',
+  left:'피사체를 오른쪽에 배치. 왼쪽에 텍스트 삽입 공간 확보.',
+  right:'피사체를 왼쪽에 배치. 오른쪽에 텍스트 삽입 공간 확보.',
+  top:'피사체를 하단에 배치. 상단에 텍스트 삽입 공간 확보.',
+  bottom:'피사체를 상단에 배치. 하단에 텍스트 삽입 공간 확보.',
+  pastel_gradient:'연한 파스텔 그라데이션 배경. 부드럽고 깨끗한 뷰티 무드.',
+  pure_white:'순백의 깨끗한 흰 배경. 어떤 스타일에도 잘 어울림.',
+  cream_warm:'따뜻한 크림 오프화이트 배경. 포근하고 자연스러운 무드.',
+  dark_elegant:'깊고 어두운 스튜디오 배경. 드라마틱한 럭셔리 에디토리얼 느낌.',
+  soft_grey:'중립적인 소프트 그레이 배경. 어떤 텍스트 컬러도 잘 받아요.'
+};
+
+// ── SHOT DISABLE MAP ──
+const SHOT_DISABLED = {
+  long:           ['effect', 'overlay'],
+  medium_long:    ['effect', 'overlay'],
+  medium:         [],
+  medium_closeup: [],
+  closeup:        [],
+  extreme_closeup:['outfit', 'hair', 'hair_color', 'pose', 'background', 'space'],
+  macro:          ['outfit', 'hair', 'hair_color', 'pose', 'background', 'space', 'overlay', 'expression']
+};
+
+// ── STATE ──
+let state = {
+  brand: 'leshine',
+  category: 'beauty_face',
+  currentStep: 1,
+  selections: {
+    angle: 'slightly_high', shot: 'medium_closeup', ratio: '9:16', space: 'none',
+    lighting: 'butterfly', color_grade: 'warm_golden',
+    pose: 'hand_to_face', expression: 'warm_calm',
+    hair: 'low_bun', hair_color: 'black',
+    outfit: 'slip_white', background: 'pastel_gradient',
+    effect: 'dewy_glass', overlay: 'none'
+  },
+  generatedPrompt: '',
+  generatedNegative: ''
+};
+
+// ── STEP NAVIGATION ──
+const TOTAL_STEPS = 8;
+
+function goToStep(n) {
+  if (n < 1 || n > TOTAL_STEPS) return;
+  document.querySelector(`#step-${state.currentStep}`).classList.remove('active');
+  state.currentStep = n;
+  document.querySelector(`#step-${n}`).classList.add('active');
+  updateProgressBar();
+  updateNavButtons();
+  if (n === 8) renderSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() {
+  if (state.currentStep < TOTAL_STEPS) goToStep(state.currentStep + 1);
+}
+function prevStep() {
+  if (state.currentStep > 1) goToStep(state.currentStep - 1);
+}
+
+function updateProgressBar() {
+  document.querySelectorAll('.step-node').forEach(node => {
+    const s = parseInt(node.dataset.step);
+    node.classList.remove('active', 'done');
+    if (s === state.currentStep) node.classList.add('active');
+    else if (s < state.currentStep) node.classList.add('done');
+  });
+  for (let i = 1; i < TOTAL_STEPS; i++) {
+    const conn = document.getElementById(`conn-${i}`);
+    if (conn) conn.classList.toggle('done', i < state.currentStep);
+  }
+  document.getElementById('nav-step-info').textContent = `${state.currentStep} / ${TOTAL_STEPS}`;
+}
+
+function updateNavButtons() {
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  prev.style.visibility = state.currentStep === 1 ? 'hidden' : 'visible';
+  next.textContent = state.currentStep === TOTAL_STEPS ? '완성' : '다음';
+  next.classList.toggle('finish', state.currentStep === TOTAL_STEPS);
+  if (state.currentStep === TOTAL_STEPS) {
+    next.onclick = generatePrompt;
+  } else {
+    next.onclick = nextStep;
+  }
+}
+
+// ── BRAND SELECT ──
+function selectBrand(brand) {
+  state.brand = brand;
+  document.querySelectorAll('.brand-card').forEach(el => el.classList.remove('active'));
+  document.querySelector(`[data-brand="${brand}"]`).classList.add('active');
+
+  const b = DB[brand];
+  const pill = document.getElementById('topbar-brand-pill');
+  pill.textContent = b.label;
+  pill.style.background = b.color + '22';
+  pill.style.color = b.color;
+  pill.style.borderColor = b.color + '55';
+
+  applyBrandDefaults();
+}
+
+function applyBrandDefaults() {
+  const defaults = DB[state.brand].defaults;
+  Object.entries(defaults).forEach(([group, val]) => {
+    state.selections[group] = val;
+    document.querySelectorAll(`.chip[data-group="${group}"]`).forEach(c => {
+      c.classList.toggle('selected', c.dataset.val === val);
+    });
+    const statusEl = document.getElementById('status-' + group);
+    if (statusEl) statusEl.textContent = val;
+  });
+  document.querySelectorAll('[data-group="ratio"]').forEach(b => {
+    b.classList.toggle('selected', b.dataset.val === state.selections.ratio);
+  });
+}
+
+// ── CHIP SELECT ──
+function selectChip(el) {
+  const group = el.dataset.group;
+  const val = el.dataset.val;
+  el.closest('.section-chips').querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selections[group] = val;
+  const statusEl = document.getElementById('status-' + group);
+  if (statusEl) statusEl.textContent = val;
+  if (group === 'shot') updateDisabledGroups(val);
+}
+
+function selectRatio(el) {
+  document.querySelectorAll('[data-group="ratio"]').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+  state.selections.ratio = el.dataset.val;
+  const statusEl = document.getElementById('status-ratio');
+  if (statusEl) statusEl.textContent = el.dataset.val;
+}
+
+// ── DISABLED GROUPS ──
+function updateDisabledGroups(shot) {
+  const disabled = SHOT_DISABLED[shot] || [];
+  document.querySelectorAll('.option-section[id^="group-"]').forEach(g => {
+    g.classList.remove('group-disabled');
+  });
+  disabled.forEach(key => {
+    const el = document.getElementById('group-' + key);
+    if (el) el.classList.add('group-disabled');
+  });
+}
+
+// ── SUMMARY ──
+function renderSummary() {
+  const s = state.selections;
+  const b = DB[state.brand];
+  const grid = document.getElementById('summary-grid');
+  const labelMap = {
+    angle:'앵글', shot:'샷', ratio:'비율', space:'여백',
+    lighting:'조명', color_grade:'색감',
+    pose:'포즈', expression:'표정',
+    hair:'헤어', hair_color:'헤어 색상',
+    outfit:'의상', background:'배경',
+    effect:'피부', overlay:'오버레이'
+  };
+  grid.innerHTML = `<span class="summary-tag" style="background:${b.color}18;color:${b.color};border-color:${b.color}44">${b.label}</span>`;
+  Object.entries(s).forEach(([k, v]) => {
+    if (!v || v === 'none') return;
+    grid.innerHTML += `<span class="summary-tag">${labelMap[k] || k}: ${v}</span>`;
+  });
+}
+
+// ── GENERATE ──
+function generatePrompt() {
+  const s = state.selections;
+  const brand = DB[state.brand];
+  const shotOff = new Set(SHOT_DISABLED[s.shot] || []);
+
+  const isTightShot = s.shot === 'extreme_closeup' || s.shot === 'macro';
+  const identityLine = isTightShot
+    ? 'Preserve exact facial identity from reference image. Maintain facial proportions, bone structure, gaze direction, natural asymmetry, and expression. Partial cropping of forehead, chin, hair, and shoulders is intentional and acceptable.'
+    : IDENTITY;
+
+  const parts = [
+    identityLine,
+    SKIN_LOCKED,
+    PROMPT_TEMPLATES.shot[s.shot] + `, aspect ratio ${s.ratio}`,
+    PROMPT_TEMPLATES.angle[s.angle],
+    'soft feminine clean studio beauty portrait, minimal cosmetic ad style',
+    ...(shotOff.has('outfit')     ? [] : [PROMPT_TEMPLATES.outfit[s.outfit]]),
+    ...(shotOff.has('pose')       ? [] : [PROMPT_TEMPLATES.pose[s.pose]]),
+    ...(shotOff.has('expression') ? [] : [PROMPT_TEMPLATES.expression[s.expression]]),
+    ...(shotOff.has('hair')       ? [] : [PROMPT_TEMPLATES.hair_color[s.hair_color] + ', ' + PROMPT_TEMPLATES.hair[s.hair]]),
+    PROMPT_TEMPLATES.lighting[s.lighting] || s.lighting,
+    PROMPT_TEMPLATES.color_grade[s.color_grade] || s.color_grade,
+    ...(shotOff.has('background') ? [] : [PROMPT_TEMPLATES.background[s.background]]),
+  ];
+
+  if (!shotOff.has('space') && s.space && s.space !== 'none') {
+    parts.push(PROMPT_TEMPLATES.space[s.space]);
+  }
+  if (!shotOff.has('effect') && state.category === 'beauty_face' && s.effect) {
+    parts.push(PROMPT_TEMPLATES.effect[s.effect] || s.effect);
+  }
+  if (!shotOff.has('overlay') && s.overlay && s.overlay !== 'none') {
+    parts.push(PROMPT_TEMPLATES.overlay[s.overlay]);
+  }
+
+  parts.push(brand.prompt_base);
+  parts.push('full-frame camera, 85mm portrait lens, shallow depth of field, subject tack sharp, background softly blurred');
+  parts.push(QUALITY);
+
+  state.generatedPrompt    = parts.filter(Boolean).join(', ');
+  state.generatedNegative  = NEGATIVE;
+
+  document.getElementById('out-positive').textContent = state.generatedPrompt;
+  document.getElementById('out-negative').textContent = state.generatedNegative;
+  document.getElementById('out-all').textContent = `[Positive]\n${state.generatedPrompt}\n\n[Negative]\n${state.generatedNegative}`;
+}
+
+// ── COPY ──
+function copyPrompt(type) {
+  let text;
+  if (type === 'all') text = `[Positive]\n${state.generatedPrompt}\n\n[Negative]\n${state.generatedNegative}`;
+  else if (type === 'positive') text = state.generatedPrompt;
+  else text = state.generatedNegative;
+  if (!text) return;
+
+  const btn = document.querySelector(`[onclick="copyPrompt('${type}')"]`);
+
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  };
+
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      const orig = btn.textContent;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = orig, 1500);
+    }).catch(fallback);
+  } else {
+    fallback();
+  }
+}
+
+// ── INIT ──
+applyBrandDefaults();
+updateProgressBar();
+updateNavButtons();
+
+// 툴팁 적용
+document.querySelectorAll('.chip[data-val]').forEach(chip => {
+  const val = chip.dataset.val;
+  if (TOOLTIPS[val]) chip.dataset.tooltip = TOOLTIPS[val];
+});
+
+// 탑바 브랜드 pill 초기화
+const initBrand = DB[state.brand];
+const pill = document.getElementById('topbar-brand-pill');
+pill.style.background = initBrand.color + '22';
+pill.style.color = initBrand.color;
+pill.style.borderColor = initBrand.color + '55';
+</script>
+</body>
+</html>
