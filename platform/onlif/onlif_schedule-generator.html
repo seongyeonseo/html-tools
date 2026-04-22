@@ -427,6 +427,7 @@
       <option value="정상진료">정상진료</option>
       <option value="단축진료">단축진료</option>
       <option value="휴무">휴무</option>
+      <option value="공휴일진료">공휴일진료</option>
     </select>
     <div class="field-group" id="field-time">
       <span class="modal-lbl">진료 시간</span>
@@ -663,10 +664,10 @@ function renderCanvas(canvas, mode) {
     if (col===0) dc='#C0392B';
     if (col===6) dc=COLOR_CLINIC;
     if (sched?.type==='정기휴무') dc=COLOR_HOLIDAY;
-    if (sched?.type==='정상진료'||sched?.type==='단축진료') dc=COLOR_CLINIC;
+    if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') dc=COLOR_CLINIC;
     if (sched?.type==='휴무') dc=COLOR_HOLIDAY;
 
-    if (sched?.type==='정상진료'||sched?.type==='단축진료') {
+    if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') {
       ctx.beginPath(); ctx.arc(cx,cy,circleR,0,Math.PI*2);
       ctx.fillStyle=COLOR_CLINIC+'22'; ctx.fill();
       ctx.strokeStyle=COLOR_CLINIC; ctx.lineWidth=1.5; ctx.stroke();
@@ -693,7 +694,7 @@ function renderCanvas(canvas, mode) {
     if (sched?.type==='정기휴무') {
       ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
       ctx.fillStyle=COLOR_HOLIDAY; ctx.fillText('정기휴무', cx, labelY);
-    } else if (sched?.type==='정상진료'||sched?.type==='단축진료') {
+    } else if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') {
       ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
       ctx.fillStyle=COLOR_CLINIC; ctx.fillText(sched.type, cx, labelY);
       if (sched.time) {
@@ -773,7 +774,7 @@ function renderCalEditor() {
 
     const s=schedule[day];
     const bg = s?.type==='정기휴무'||s?.type==='휴무' ? COLOR_HOLIDAY+'33'
-             : s?.type==='정상진료'||s?.type==='단축진료' ? COLOR_CLINIC+'22' : '#fff';
+             : s?.type==='정상진료'||s?.type==='단축진료'||s?.type==='공휴일진료' ? COLOR_CLINIC+'22' : '#fff';
     el.className='cal-cell';
     el.style.background=bg;
 
@@ -786,7 +787,7 @@ function renderCalEditor() {
     if (s) {
       const badge=document.createElement('span');
       badge.className='day-badge';
-      const c={정기휴무:COLOR_HOLIDAY,정상진료:COLOR_CLINIC,단축진료:COLOR_CLINIC,휴무:COLOR_HOLIDAY}[s.type]||'#999';
+      const c={정기휴무:COLOR_HOLIDAY,정상진료:COLOR_CLINIC,단축진료:COLOR_CLINIC,공휴일진료:COLOR_CLINIC,휴무:COLOR_HOLIDAY}[s.type]||'#999';
       badge.style.color=c;
       badge.textContent=s.type==='휴무'?(s.label?s.label.slice(0,5):'휴무'):s.type;
       el.appendChild(badge);
@@ -811,7 +812,7 @@ function openModal(day) {
 
 function updateModalFields() {
   const t=modalType.value;
-  fieldTime.classList.toggle('show', t==='정상진료'||t==='단축진료');
+  fieldTime.classList.toggle('show', t==='정상진료'||t==='단축진료'||t==='공휴일진료');
   fieldLabel.classList.toggle('show', t==='휴무');
 }
 
