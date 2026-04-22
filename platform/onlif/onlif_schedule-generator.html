@@ -384,12 +384,24 @@
       <div class="ctrl-body">
         <div class="legend">
           <div class="legend-item">
-            <input type="color" id="color-holiday" value="#FED3D0" title="정기휴무/휴무 색상"/>
-            <span id="legend-holiday-label" style="color:#FED3D0">정기휴무 / 휴무</span>
+            <input type="color" id="color-정기휴무" value="#FED3D0"/>
+            <span id="legend-label-정기휴무" style="color:#FED3D0">정기휴무</span>
           </div>
           <div class="legend-item">
-            <input type="color" id="color-clinic" value="#8EB9D7" title="정상진료/단축진료 색상"/>
-            <span id="legend-clinic-label" style="color:#8EB9D7">정상진료 / 단축진료</span>
+            <input type="color" id="color-휴무" value="#FED3D0"/>
+            <span id="legend-label-휴무" style="color:#FED3D0">휴무</span>
+          </div>
+          <div class="legend-item">
+            <input type="color" id="color-정상진료" value="#8EB9D7"/>
+            <span id="legend-label-정상진료" style="color:#8EB9D7">정상진료</span>
+          </div>
+          <div class="legend-item">
+            <input type="color" id="color-단축진료" value="#8EB9D7"/>
+            <span id="legend-label-단축진료" style="color:#8EB9D7">단축진료</span>
+          </div>
+          <div class="legend-item">
+            <input type="color" id="color-공휴일진료" value="#A5C8A5"/>
+            <span id="legend-label-공휴일진료" style="color:#A5C8A5">공휴일진료</span>
           </div>
         </div>
       </div>
@@ -455,8 +467,14 @@ let editDay   = null;
 let bgScale   = 1.0;
 let bgOffset  = { pc: {x:0, y:0}, mo: {x:0, y:0} };
 let bgOpacity = 0.20;
-let COLOR_HOLIDAY = '#FED3D0';
-let COLOR_CLINIC  = '#8EB9D7';
+const typeColors = {
+  정기휴무:   '#FED3D0',
+  휴무:       '#FED3D0',
+  정상진료:   '#8EB9D7',
+  단축진료:   '#8EB9D7',
+  공휴일진료: '#A5C8A5'
+};
+function tc(type) { return typeColors[type] || '#999'; }
 
 // 로고 이미지 (SVG → 흰색 버전 base64)
 const LOGO_IMG = new Image();
@@ -582,7 +600,7 @@ function renderCanvas(canvas, mode) {
   ctx.textBaseline='middle'; ctx.textAlign='center';
   DAYS.forEach((d,i) => {
     ctx.font = `700 ${isPC?12:10.5}px 'Pretendard', sans-serif`;
-    ctx.fillStyle = i===0?'#C0392B': i===6?COLOR_CLINIC:'#666';
+    ctx.fillStyle = i===0?'#C0392B': i===6?tc('정상진료'):'#666';
     ctx.fillText(d, cardPad + colW*i + colW/2, cardTop + (isPC ? 18 : 15) + (isPC ? 6 : 5.25));
   });
 
@@ -619,13 +637,13 @@ function renderCanvas(canvas, mode) {
         ctx.lineTo(x1, cy+circleR);
         ctx.arc(x1, cy, circleR, Math.PI/2, 3*Math.PI/2);
         ctx.closePath();
-        ctx.fillStyle=COLOR_HOLIDAY+'33'; ctx.fill();
-        ctx.strokeStyle=COLOR_HOLIDAY; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle=tc('휴무')+'33'; ctx.fill();
+        ctx.strokeStyle=tc('휴무'); ctx.lineWidth=1.5; ctx.stroke();
         const midX = (x1 + x2) / 2;
         const labelY = cy + circleR + (isPC?5:4);
         const sched = schedule[sDay];
         ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
-        ctx.fillStyle=COLOR_HOLIDAY; ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillStyle=tc('휴무'); ctx.textAlign='center'; ctx.textBaseline='top';
         (sched?.label||'휴무').split(' ').forEach((line,li)=>{
           ctx.fillText(line, midX, labelY+li*(labelFontSz+2));
         });
@@ -662,15 +680,13 @@ function renderCanvas(canvas, mode) {
 
     let dc = '#1a1a1a';
     if (col===0) dc='#C0392B';
-    if (col===6) dc=COLOR_CLINIC;
-    if (sched?.type==='정기휴무') dc=COLOR_HOLIDAY;
-    if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') dc=COLOR_CLINIC;
-    if (sched?.type==='휴무') dc=COLOR_HOLIDAY;
+    if (col===6) dc=tc('정상진료');
+    if (sched?.type) dc=tc(sched.type);
 
     if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') {
       ctx.beginPath(); ctx.arc(cx,cy,circleR,0,Math.PI*2);
-      ctx.fillStyle=COLOR_CLINIC+'22'; ctx.fill();
-      ctx.strokeStyle=COLOR_CLINIC; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle=tc(sched.type)+'22'; ctx.fill();
+      ctx.strokeStyle=tc(sched.type); ctx.lineWidth=1.5; ctx.stroke();
     }
     if (sched?.type==='휴무') {
       const thisLabel = sched?.label||'휴무';
@@ -679,8 +695,8 @@ function renderCanvas(canvas, mode) {
       const nH=nRow&&cells[idx+1]&&schedule[cells[idx+1]]?.type==='휴무'&&(schedule[cells[idx+1]]?.label||'휴무')===thisLabel;
       if (!pH&&!nH) {
         ctx.beginPath(); ctx.arc(cx,cy,circleR,0,Math.PI*2);
-        ctx.fillStyle=COLOR_HOLIDAY+'33'; ctx.fill();
-        ctx.strokeStyle=COLOR_HOLIDAY; ctx.lineWidth=1.5; ctx.stroke();
+        ctx.fillStyle=tc('휴무')+'33'; ctx.fill();
+        ctx.strokeStyle=tc('휴무'); ctx.lineWidth=1.5; ctx.stroke();
       }
     }
 
@@ -693,10 +709,10 @@ function renderCanvas(canvas, mode) {
 
     if (sched?.type==='정기휴무') {
       ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
-      ctx.fillStyle=COLOR_HOLIDAY; ctx.fillText('정기휴무', cx, labelY);
+      ctx.fillStyle=tc('정기휴무'); ctx.fillText('정기휴무', cx, labelY);
     } else if (sched?.type==='정상진료'||sched?.type==='단축진료'||sched?.type==='공휴일진료') {
       ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
-      ctx.fillStyle=COLOR_CLINIC; ctx.fillText(sched.type, cx, labelY);
+      ctx.fillStyle=tc(sched.type); ctx.fillText(sched.type, cx, labelY);
       if (sched.time) {
         ctx.font=`500 ${timeFontSz}px 'Pretendard', sans-serif`;
         ctx.fillText(sched.time, cx, labelY+labelFontSz+2);
@@ -708,7 +724,7 @@ function renderCanvas(canvas, mode) {
       const nH2=nRow2&&cells[idx+1]&&schedule[cells[idx+1]]?.type==='휴무'&&(schedule[cells[idx+1]]?.label||'휴무')===thisLabel2;
       if (!pH2&&!nH2) {
         ctx.font=`700 ${labelFontSz}px 'Pretendard', sans-serif`;
-        ctx.fillStyle=COLOR_HOLIDAY;
+        ctx.fillStyle=tc('휴무');
         thisLabel2.split(' ').forEach((line,li)=>{
           ctx.fillText(line, cx, labelY+li*(labelFontSz+2));
         });
@@ -752,7 +768,7 @@ function updatePreviewSizes() {
 
 // ── Calendar editor ────────────────────────────────────────────────────────
 function getDayColor(col) {
-  return col===0 ? '#C0392B' : col===6 ? COLOR_CLINIC : '#333';
+  return col===0 ? '#C0392B' : col===6 ? tc('정상진료') : '#333';
 }
 
 function renderCalEditor() {
@@ -773,8 +789,7 @@ function renderCalEditor() {
     if (!day) { el.className='cal-cell empty'; calGrid.appendChild(el); return; }
 
     const s=schedule[day];
-    const bg = s?.type==='정기휴무'||s?.type==='휴무' ? COLOR_HOLIDAY+'33'
-             : s?.type==='정상진료'||s?.type==='단축진료'||s?.type==='공휴일진료' ? COLOR_CLINIC+'22' : '#fff';
+    const bg = s?.type ? (tc(s.type) + (s.type==='정기휴무'||s.type==='휴무' ? '33' : '22')) : '#fff';
     el.className='cal-cell';
     el.style.background=bg;
 
@@ -787,7 +802,7 @@ function renderCalEditor() {
     if (s) {
       const badge=document.createElement('span');
       badge.className='day-badge';
-      const c={정기휴무:COLOR_HOLIDAY,정상진료:COLOR_CLINIC,단축진료:COLOR_CLINIC,공휴일진료:COLOR_CLINIC,휴무:COLOR_HOLIDAY}[s.type]||'#999';
+      const c=tc(s.type);
       badge.style.color=c;
       badge.textContent=s.type==='휴무'?(s.label?s.label.slice(0,5):'휴무'):s.type;
       el.appendChild(badge);
@@ -834,15 +849,12 @@ inpYear.addEventListener('change', ()=>{ year=+inpYear.value; renderCalEditor();
 inpMonth.addEventListener('change', ()=>{ month=+inpMonth.value; renderCalEditor(); redrawAll(); });
 
 // ── Color pickers ─────────────────────────────────────────────────────────
-document.getElementById('color-holiday').addEventListener('input', e => {
-  COLOR_HOLIDAY = e.target.value;
-  document.getElementById('legend-holiday-label').style.color = COLOR_HOLIDAY;
-  renderCalEditor(); redrawAll();
-});
-document.getElementById('color-clinic').addEventListener('input', e => {
-  COLOR_CLINIC = e.target.value;
-  document.getElementById('legend-clinic-label').style.color = COLOR_CLINIC;
-  renderCalEditor(); redrawAll();
+['정기휴무','휴무','정상진료','단축진료','공휴일진료'].forEach(type => {
+  document.getElementById('color-'+type).addEventListener('input', e => {
+    typeColors[type] = e.target.value;
+    document.getElementById('legend-label-'+type).style.color = e.target.value;
+    renderCalEditor(); redrawAll();
+  });
 });
 
 // ── BG upload ──────────────────────────────────────────────────────────────
