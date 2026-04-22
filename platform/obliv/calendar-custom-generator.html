@@ -348,7 +348,6 @@ let logoType='none', logoPos='bottom-center';
 let footerText='', footerColor='#999999', footerSize=11;
 let highlights=[{id:1,label:'휴가',color:'#C0392B',days:new Set()}];
 let activeHlId=1, nextHlId=2;
-let isDragging=false, dragMode='add';
 let logoCache={};
 
 // ─── DOM ────────────────────────────────────────────────────────────────────
@@ -618,23 +617,12 @@ function renderCalEditor(){
   document.getElementById('cal-mode-bar').innerHTML=ahl?`현재: <strong>"${ahl.label}"</strong> — 클릭/드래그로 지정`:'그룹을 선택하세요';
 }
 
-calGrid.addEventListener('mousedown',e=>{
+calGrid.addEventListener('click',e=>{
   const cell=e.target.closest('.cal-cell[data-day]');if(!cell)return;
-  e.preventDefault();
   const day=+cell.dataset.day,ahl=highlights.find(h=>h.id===activeHlId);
-  isDragging=true;
-  dragMode=(ahl&&ahl.days.has(day))?'remove':'add';
-  dragMode==='remove'?removeDay(day):assignDay(day,activeHlId);
+  if(ahl&&ahl.days.has(day))removeDay(day);else assignDay(day,activeHlId);
   renderCalEditor();redrawAll();
 });
-calGrid.addEventListener('mouseover',e=>{
-  if(!isDragging)return;
-  const cell=e.target.closest('.cal-cell[data-day]');if(!cell)return;
-  const day=+cell.dataset.day;
-  dragMode==='remove'?removeDay(day):assignDay(day,activeHlId);
-  renderCalEditor();redrawAll();
-});
-document.addEventListener('mouseup',()=>{isDragging=false;});
 
 // ─── Highlight list UI ────────────────────────────────────────────────────
 function renderHlList(){
