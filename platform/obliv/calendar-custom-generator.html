@@ -346,7 +346,7 @@ let bgOffset={pc:{x:0,y:0},mo:{x:0,y:0},a4:{x:0,y:0}};
 let titleSz=52, textColor='#2a2a2a';
 let logoType='none', logoPos='bottom-center';
 let footerText='', footerColor='#999999', footerSize=11;
-let highlights=[{id:1,label:'휴가',color:'#C0392B',days:new Set()}];
+let highlights=[{id:1,label:'휴가',color:'#C0392B',daysByMonth:{}}];
 let activeHlId=1, nextHlId=2;
 let logoCache={};
 
@@ -390,9 +390,11 @@ async function prewarmLogos(){
 }
 
 // ─── Highlight helpers ────────────────────────────────────────────────────
-function getHlForDay(d){return highlights.find(h=>h.days.has(d))||null;}
-function assignDay(d,id){highlights.forEach(h=>h.days.delete(d));const h=highlights.find(h=>h.id===id);if(h)h.days.add(d);}
-function removeDay(d){highlights.forEach(h=>h.days.delete(d));}
+function mk(){return`${year}-${month}`;}
+function mDays(hl){const k=mk();if(!hl.daysByMonth[k])hl.daysByMonth[k]=new Set();return hl.daysByMonth[k];}
+function getHlForDay(d){return highlights.find(h=>mDays(h).has(d))||null;}
+function assignDay(d,id){highlights.forEach(h=>mDays(h).delete(d));const h=highlights.find(h=>h.id===id);if(h)mDays(h).add(d);}
+function removeDay(d){highlights.forEach(h=>mDays(h).delete(d));}
 
 // ─── Canvas Render (scale-aware) ──────────────────────────────────────────
 async function renderCanvas(canvas,mode){
@@ -504,7 +506,7 @@ async function renderCanvas(canvas,mode){
       };
       for(let col=0;col<7;col++){
         const day=cells[row*7+col];
-        if(day&&hl.days.has(day)){if(sc2<0)sc2=col;ec=col;}else flush();
+        if(day&&mDays(hl).has(day)){if(sc2<0)sc2=col;ec=col;}else flush();
       }
       flush();
     }
@@ -620,7 +622,7 @@ function renderCalEditor(){
 calGrid.addEventListener('click',e=>{
   const cell=e.target.closest('.cal-cell[data-day]');if(!cell)return;
   const day=+cell.dataset.day,ahl=highlights.find(h=>h.id===activeHlId);
-  if(ahl&&ahl.days.has(day))removeDay(day);else assignDay(day,activeHlId);
+  if(ahl&&mDays(ahl).has(day))removeDay(day);else assignDay(day,activeHlId);
   renderCalEditor();redrawAll();
 });
 
@@ -639,7 +641,7 @@ function renderHlList(){
       </div>
       <div class="hl-meta">
         <button class="btn-eye">🔍 스포이드</button>
-        <span class="hl-count">${hl.days.size}일</span>
+        <span class="hl-count">${mDays(hl).size}일</span>
       </div>`;
     item.addEventListener('click',ev=>{if(ev.target.classList.contains('btn-del'))return;activeHlId=hl.id;renderHlList();renderCalEditor();});
     const ci=item.querySelector('input[type=color]');
@@ -666,7 +668,7 @@ function renderHlList(){
 function addHighlight(){
   if(highlights.length>=5)return;
   const cols=['#2980b9','#27ae60','#8e44ad','#e67e22','#16a085'];
-  const hl={id:nextHlId++,label:`그룹${highlights.length+1}`,color:cols[highlights.length%cols.length],days:new Set()};
+  const hl={id:nextHlId++,label:`그룹${highlights.length+1}`,color:cols[highlights.length%cols.length],daysByMonth:{}};
   highlights.push(hl);activeHlId=hl.id;
   renderHlList();renderCalEditor();
 }
@@ -823,7 +825,7 @@ function saveHistory(){
     time:new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
     year,month,titleSz,bgColor,bgOverlay,bgScale,
     logoType,logoPos,footerText,footerColor,footerSize,
-    highlights:highlights.map(h=>({...h,days:[...h.days]}))
+    highlights:highlights.map(h=>({...h,daysByMonth:Object.fromEntries(Object.entries(h.daysByMonth).map(([k,v])=>[k,[...v]]))}))
   };
   hist.unshift(snap);
   if(hist.length>20)hist.length=20;
@@ -838,7 +840,7 @@ function loadHistory(id){
   bgColor=snap.bgColor;bgOverlay=snap.bgOverlay;bgScale=snap.bgScale;
   logoType=snap.logoType;logoPos=snap.logoPos;
   footerText=snap.footerText;footerColor=snap.footerColor;footerSize=snap.footerSize;
-  highlights=snap.highlights.map(h=>({...h,days:new Set(h.days)}));
+  highlights=snap.highlights.map(h=>({...h,daysByMonth:Object.fromEntries(Object.entries(h.daysByMonth||{}).map(([k,v])=>[k,new Set(v)]))}));
   activeHlId=highlights[0]?.id||1;
   document.getElementById('sel-year').value=year;
   document.getElementById('sel-month').value=month;
