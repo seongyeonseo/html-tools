@@ -431,8 +431,9 @@ async function renderCanvas(canvas,mode){
   const cells=buildCells(year,month);
   const totalRows=cells.length/7;
 
-  // gap title→dow: mobile smaller
-  const gapTD=Math.round((mode==='mo'?22:42)*sc);
+  // gap title→dow: layout(grid 위치 고정) / visual(제목만 위로)
+  const gapTD=Math.round((mode==='mo'?22:42)*sc);          // grid 위치 결정용 (변경 X)
+  const gapTDvis=Math.round((mode==='a4'?126:mode==='mo'?33:63)*sc); // 시각적 간격 (A4 3x, 나머지 1.5x)
   const gapDG=Math.round(19*sc);
 
   // Footer text
@@ -455,9 +456,10 @@ async function renderCanvas(canvas,mode){
   const idealTopPad=Math.floor((H-contentH)/2);
   const topPad=Math.max(minPad,Math.min(idealTopPad,maxTopPad));
 
-  const titleY=topPad+tSz/2;
-  const dowY=topPad+tSz+gapTD+dowSz/2;
+  const dowY=topPad+tSz+gapTD+dowSz/2;           // grid 위치: gapTD 기준 고정
   const gridTop=topPad+tSz+gapTD+dowSz+gapDG;
+  // 제목은 dow 위에서 시각적 간격(gapTDvis)만큼 위로 — 상단 이탈 방지 clamp
+  const titleY=Math.max(tSz/2+Math.round(8*sc), dowY-dowSz/2-gapTDvis-tSz/2);
 
   ctx.clearRect(0,0,W,H);
 
@@ -476,12 +478,14 @@ async function renderCanvas(canvas,mode){
   const onDark=!!bgImg;
   const autoText=bgImg?'#ffffff':isColorLight(bgColor)?'#1c1c1c':'#ffffff';
 
-  // 2. Month title — "{n}월 진료안내" 고정, Pretendard SemiBold, 자간 -0.04em
+  // 2. Month title — "{n}월 진료 안내" 고정, Pretendard SemiBold, 자간 -0.04em
+  // letterSpacing이 마지막 글자에도 적용 → 시각 중앙 우편향 → x를 spacing/2 만큼 좌보정
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle=autoText;
   ctx.font=`600 ${tSz}px ${titleFont}`;
-  ctx.letterSpacing=`${Math.round(tSz*-0.04)}px`;
-  ctx.fillText(`${month}월 진료안내`,W/2,titleY);
+  const titleLS=Math.round(tSz*-0.04);
+  ctx.letterSpacing=`${titleLS}px`;
+  ctx.fillText(`${month}월 진료 안내`,W/2+titleLS/2,titleY);
   ctx.letterSpacing='0px';
 
   // 3. Day headers — 한글 요일, full opacity, 일요일 색상 배경 밝기 자동
