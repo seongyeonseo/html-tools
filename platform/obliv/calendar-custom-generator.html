@@ -182,13 +182,9 @@ input[type=color].swatch::-webkit-color-swatch{border:none;border-radius:50%;}
           <select id="sel-month"></select>
         </div>
         <div class="form-row">
-          <span class="form-label">부제목</span>
-          <input type="text" id="title-sub" placeholder="예) 진료 안내" value="진료 안내"/>
-        </div>
-        <div class="form-row">
           <span class="form-label">크기</span>
-          <input type="range" id="title-size" min="28" max="76" value="52"/>
-          <span class="range-val" id="title-size-val">52</span>
+          <input type="range" id="title-size" min="20" max="80" value="50"/>
+          <span class="range-val" id="title-size-val">50</span>
         </div>
       </div>
     </div>
@@ -349,7 +345,7 @@ const now = new Date();
 let year = now.getFullYear(), month = now.getMonth()+1;
 let bgColor='#F5F0E7', bgImg=null, bgScale=1.0, bgOverlay=0.15;
 let bgOffset={pc:{x:0,y:0},mo:{x:0,y:0},a4:{x:0,y:0}};
-let titleSz=52, titleSub='진료 안내', textColor='#2a2a2a';
+let titleSz=50, textColor='#2a2a2a';
 let logoType='none', logoPos='bottom-center';
 let footerText='', footerColor='#999999', footerSize=11, footerOpacity=100;
 let highlights=[{id:1,label:'휴가',color:'#C0392B',daysByMonth:{}}];
@@ -410,18 +406,23 @@ async function renderCanvas(canvas,mode){
   const sc=W/baseW; // all sizes scale with canvas width
 
   const padX=Math.round(64*sc);
-  const tSz=Math.round((mode==='mo'?Math.round(titleSz*.80):titleSz)*sc);
-  // DOW: A4 2x, mobile 9, pc 10
-  const dowSz=Math.round((mode==='a4'?20:mode==='mo'?9:10)*sc);
-  // rowH: mobile smaller to prevent overlap
-  const rowH=Math.round((mode==='mo'?50:68)*sc);
+  // title: 슬라이더 50 기준 → A4=1.0, PC=0.9(→45), MO=0.7(→35)
+  const tSz=Math.round((mode==='a4'?titleSz:mode==='mo'?titleSz*0.70:titleSz*0.90)*sc);
+  // DOW: A4 2x, mobile 9, pc 15
+  const dowSz=Math.round((mode==='a4'?20:mode==='mo'?9:15)*sc);
+  // rowH: A4 96(원 간격 확보), mobile 50, pc 68
+  const rowH=Math.round((mode==='a4'?96:mode==='mo'?50:68)*sc);
   const colW=(W-padX*2)/7;
-  const circR=Math.round((mode==='mo'?15:20)*sc);
+  // circR & lblSz: A4 2x scaled
+  const circR=Math.round((mode==='a4'?40:mode==='mo'?15:20)*sc);
   // date numbers: A4 2x
   const dateSz=Math.round((mode==='a4'?45:mode==='mo'?19.5:22.5)*sc);
-  const lblSz=Math.round((mode==='mo'?8.5:10)*sc);
+  const lblSz=Math.round((mode==='a4'?20:mode==='mo'?8.5:10)*sc);
   // footer size: A4 1.5x, mo 0.85x
   const fSz=Math.round((mode==='a4'?footerSize*1.5:mode==='mo'?Math.round(footerSize*.85):footerSize)*sc);
+  // logo height: mobile slightly smaller / seoul-origin 1.5x
+  const lhBase=Math.round((mode==='mo'?15:20)*sc);
+  const lhLogo=logoType==='seoul'?Math.round(lhBase*1.5):lhBase;
 
   const titleFont=`'Pretendard','Noto Sans KR',sans-serif`;
   const numFont=`'Cormorant Garamond','Pretendard',sans-serif`;
@@ -434,42 +435,29 @@ async function renderCanvas(canvas,mode){
   const gapTD=Math.round((mode==='mo'?22:42)*sc);
   const gapDG=Math.round(19*sc);
 
-  // Logo bottom margin: A4 3x
-  const botMargin=Math.round(22*sc)*(mode==='a4'?3:1);
-  const lhPreview=Math.round(20*sc);
-  const logoBottomY=H-botMargin;
-
-  // Footer
+  // Footer text
   const footerLines=footerText?footerText.split('\n'):[];
   const lineH=Math.round(fSz*1.55);
   const totalFooterH=footerLines.length>0?footerLines.length*lineH:0;
   const logoGap=Math.round(14*sc);
 
-  // A4: footer right below grid; others: anchored from bottom
-  let footerBotRef;
-  if(mode==='a4'){
-    footerBotRef=0; // will set after gridTop
-  } else {
-    footerBotRef=logoType!=='none'?(logoBottomY-lhPreview-logoGap):(H-botMargin);
-  }
+  // ① 로고/푸터 위치 먼저 확정 (캔버스 하단 기준, grid 위치와 무관)
+  const botMargin=Math.round((mode==='a4'?66:mode==='pc'?44:22)*sc);
+  const logoFixedTop=H-botMargin-lhLogo;
+  const footerBotRef=logoType!=='none'?logoFixedTop-logoGap:H-botMargin;
 
-  // Title block: "{n}월" + optional subtitle
-  const subSz=Math.round(tSz*0.36);
-  const subGap=Math.round(6*sc);
-  const titleBlockH=tSz+(titleSub?subGap+subSz:0);
-
-  // Grid centering
-  const contentH=titleBlockH+gapTD+dowSz+gapDG+totalRows*rowH;
+  // ② grid topPad — 푸터 영역 침범 안 하도록 상한 제한
+  const contentH=tSz+gapTD+dowSz+gapDG+totalRows*rowH;
   const minPad=Math.round(32*sc);
-  const topPad=Math.max(minPad,Math.floor((H-contentH)/2));
+  const safeGap=Math.round((mode==='pc'?6:16)*sc);  // grid 하단 ↔ 푸터 최소 간격
+  const labelExtend=mode==='a4'?Math.round(40*sc):0; // A4만 원형이 grid 아래로 삐져나옴
+  const maxTopPad=footerBotRef-totalFooterH-safeGap-labelExtend-contentH;
+  const idealTopPad=Math.floor((H-contentH)/2);
+  const topPad=Math.max(minPad,Math.min(idealTopPad,maxTopPad));
 
   const titleY=topPad+tSz/2;
-  const subY=topPad+tSz+subGap+subSz/2;
-  const dowY=topPad+titleBlockH+gapTD+dowSz/2;
-  const gridTop=topPad+titleBlockH+gapTD+dowSz+gapDG;
-
-  // A4 footer: just below grid
-  if(mode==='a4') footerBotRef=gridTop+totalRows*rowH+Math.round(20*sc)+totalFooterH;
+  const dowY=topPad+tSz+gapTD+dowSz/2;
+  const gridTop=topPad+tSz+gapTD+dowSz+gapDG;
 
   ctx.clearRect(0,0,W,H);
 
@@ -488,24 +476,20 @@ async function renderCanvas(canvas,mode){
   const onDark=!!bgImg;
   const autoText=bgImg?'#ffffff':isColorLight(bgColor)?'#1c1c1c':'#ffffff';
 
-  // 2. Month title — 한글, Pretendard SemiBold
+  // 2. Month title — "{n}월 진료안내" 고정, Pretendard SemiBold, 자간 -0.04em
   ctx.textAlign='center';ctx.textBaseline='middle';
   ctx.fillStyle=autoText;
   ctx.font=`600 ${tSz}px ${titleFont}`;
-  ctx.fillText(`${month}월`,W/2,titleY);
-  if(titleSub){
-    ctx.font=`500 ${subSz}px ${titleFont}`;
-    ctx.globalAlpha=0.7;
-    ctx.fillText(titleSub,W/2,subY);
-    ctx.globalAlpha=1;
-  }
+  ctx.letterSpacing=`${Math.round(tSz*-0.04)}px`;
+  ctx.fillText(`${month}월 진료안내`,W/2,titleY);
+  ctx.letterSpacing='0px';
 
-  // 3. Day headers — 한글 요일, full opacity
+  // 3. Day headers — 한글 요일, full opacity, 일요일 색상 배경 밝기 자동
   const DAYS=['일','월','화','수','목','금','토'];
-  const SUN_COLOR='#cc000a';
+  const SUN_COLOR=autoText==='#ffffff'?'#ff4c4c':'#cc000a';
   ctx.font=`600 ${dowSz}px ${uiFont}`;ctx.textBaseline='middle';
   DAYS.forEach((d,i)=>{
-    ctx.fillStyle=i===0?SUN_COLOR:(autoText==='#ffffff'?'rgba(255,255,255,.75)':'#888');
+    ctx.fillStyle=i===0?SUN_COLOR:(autoText==='#ffffff'?'#ffffff':'#888888');
     ctx.textAlign='center';
     ctx.fillText(d,padX+i*colW+colW/2,dowY);
   });
@@ -553,7 +537,7 @@ async function renderCanvas(canvas,mode){
     const cx=padX+col*colW+colW/2,cy=gridTop+row*rowH+circR;
     const hl=getHlForDay(day);
     let dc;
-    if(hl)dc='#fff';
+    if(hl)dc=isColorLight(hl.color)?'#1c1c1c':'#ffffff';
     else dc=col===0?SUN_COLOR:autoText;
     ctx.font=`${hl?'700':'400'} ${dateSz}px ${numFont}`;
     ctx.fillStyle=dc;ctx.textAlign='center';ctx.textBaseline='middle';
@@ -567,10 +551,12 @@ async function renderCanvas(canvas,mode){
     ctx.fillStyle=footerColor;
     ctx.globalAlpha=footerOpacity/100;
     ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.letterSpacing=`${Math.round(fSz*-0.04)}px`;
     footerLines.forEach((line,i)=>{
       const ly=footerBotRef-totalFooterH+lineH*i+lineH/2;
       ctx.fillText(line,W/2,ly);
     });
+    ctx.letterSpacing='0px';
     ctx.globalAlpha=1;
   }
 
@@ -580,14 +566,14 @@ async function renderCanvas(canvas,mode){
     const li=await getLogoImg(logoType,logoColor);
     if(li&&li.naturalWidth>0){
       const asp=li.naturalWidth/li.naturalHeight;
-      const lh=lhPreview;
+      const lh=lhLogo;
       const lw=lh*asp;
       let lx,ly;
       switch(logoPos){
         case 'top-right':    lx=W-padX-lw; ly=Math.round(24*sc); break;
-        case 'bottom-right': lx=W-padX-lw; ly=logoBottomY-lhPreview;  break;
+        case 'bottom-right': lx=W-padX-lw; ly=logoFixedTop; break;
         case 'top-left':     lx=padX;       ly=Math.round(24*sc); break;
-        default:             lx=W/2-lw/2;   ly=logoBottomY-lhPreview;  // bottom-center
+        default:             lx=W/2-lw/2;   ly=logoFixedTop; // bottom-center
       }
       ctx.globalAlpha=0.88;
       ctx.drawImage(li,lx,ly,lw,lh);
@@ -788,7 +774,6 @@ document.getElementById('bg-scale').addEventListener('input',e=>{bgScale=e.targe
 document.getElementById('bg-overlay').addEventListener('input',e=>{bgOverlay=e.target.value/100;document.getElementById('bg-overlay-val').textContent=e.target.value+'%';redrawAll();});
 document.querySelectorAll('input[name=logo]').forEach(r=>r.addEventListener('change',e=>{logoType=e.target.value;redrawAll();}));
 document.getElementById('logo-pos').addEventListener('change',e=>{logoPos=e.target.value;redrawAll();});
-document.getElementById('title-sub').addEventListener('input',e=>{titleSub=e.target.value;redrawAll();});
 document.getElementById('title-size').addEventListener('input',e=>{titleSz=+e.target.value;document.getElementById('title-size-val').textContent=e.target.value;redrawAll();});
 document.getElementById('footer-text').addEventListener('input',e=>{footerText=e.target.value;redrawAll();});
 function renderFooterColorChips(base){
@@ -860,7 +845,7 @@ function saveHistory(){
     id:Date.now(),
     label:`${year}년 ${month}월`,
     time:new Date().toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}),
-    year,month,titleSz,titleSub,bgColor,bgOverlay,bgScale,
+    year,month,titleSz,bgColor,bgOverlay,bgScale,
     logoType,logoPos,footerText,footerColor,footerSize,footerOpacity,
     highlights:highlights.map(h=>({...h,daysByMonth:Object.fromEntries(Object.entries(h.daysByMonth).map(([k,v])=>[k,[...v]]))}))
   };
@@ -873,7 +858,7 @@ function saveHistory(){
 function loadHistory(id){
   const snap=getHistory().find(h=>h.id===id);
   if(!snap)return;
-  year=snap.year;month=snap.month;titleSz=snap.titleSz;titleSub=snap.titleSub??'';
+  year=snap.year;month=snap.month;titleSz=snap.titleSz;
   bgColor=snap.bgColor;bgOverlay=snap.bgOverlay;bgScale=snap.bgScale;
   logoType=snap.logoType;logoPos=snap.logoPos;
   footerText=snap.footerText;footerColor=snap.footerColor;footerSize=snap.footerSize;footerOpacity=snap.footerOpacity??100;
@@ -881,7 +866,6 @@ function loadHistory(id){
   activeHlId=highlights[0]?.id||1;
   document.getElementById('sel-year').value=year;
   document.getElementById('sel-month').value=month;
-  document.getElementById('title-sub').value=titleSub;
   document.getElementById('title-size').value=titleSz;
   document.getElementById('title-size-val').textContent=titleSz;
   document.getElementById('bg-color').value=bgColor;
