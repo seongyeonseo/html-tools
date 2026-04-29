@@ -63,24 +63,22 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
 /* ── 공통 박스 ── */
 .info-box { background: #fff; }
 .info-row {
-  display: grid; grid-template-columns: 120px 1fr;
-  padding: 20px 32px; border-bottom: 1px solid #ede6dd;
-  gap: 20px; align-items: start;
+  display: grid; grid-template-columns: 160px 1fr;
+  padding: 18px 32px; border-bottom: 1px solid #ede6dd;
+  gap: 24px; align-items: center;
 }
 .info-row:last-child { border-bottom: none; }
 .info-key {
   font-family: "Pretendard", sans-serif;
-  font-weight: 700; font-size: 18px; color: #2d1819;
-  white-space: nowrap; letter-spacing: -0.04em; display: block;
+  font-weight: 700; font-size: 17px; color: #2d1819;
+  white-space: nowrap; letter-spacing: -0.04em;
 }
 .info-val {
   font-family: "Pretendard", sans-serif;
-  font-weight: 400; font-size: 18px; color: #2d1819;
-  line-height: 1.7; letter-spacing: -0.04em; white-space: pre-wrap; display: block;
+  font-weight: 400; font-size: 17px; color: #2d1819;
+  line-height: 1.7; letter-spacing: -0.04em; white-space: pre-wrap;
 }
-/* contenteditable 내 Enter로 생기는 div 래핑 방지 */
-.info-val > div, .info-val > p { display: inline; }
-.col-duties > div, .col-duties > p { display: block; margin: 0; }
+/* contenteditable Enter div 래핑 방지 */
 [contenteditable] { caret-color: #cd6d2e; }
 /* ── 전형절차 ── */
 .process-steps {
@@ -460,7 +458,7 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
 </div>
 
 <script>
-const SAVE_KEY='hq-songdo-v2-draft', HISTORY_KEY='hq-songdo-v2-history', MAX_HISTORY=20;
+const SAVE_KEY='hq-songdo-v3-draft', HISTORY_KEY='hq-songdo-v3-history', MAX_HISTORY=20;
 
 function getEditables(){return document.querySelectorAll('#poster-canvas [contenteditable]');}
 function getRowsData(){var r=[];document.querySelectorAll('.recruit-row').forEach(function(row){r.push({id:row.id,html:row.innerHTML});});return r;}
@@ -658,26 +656,13 @@ document.getElementById('btn-export').addEventListener('click',async function(){
   }
 });
 
-// contenteditable Enter → <br> 변환 (div/p 래핑으로 인한 텍스트 밀림 방지)
+// contenteditable Enter → insertLineBreak (div/p 래핑 방지)
 document.addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
   var t = e.target;
   if (!t.isContentEditable) return;
   e.preventDefault();
-  var sel = window.getSelection();
-  if (!sel.rangeCount) return;
-  var range = sel.getRangeAt(0);
-  range.deleteContents();
-  var br = document.createElement('br');
-  range.insertNode(br);
-  // 커서를 br 다음으로 이동
-  var after = document.createTextNode('​');
-  range.setStartAfter(br);
-  range.insertNode(after);
-  range.setStartAfter(after);
-  range.collapse(true);
-  sel.removeAllRanges();
-  sel.addRange(range);
+  document.execCommand('insertLineBreak');
 });
 
 // paste 시 plain text만 허용 (서식 붙여넣기로 인한 레이아웃 깨짐 방지)
