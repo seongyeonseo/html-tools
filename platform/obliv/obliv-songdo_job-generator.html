@@ -8,47 +8,33 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 100vh; }
-
-/* ── 레이아웃 ── */
-.app-wrapper { display: flex; width: 1260px; margin: 0 auto; padding: 32px 0; align-items: flex-start; gap: 28px; }
+body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 100vh; }
+.app-wrapper { display: flex; width: 1280px; margin: 0 auto; padding: 32px 0; align-items: flex-start; gap: 28px; }
 .preview-area { flex: 1; min-width: 0; }
-#poster-canvas { width: 860px; background: #fff; }
-
-/* ── 섹션 공통 ── */
-.poster-section { padding: 60px 60px 0; }
-.poster-section:last-child { padding-bottom: 72px; }
-#section-benefits { padding-bottom: 80px; }
-
-.section-header { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
-.section-icon {
-  width: 52px; height: 52px; flex-shrink: 0;
-  background: #af9588; border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-}
-.section-icon img { width: 34px; height: 34px; display: block; }
-.section-title {
+#poster-canvas { width: 860px; }
+#top-img { width: 100%; display: block; vertical-align: top; }
+.poster-body { background: #fff8f1; }
+.ps { padding: 72px 50px 0; }
+.ps:last-child { padding-bottom: 80px; }
+.sec-title {
   font-family: "Pretendard", sans-serif;
-  font-weight: 800; font-size: 40px;
-  color: #2d1819; letter-spacing: -0.02em; line-height: 1;
+  font-weight: 700; font-size: 40px;
+  color: #2d1819; text-align: center;
+  letter-spacing: -0.4px; margin-bottom: 44px;
 }
-
 /* ── 모집분야 ── */
-.recruit-table { width: 100%; }
+.recruit-wrap { background: #fff; }
 .recruit-thead {
-  display: grid;
-  grid-template-columns: 160px 210px 1fr;
-  background: #2d1819; height: 44px; align-items: center;
+  display: grid; grid-template-columns: 156px 220px 1fr;
+  background: #cd6d2e; height: 45px; align-items: center;
 }
 .recruit-thead .th {
   font-family: "Pretendard", sans-serif;
-  font-weight: 500; font-size: 16px; color: #fff; text-align: center;
+  font-weight: 500; font-size: 18px; color: #fff; text-align: center;
 }
 .recruit-row {
-  display: grid;
-  grid-template-columns: 160px 210px 1fr;
-  border-bottom: 1px solid #d8d8d8;
-  align-items: stretch;
+  display: grid; grid-template-columns: 156px 220px 1fr;
+  border-bottom: 1px solid #e8e0d8; align-items: stretch;
 }
 .col-pos {
   font-family: "Pretendard", sans-serif;
@@ -56,511 +42,402 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
   text-align: center;
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; gap: 4px;
-  padding: 18px 8px; line-height: 1.4;
-  border-right: 1px solid #d8d8d8;
+  padding: 20px 8px; line-height: 1.4;
+  border-right: 1px solid #e8e0d8;
 }
 .col-pos [contenteditable] { display: block; }
 .col-duties {
   font-family: "Pretendard", sans-serif;
   font-size: 14px; color: #2d1819; line-height: 1.85;
-  padding: 16px 14px;
-  border-right: 1px solid #d8d8d8;
-  white-space: pre-wrap;
-  letter-spacing: -0.04em;
+  padding: 18px 16px; border-right: 1px solid #e8e0d8;
+  white-space: pre-wrap; letter-spacing: -0.04em;
 }
 .col-req {
   font-family: "Pretendard", sans-serif;
   font-size: 14px; color: #2d1819; line-height: 1.85;
-  padding: 16px 14px;
-  letter-spacing: -0.04em;
+  padding: 18px 16px; letter-spacing: -0.04em;
 }
-.req-label {
-  font-weight: 700; font-size: 14px;
-  display: block; margin-bottom: 0;
-}
+.req-label { font-weight: 700; font-size: 14px; display: block; }
 .req-label + [contenteditable] { white-space: pre-wrap; }
 .req-label:not(:first-child) { margin-top: 6px; }
-
-/* ── 급여 ── */
-.salary-list { list-style: none; }
-.salary-list li {
+/* ── 공통 박스 ── */
+.info-box { background: #fff; }
+.info-row {
+  display: grid; grid-template-columns: 120px 1fr;
+  padding: 20px 32px; border-bottom: 1px solid #ede6dd;
+  gap: 20px; align-items: start;
+}
+.info-row:last-child { border-bottom: none; }
+.info-key {
   font-family: "Pretendard", sans-serif;
-  font-size: 26px; color: #2d1819;
-  line-height: 1.9; letter-spacing: -0.04em;
+  font-weight: 700; font-size: 18px; color: #2d1819;
+  white-space: nowrap; letter-spacing: -0.04em; padding-top: 2px;
 }
-
-/* ── 근무조건 ── */
-.work-table { width: 100%; }
-.work-row {
-  display: grid;
-  grid-template-columns: 155px 1fr;
-  padding: 22px 0; border-bottom: 1px solid #e0e0e0;
-  gap: 24px; align-items: start;
-}
-.work-row:last-child { border-bottom: none; }
-.work-key {
+.info-val {
   font-family: "Pretendard", sans-serif;
-  font-weight: 700; font-size: 24px; color: #2d1819;
-  white-space: nowrap; letter-spacing: -0.04em;
+  font-weight: 400; font-size: 18px; color: #2d1819;
+  line-height: 1.7; letter-spacing: -0.04em; white-space: pre-wrap;
 }
-.work-val {
-  font-family: "Pretendard", sans-serif;
-  font-weight: 400; font-size: 24px; color: #2d1819;
-  line-height: 1.65; letter-spacing: -0.04em; white-space: pre-wrap;
-}
-
 /* ── 전형절차 ── */
 .process-steps {
-  display: flex; align-items: center; gap: 0;
-  margin-bottom: 36px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 40px;
 }
-.process-step {
-  width: 148px; height: 148px;
+.ps-box {
+  width: 152px; height: 152px;
   border-radius: 0 0 28px 0;
   display: flex; align-items: center; justify-content: center;
   font-family: "Pretendard", sans-serif;
   font-weight: 700; font-size: 22px; color: #fff;
-  text-align: center; line-height: 1.3;
-  letter-spacing: -0.04em;
+  text-align: center; line-height: 1.3; letter-spacing: -0.04em;
 }
-.process-step-1 { background: #edcfb2; }
-.process-step-2 { background: #d79d64; }
-.process-step-3 { background: #cd6d2e; }
-.process-arrow {
-  font-size: 28px; color: #cd6d2e; padding: 0 16px;
-  font-weight: 700; line-height: 1;
-}
-.process-info { display: flex; flex-direction: column; gap: 0; }
-.process-row {
-  display: grid; grid-template-columns: 130px 1fr;
-  padding: 14px 0; border-bottom: 1px solid #e0e0e0;
-  gap: 16px; align-items: start;
-}
-.process-row:last-child { border-bottom: none; }
-.pinfo-key {
-  font-family: "Pretendard", sans-serif;
-  font-weight: 700; font-size: 22px; color: #2d1819;
-  white-space: nowrap; letter-spacing: -0.04em;
-}
-.pinfo-val {
-  font-family: "Pretendard", sans-serif;
-  font-size: 22px; color: #2d1819;
-  line-height: 1.65; letter-spacing: -0.04em; white-space: pre-wrap;
-}
+.ps-box-1 { background: #edcfb2; }
+.ps-box-2 { background: #d79d64; }
+.ps-box-3 { background: #cd6d2e; }
+.ps-arrow { font-size: 30px; color: #cd6d2e; padding: 0 18px; font-weight: 400; }
 .process-note {
   font-family: "Pretendard", sans-serif;
-  font-size: 16px; color: #888; line-height: 1.8;
+  font-size: 15px; color: #999; line-height: 1.8;
   letter-spacing: -0.04em; margin-top: 20px;
-  white-space: pre-wrap;
+  white-space: pre-wrap; text-align: center;
 }
-
 /* ── 복리후생 ── */
-.benefits-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
+.benefits-box {
+  background: #fff;
+  display: grid; grid-template-columns: repeat(4, 1fr);
 }
-.benefit-cell {
+.bcell {
   display: flex; flex-direction: column;
   align-items: center; justify-content: flex-start;
-  padding: 20px 8px 16px; text-align: center;
-  min-height: 170px;
+  padding: 28px 12px 24px; text-align: center; min-height: 200px;
+  border-right: 1px solid #f0ebe4; border-bottom: 1px solid #f0ebe4;
 }
-.benefit-cell.hidden { display: none; }
-.benefit-cell img { width: 70px; height: 70px; object-fit: contain; margin-bottom: 10px; }
-.benefit-cell p {
+.bcell:nth-child(4n) { border-right: none; }
+.bcell:nth-child(n+9) { border-bottom: none; }
+.bcell.hidden { display: none; }
+.bcell img { width: 80px; height: 80px; object-fit: contain; margin-bottom: 14px; }
+.bcell p {
   font-family: "Pretendard", sans-serif;
-  font-weight: 700; font-size: 17px; color: #2d1819;
-  line-height: 1.35; white-space: pre-wrap; margin-bottom: 4px;
+  font-weight: 700; font-size: 17px; color: #cd6d2e;
+  line-height: 1.35; white-space: pre-wrap; margin-bottom: 6px;
 }
-.benefit-desc {
+.bcell span {
   font-family: "Pretendard", sans-serif;
   font-weight: 400; font-size: 14px; color: #555;
-  line-height: 1.5; white-space: pre-wrap; display: block;
+  line-height: 1.55; white-space: pre-wrap; display: block;
 }
-
-/* ── contenteditable 스타일 ── */
-[contenteditable]:focus {
-  outline: 2px solid rgba(16,16,255,0.25);
-  border-radius: 3px;
-}
-
+/* ── contenteditable ── */
+[contenteditable]:focus { outline: 2px solid rgba(205,109,46,0.3); border-radius: 3px; }
 /* ── 사이드바 ── */
 .sidebar {
-  width: 310px; flex-shrink: 0;
-  position: sticky; top: 32px;
+  width: 310px; flex-shrink: 0; position: sticky; top: 32px;
   max-height: calc(100vh - 64px); overflow-y: auto;
 }
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
-
 .hint-box {
-  font-size: 11px; color: #666; background: #f6f6ff;
-  border: 1px solid #dcdcff; border-radius: 6px;
-  padding: 8px 11px; margin-bottom: 14px; line-height: 1.7;
-  letter-spacing: -0.02em;
+  font-size: 11px; color: #666; background: #fff7f0;
+  border: 1px solid #f0d8c4; border-radius: 6px;
+  padding: 8px 11px; margin-bottom: 14px; line-height: 1.7; letter-spacing: -0.02em;
 }
-.hint-box strong { color: #1010FF; font-weight: 700; }
-
-.ctrl-section { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e0e0e0; }
-.ctrl-section:last-of-type { border-bottom: none; }
-.ctrl-label {
-  font-size: 12px; font-weight: 700; color: #1010FF;
+.hint-box strong { color: #cd6d2e; font-weight: 700; }
+.ctrl-sec { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e8d8c8; }
+.ctrl-sec:last-of-type { border-bottom: none; }
+.ctrl-lbl {
+  font-size: 12px; font-weight: 700; color: #cd6d2e;
   letter-spacing: -0.04em; margin-bottom: 10px;
   cursor: pointer; display: flex; align-items: center;
   justify-content: space-between; user-select: none;
 }
-.ctrl-label::after { content: "▾"; font-size: 10px; transition: transform 0.2s; }
-.ctrl-section.collapsed .ctrl-label { margin-bottom: 0; }
-.ctrl-section.collapsed .ctrl-label::after { transform: rotate(-90deg); }
-.ctrl-section.collapsed .ctrl-body { display: none; }
-
-/* 포지션 목록 */
+.ctrl-lbl::after { content: "▾"; font-size: 10px; transition: transform 0.2s; }
+.ctrl-sec.collapsed .ctrl-lbl { margin-bottom: 0; }
+.ctrl-sec.collapsed .ctrl-lbl::after { transform: rotate(-90deg); }
+.ctrl-sec.collapsed .ctrl-body { display: none; }
 .pos-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
-.pos-list-item {
+.pos-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; background: #f8f8f8;
-  border: 1px solid #e0e0e0; border-radius: 5px;
+  padding: 7px 10px; background: #fdf6f0;
+  border: 1px solid #e8d8c8; border-radius: 5px;
   font-size: 12px; font-weight: 600; color: #333;
   font-family: "Pretendard", sans-serif;
 }
-.pos-drag-handle {
-  cursor: grab; color: #bbb; font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1;
-  user-select: none;
-}
-.pos-drag-handle:active { cursor: grabbing; }
-.pos-list-item.drag-over { border-color: #1010FF; background: #eeeeff; }
-.pos-list-item.dragging { opacity: 0.4; }
-.pos-list-name { flex: 1; }
-.pos-del {
-  background: none; border: none; cursor: pointer;
-  color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0;
-}
+.drag-handle { cursor: grab; color: #c8b0a0; font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1; user-select: none; }
+.drag-handle:active { cursor: grabbing; }
+.pos-item.drag-over { border-color: #cd6d2e; background: #fff0e8; }
+.pos-item.dragging { opacity: 0.4; }
+.pos-name { flex: 1; }
+.pos-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0; }
 .pos-del:hover { color: #e00; }
-.btn-add-pos {
-  width: 100%; background: none; border: 1.5px dashed #1010FF;
-  color: #1010FF; border-radius: 6px; padding: 8px 0;
+.btn-add {
+  width: 100%; background: none; border: 1.5px dashed #cd6d2e;
+  color: #cd6d2e; border-radius: 6px; padding: 8px 0;
   font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif;
   cursor: pointer; margin-top: 6px; letter-spacing: -0.02em;
 }
-.btn-add-pos:hover { background: #f0f0ff; }
-
-/* 복리후생 토글 */
-.benefit-toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.benefit-toggle-item {
+.btn-add:hover { background: #fff0e8; }
+.btog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.btog {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 8px; background: #f8f8f8;
-  border: 1px solid #e0e0e0; border-radius: 5px;
+  padding: 5px 8px; background: #fdf6f0;
+  border: 1px solid #e8d8c8; border-radius: 5px;
   font-size: 11px; font-weight: 600; color: #333;
   font-family: "Pretendard", sans-serif; cursor: pointer;
 }
-.benefit-toggle-item input[type="checkbox"] {
-  width: 13px; height: 13px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0;
-}
-
-/* 상단 이미지 URL 입력 */
-.top-img-input {
-  width: 100%; font-size: 11px; font-family: "Pretendard", sans-serif;
-  border: 1px solid #ddd; border-radius: 5px; padding: 7px 9px;
-  color: #333; letter-spacing: -0.02em; margin-bottom: 6px;
-  box-sizing: border-box;
-}
-.top-img-input:focus { outline: 1px solid #1010FF; border-color: #1010FF; }
-.btn-apply-img {
-  width: 100%; background: #f0f0ff; border: 1.5px solid #1010FF;
-  color: #1010FF; border-radius: 6px; padding: 7px 0;
-  font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif;
-  cursor: pointer; letter-spacing: -0.02em;
-}
-.btn-apply-img:hover { background: #e0e0ff; }
-
+.btog input[type="checkbox"] { width: 13px; height: 13px; accent-color: #cd6d2e; cursor: pointer; flex-shrink: 0; }
 .btn-export {
-  width: 100%; background: #1010FF; color: #fff; border: none;
+  width: 100%; background: #cd6d2e; color: #fff; border: none;
   border-radius: 7px; padding: 12px 0; font-size: 13px; font-weight: 700;
   font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 8px;
   transition: background 0.15s; letter-spacing: -0.04em;
 }
-.btn-export:hover { background: #0000cc; }
-.btn-export:disabled { background: #888; cursor: default; }
-
-/* 히스토리 */
-.btn-save-history {
-  width: 100%; background: #fff; border: 1.5px solid #1010FF; color: #1010FF;
+.btn-export:hover { background: #b05a20; }
+.btn-export:disabled { background: #aaa; cursor: default; }
+.btn-history {
+  width: 100%; background: #fff; border: 1.5px solid #cd6d2e; color: #cd6d2e;
   border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700;
-  font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px;
-  letter-spacing: -0.03em; transition: background 0.15s;
+  font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px; letter-spacing: -0.03em;
 }
-.btn-save-history:hover { background: #f0f0ff; }
+.btn-history:hover { background: #fff0e8; }
 .history-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-.history-item {
-  display: flex; align-items: center; gap: 6px;
-  padding: 7px 9px; background: #f8f8f8;
-  border: 1px solid #e0e0e0; border-radius: 5px;
-}
-.history-item button.load {
-  flex: 1; background: none; border: none; cursor: pointer; text-align: left;
-  font-size: 11px; font-weight: 600; color: #333;
-  font-family: "Pretendard", sans-serif; letter-spacing: -0.02em;
-}
-.history-item button.load:hover { color: #1010FF; }
-.history-item button.del {
-  background: none; border: none; cursor: pointer;
-  font-size: 13px; color: #ccc; line-height: 1; padding: 0;
-}
+.history-item { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: #fdf6f0; border: 1px solid #e8d8c8; border-radius: 5px; }
+.history-item button.load { flex: 1; background: none; border: none; cursor: pointer; text-align: left; font-size: 11px; font-weight: 600; color: #333; font-family: "Pretendard", sans-serif; letter-spacing: -0.02em; }
+.history-item button.load:hover { color: #cd6d2e; }
+.history-item button.del { background: none; border: none; cursor: pointer; font-size: 13px; color: #ccc; line-height: 1; padding: 0; }
 .history-item button.del:hover { color: #e00; }
-.history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; letter-spacing: -0.02em; }
+.history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; }
 </style>
 </head>
 <body>
-
 <div class="app-wrapper">
-
-  <!-- ── 미리보기 ── -->
   <div class="preview-area">
   <div id="poster-canvas">
 
-    <!-- 상단 이미지 -->
-    <img id="top-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/obliv_center_all_new_members_v260429_top.png" style="width:100%; display:block; vertical-align:top;" alt="">
+    <img id="top-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/obliv_center_all_new_members_v260429_top.png" alt="" crossorigin="anonymous">
 
-    <!-- 모집분야 -->
-    <div class="poster-section" style="padding-bottom:0;">
-      <div class="section-header">
-        <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
-        <div class="section-title">모집분야</div>
-      </div>
-      <div class="recruit-table">
-        <div class="recruit-thead">
-          <div class="th">모집 부분</div>
-          <div class="th">담당 업무</div>
-          <div class="th">자격요건 및 우대사항</div>
-        </div>
+    <div class="poster-body">
 
-        <!-- 상담실장 -->
-        <div class="recruit-row" id="row-sangdam">
-          <div class="col-pos">
-            <span contenteditable="true">상담실장</span>
-            <span contenteditable="true">0명</span>
+      <!-- 모집분야 -->
+      <div class="ps" style="padding-bottom:0;">
+        <div class="sec-title">모집분야</div>
+        <div class="recruit-wrap">
+          <div class="recruit-thead">
+            <div class="th">모집 부분</div>
+            <div class="th">담당 업무</div>
+            <div class="th">자격요건 및 우대사항</div>
           </div>
-          <div class="col-duties" contenteditable="true">· 고객 상담 및 피부 시술 안내
+          <div class="recruit-row" id="row-sangdam">
+            <div class="col-pos">
+              <span contenteditable="true">상담실장</span>
+              <span contenteditable="true">0명</span>
+            </div>
+            <div class="col-duties" contenteditable="true">· 고객 상담 및 피부 시술 안내
 · 초/재진 고객관리
 · 매출관리 및 제품판매</div>
-          <div class="col-req">
-            <span class="req-label">자격요건</span>
-            <div contenteditable="true">· 성형외과/피부과 상담 경력 1년 이상</div>
-            <span class="req-label">우대사항</span>
-            <div contenteditable="true">· 프리미엄 의원 또는 신규 오픈 병원 근무 경험
+            <div class="col-req">
+              <span class="req-label">자격요건</span>
+              <div contenteditable="true">· 성형외과/피부과 상담 경력 1년 이상</div>
+              <span class="req-label">우대사항</span>
+              <div contenteditable="true">· 프리미엄 의원 또는 신규 오픈 병원 근무 경험
 · 1:1 고객 상담 및 고액 시술 상담 경험자
 · 상담 스크립트, 프로세스 직접 구축 또는 개선 경험자
 · 실손의료보험(실비) 청구 관련 상담 경험자</div>
+            </div>
           </div>
-        </div>
-
-        <!-- 코디네이터 -->
-        <div class="recruit-row" id="row-coordinator">
-          <div class="col-pos">
-            <span contenteditable="true">코디네이터</span>
-            <span contenteditable="true">0명</span>
-          </div>
-          <div class="col-duties" contenteditable="true">· 고객 응대 및 접수, 수납
+          <div class="recruit-row" id="row-coordinator">
+            <div class="col-pos">
+              <span contenteditable="true">코디네이터</span>
+              <span contenteditable="true">0명</span>
+            </div>
+            <div class="col-duties" contenteditable="true">· 고객 응대 및 접수, 수납
 · 진료 및 시술 일정 관리</div>
-          <div class="col-req">
-            <span class="req-label">자격요건</span>
-            <div contenteditable="true">· 경력 무관</div>
-            <span class="req-label">우대사항</span>
-            <div contenteditable="true">· 코디네이터 자격증 소지자
+            <div class="col-req">
+              <span class="req-label">자격요건</span>
+              <div contenteditable="true">· 경력 무관</div>
+              <span class="req-label">우대사항</span>
+              <div contenteditable="true">· 코디네이터 자격증 소지자
 · 서비스직 경력자</div>
+            </div>
           </div>
-        </div>
-
-        <!-- 간호조무사 -->
-        <div class="recruit-row" id="row-nurse">
-          <div class="col-pos">
-            <span contenteditable="true">간호조무사</span>
-            <span contenteditable="true">0명</span>
-          </div>
-          <div class="col-duties" contenteditable="true">· 진료 및 시술 보조
+          <div class="recruit-row" id="row-nurse">
+            <div class="col-pos">
+              <span contenteditable="true">간호조무사</span>
+              <span contenteditable="true">0명</span>
+            </div>
+            <div class="col-duties" contenteditable="true">· 진료 및 시술 보조
 · 의료기기 및 소모품 관리
 · 환자 안내 및 회복 관리</div>
-          <div class="col-req">
-            <span class="req-label">자격요건</span>
-            <div contenteditable="true">· 간호조무사 자격증 소지자</div>
-            <span class="req-label">우대사항</span>
-            <div contenteditable="true">· IV, IM 가능자
+            <div class="col-req">
+              <span class="req-label">자격요건</span>
+              <div contenteditable="true">· 간호조무사 자격증 소지자</div>
+              <span class="req-label">우대사항</span>
+              <div contenteditable="true">· IV, IM 가능자
 · 피부과, 성형외과 근무 경험자
 · 시술 어시스트 경험자</div>
+            </div>
           </div>
-        </div>
-
-        <!-- 피부&바디관리사 -->
-        <div class="recruit-row" id="row-skin">
-          <div class="col-pos">
-            <span contenteditable="true">피부&amp;바디관리사</span>
-            <span contenteditable="true">0명</span>
-          </div>
-          <div class="col-duties" contenteditable="true">· 피부관리
+          <div class="recruit-row" id="row-skin">
+            <div class="col-pos">
+              <span contenteditable="true">피부&amp;바디관리사</span>
+              <span contenteditable="true">0명</span>
+            </div>
+            <div class="col-duties" contenteditable="true">· 피부관리
 · 레이저 바디관리</div>
-          <div class="col-req">
-            <span class="req-label">자격요건</span>
-            <div contenteditable="true">· 피부&amp;바디관리 경력 1년 이상</div>
-            <span class="req-label">우대사항</span>
-            <div contenteditable="true">· 에스테틱 피부&amp;바디관리 경력 1년 이상
+            <div class="col-req">
+              <span class="req-label">자격요건</span>
+              <div contenteditable="true">· 피부&amp;바디관리 경력 1년 이상</div>
+              <span class="req-label">우대사항</span>
+              <div contenteditable="true">· 에스테틱 피부&amp;바디관리 경력 1년 이상
 · 동종업계 경력 1년 이상
 · 간호조무사/피부관리사 자격증 소지</div>
+            </div>
           </div>
         </div>
-
-      </div><!-- /recruit-table -->
-    </div><!-- /모집분야 -->
-
-    <!-- 급여 -->
-    <div class="poster-section">
-      <div class="section-header">
-        <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
-        <div class="section-title">급여</div>
       </div>
-      <ul class="salary-list">
-        <li contenteditable="true">· 면접 후 결정 (경력에 따른 연봉 협의)</li>
-        <li contenteditable="true">· 수습계약 : 3개월 (급여 100% 지급)</li>
-        <li contenteditable="true">· 연장근무 수당 지급</li>
-        <li contenteditable="true">· 4대보험 적용/퇴직연금 별도</li>
-      </ul>
-    </div>
 
-    <!-- 근무조건 -->
-    <div class="poster-section">
-      <div class="section-header">
-        <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
-        <div class="section-title">근무조건</div>
+      <!-- 급여 -->
+      <div class="ps">
+        <div class="sec-title">급여</div>
+        <div class="info-box">
+          <div class="info-row">
+            <div class="info-key">급여</div>
+            <div class="info-val" contenteditable="true">면접 후 결정 (경력에 따른 연봉 협의)</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">수습</div>
+            <div class="info-val" contenteditable="true">3개월 (급여 100% 지급)</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">기타</div>
+            <div class="info-val" contenteditable="true">연장근무 수당 지급 / 4대보험 적용 / 퇴직연금 별도</div>
+          </div>
+        </div>
       </div>
-      <div class="work-table">
-        <div class="work-row">
-          <div class="work-key">근무 형태</div>
-          <div class="work-val" contenteditable="true">정규직</div>
-        </div>
-        <div class="work-row">
-          <div class="work-key">근무 장소</div>
-          <div class="work-val" contenteditable="true">21998 인천광역시 연수구
-인천타워대로 132번길 34 (송도동) 3F</div>
-        </div>
-        <div class="work-row">
-          <div class="work-key">지원 자격</div>
-          <div class="work-val" contenteditable="true">경력 무관 (잠재력있는 신입 가능)</div>
-        </div>
-        <div class="work-row">
-          <div class="work-key">근무일</div>
-          <div class="work-val" contenteditable="true">주 5일 근무 (평일 4일 + 토 1일)</div>
-        </div>
-        <div class="work-row">
-          <div class="work-key">근무 시간</div>
-          <div class="work-val" contenteditable="true">월 – 금  10:30 – 21:00
-토요일  10:30 – 17:30
+
+      <!-- 근무 조건 -->
+      <div class="ps">
+        <div class="sec-title">근무 조건</div>
+        <div class="info-box">
+          <div class="info-row">
+            <div class="info-key">근무 형태</div>
+            <div class="info-val" contenteditable="true">정규직</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">근무 장소</div>
+            <div class="info-val" contenteditable="true">21998 인천광역시 연수구 인천타워대로 132번길 34 (송도동) 3F</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">지원 자격</div>
+            <div class="info-val" contenteditable="true">경력 무관 (잠재력있는 신입 가능)</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">근무일</div>
+            <div class="info-val" contenteditable="true">주 5일 근무 (평일 4일 + 토 1일)</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">근무 시간</div>
+            <div class="info-val" contenteditable="true">월 – 금  10:30 – 21:00  /  토요일  10:30 – 17:30
 휴게시간 : 점심 1시간</div>
-        </div>
-        <div class="work-row">
-          <div class="work-key">담당자</div>
-          <div class="work-val" contenteditable="true">담당자 이름 / 연락처</div>
+          </div>
+          <div class="info-row">
+            <div class="info-key">담당자</div>
+            <div class="info-val" contenteditable="true">담당자 이름 / 연락처</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- 전형절차 -->
-    <div class="poster-section">
-      <div class="section-header">
-        <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
-        <div class="section-title">전형절차</div>
-      </div>
-      <div class="process-steps">
-        <div class="process-step process-step-1" contenteditable="true">서류 전형</div>
-        <div class="process-arrow">›</div>
-        <div class="process-step process-step-2" contenteditable="true">면접 전형</div>
-        <div class="process-arrow">›</div>
-        <div class="process-step process-step-3" contenteditable="true">입사</div>
-      </div>
-      <div class="process-info">
-        <div class="process-row">
-          <span class="pinfo-key">제출 서류</span>
-          <span class="pinfo-val" contenteditable="true">이력서(사진첨부 필수)/자기소개서</span>
+      <!-- 전형 절차 -->
+      <div class="ps">
+        <div class="sec-title">전형 절차</div>
+        <div class="process-steps">
+          <div class="ps-box ps-box-1" contenteditable="true">서류 전형</div>
+          <div class="ps-arrow">›</div>
+          <div class="ps-box ps-box-2" contenteditable="true">면접 전형</div>
+          <div class="ps-arrow">›</div>
+          <div class="ps-box ps-box-3" contenteditable="true">입사</div>
         </div>
-        <div class="process-row">
-          <span class="pinfo-key">접수 방법</span>
-          <span class="pinfo-val" contenteditable="true">온라인 접수/이메일 접수</span>
+        <div class="info-box">
+          <div class="info-row">
+            <span class="info-key">제출 서류</span>
+            <span class="info-val" contenteditable="true">이력서(사진첨부 필수) / 자기소개서</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">접수 방법</span>
+            <span class="info-val" contenteditable="true">온라인 접수 / 이메일 접수</span>
+          </div>
         </div>
-      </div>
-      <div class="process-note" contenteditable="true">*면접 합격자에 한하여 전형결과를 안내 드립니다.
+        <div class="process-note" contenteditable="true">*면접 합격자에 한하여 전형결과를 안내 드립니다.
 *허위사실이 발견될 경우 채용이 취소될 수 있습니다.</div>
-    </div>
-
-    <!-- 복리후생 -->
-    <div class="poster-section" id="section-benefits">
-      <div class="section-header">
-        <div class="section-icon"><img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzQiIGhlaWdodD0iMzQiIHZpZXdCb3g9IjAgMCAzNCAzNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTMzLjY0OTkgMTYuMDQ5OUMzMy42NDk5IDI1LjQ5OTkgMjYuOTQ5OSAzMy4yNDk5IDE2LjQ0OTkgMzMuMjQ5OUM2LjU5OTkgMzMuMjQ5OSAtOS43NjAyNmUtMDUgMjUuODk5OSAtOS43NjAyNmUtMDUgMTcuMTk5OUMtOS43NjAyNmUtMDUgNy43NDk5IDYuNjk5OSAtOS43NzUxNmUtMDUgMTcuMTk5OSAtOS43NzUxNmUtMDVDMjcuMDQ5OSAtOS43NzUxNmUtMDUgMzMuNjQ5OSA3LjM0OTkgMzMuNjQ5OSAxNi4wNDk5Wk0xOS40OTk5IDMxLjM0OTlDMjUuNDk5OSAzMS4zNDk5IDMxLjQ0OTkgMjYuMTQ5OSAzMS40NDk5IDE5LjE0OTlDMzEuNDQ5OSA5LjU0OTkgMjIuMjk5OSAxLjg5OTkgMTQuMTQ5OSAxLjg5OTlDOC4xOTk5IDEuODk5OSAyLjE5OTkgNy4wOTk5IDIuMTk5OSAxNC4wOTk5QzIuMTk5OSAyMy42OTk5IDExLjM0OTkgMzEuMzQ5OSAxOS40OTk5IDMxLjM0OTlaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K" alt=""></div>
-        <div class="section-title">복리후생</div>
       </div>
-      <div class="benefits-grid">
-        <div class="benefit-cell" id="b-annual">
+
+      <!-- 복리 후생 -->
+      <div class="ps">
+        <div class="sec-title">복리 후생</div>
+        <div class="benefits-box">
+        <div class="bcell" id="b-annual">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">법적 연차제공</p>
-          <span class="benefit-desc" contenteditable="true">1년 미만 11개
+          <span contenteditable="true">1년 미만 11개
 1년 이상 15개</span>
         </div>
-        <div class="benefit-cell" id="b-discount">
+        <div class="bcell" id="b-discount">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">직원 할인혜택</p>
-          <span class="benefit-desc" contenteditable="true">본인 및 가족시술 시
+          <span contenteditable="true">본인 및 가족시술 시
 직원가 시술 혜택</span>
         </div>
-        <div class="benefit-cell" id="b-uniform">
-          <img src="data:image/png;base64,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" alt="">
-          <p contenteditable="true">직원 유니폼 지급</p>
-          <span class="benefit-desc" contenteditable="true">몸만오세요!</span>
-        </div>
-        <div class="benefit-cell" id="b-holiday">
+        <div class="bcell" id="b-holiday">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">명절 선물 제공</p>
-          <span class="benefit-desc" contenteditable="true">명절 상품권 or
+          <span contenteditable="true">명절 상품권 or
 포상급 지급</span>
         </div>
-        <div class="benefit-cell" id="b-lunch">
+        <div class="bcell" id="b-uniform">
+          <img src="data:image/png;base64,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" alt="">
+          <p contenteditable="true">직원 유니폼 지급</p>
+          <span contenteditable="true">몸만오세요!</span>
+        </div>
+        <div class="bcell" id="b-lunch">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">간식 제공</p>
-          <span class="benefit-desc" contenteditable="true">직원 휴게실 리모델링 후
+          <span contenteditable="true">직원 휴게실 리모델링 후
 원내 스낵바 구비</span>
         </div>
-        <div class="benefit-cell" id="b-longterm">
+        <div class="bcell" id="b-longterm">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">일할 맛 나요</p>
-          <span class="benefit-desc" contenteditable="true">장기근속,
+          <span contenteditable="true">장기근속,
 우수사원, 우수팀 포상</span>
         </div>
-        <div class="benefit-cell" id="b-referral">
+        <div class="bcell" id="b-referral">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">지인스카웃 인센티브</p>
-          <span class="benefit-desc" contenteditable="true">직원 소개시
+          <span contenteditable="true">직원 소개시
 포상금 지급</span>
         </div>
-        <div class="benefit-cell" id="b-colleague">
+        <div class="bcell" id="b-colleague">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">최고의 복지는 동료</p>
-          <span class="benefit-desc" contenteditable="true">모두 친절한 직원들
+          <span contenteditable="true">모두 친절한 직원들
 적응 걱정 No!</span>
         </div>
-        <div class="benefit-cell" id="b-birthday">
+        <div class="bcell" id="b-birthday">
           <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFkAAABZCAYAAABVC4ivAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAOdEVYdFNvZnR3YXJlAEZpZ21hnrGWYwAAC21JREFUeAHtXU1wFMcZ/WZW1k8ikNZO4YhAaflxqlJxCqmc3IItDnbFqYpRqgLkZolTLoA55IAOMc6Boy24OCcLbrE5GHwIKfuAAtychHUVLqrMT5YyQQll0AqptEJmZ9yvZ3rpbU3Pzu707KxWelUr7c/s7Mybr1+/7+ueGYtaCK4720/LmREquznKWLvIpX727pD/cS7gKwWyqEiuVSTbytMT5w5Zdp66n+QtK1ukFoFFKYKTupQZJZteYS9GKJjIxmBRnv1hDzpPneXpNElvOsmc2JI9xiJvL3s1Qk2DNc1axhnqLp9rNuFNI9ktzY+Q5R7xie2nNGFZp8kpv2P1ZAvUBCROsk/u282N2qhAdFuM7A3TlCASI7m1yVWQcGQbJ5lr7uMORq7zFq062JPU9eQd05ptlGT38aNRxvIUpa258VAg1xlnUT1NhmCTASB6GcFT7MnHtLoJBnLMa190H8+/TYYQO5Ld0izfKDLpcVsHiOo9cbU6ViRzebDsq9SeBANeVC/PDlEMNEyyu7RwpE3koRZy5ILoR29Sg2hILrheuc5xWmuwrTGrc+MZqhN1k7xmCRZogOi6SF7zBAvUSXRkkn0P/DGtg3h51WKuozObj7Z4BPg2DS6i3Tu5ehDZ3tV0FzxN9nzwOsHVYIGXmYqyYG0Lt5x5j9rXB8eEO+Iuzb9Xa6lQuXBLj8ZYJS3S0VrT8GRjWvexluQ2T5dNo0BdzrCueqeXCzuDAkmO1hEFOVqytaXdwEj2o/g/1IIoLy3Q/ctnaf7WVXru569T/4u7KdPdS6kDts5h0RzgNoJJXnp0sRVHNBYYsYUPT9Dy7P8q74HgPkb0DxjhvTuGKVWwERara+P4irfVN1qxs0P0znw6xSL4I/4607OBercPUWnmJi0/nKks15n9IT33i1/zCMfzVBDQCa4kucWiGNIw8+kHnGig/6e7afD3ExWJQHQ/+OcF/pCBqAbZeDQX1rTVvXFP1TvyC2/w07lILQBIAqQBJAKdzw5Qbv8xTh4If/D5Ba7HImKxPHT6/qWzLMJvVNaTipx0OVnZaVST7A0hjVGKEB0boldg4NVx2vTyfk5Y8cvLdPf8KU4qSN7+5okV68Bn+P787fwKOdm0e3/VwUkELrGR777j4mWF5FZwFGrH1rt9mHJMGgQh5dICffEnr/kjsgdZZG+oEZ1z1y7TN0xK5tjBkZGonDCnYXX1ZZ++9JFmh4foLfz1RBURIGHH2IkV9gxRnOnprUR2VOjkBAcQv2VcTqQO8CnJKXV4asem4lm286YJKN274XntADkZeO0gbx2x5USyc5zkNKSidO8mff3JqRUdG/7r9BQd2PNMU+MQgIMptwC4kiKTFFVOBg9MxJMSJCedzjZ0gD7JzZOKIM+76Ze/C2z+texZPdme6FDvX/qIen70Av34D6eqPsf2zHw2xXUf2LL3MNuufRQLvmR08Bd8fjAljuCM7fs8erFzKmEgEw80YegpbNvC7at8PXjcPR/dnl1/d7zyu3JLCLKKW944xP14bFj2KPs77UXy0hykIkcJATvyNeuwRJNE9PYM7OSEyeCEvfQ6/x+2Lp2chGV7X71/mGeIA6+OcRsHqP3Bpt37+AE1VwvxEhPLmyBoz1JCCNsR0eOjmaqEITKfZ8v2bH5Bu27YM/jmqNme0GNELfoD9AsA5GPrbw6ZT1Z8K2clleVhR+4x8nQZG+RBjjihv2qEgmQcmLAeP2q2F9QfyJGdCGxWmXMX595imlxzCCUqdB0boheQI3vXny9wz6uCd3a+/sqIIidh9gwHVrQoNdEBhD73bN5JW984TEbgWuMskudOs7BueAqSjFoZG8if+cxLlxHZ6OHD7BjWA3t1/8rZQDnZzA5c2PchJ/9n3xWtSfyuaFEyIFlwHuIg/OToB6FSFRksxe5gpnmQDFgLkHH7zETlNZKI3IGJqmUQtWGWTYVXa9jHH0JOil9e4eQ/ZM/xCJOTRdbRlf57o+o9leCgwNj82rgZggHbGrSYs8BhjjVrEUBTvD55sKGIq+t3WKThgAbJicgOAZU4sSxaT1P12aHzlmn7JkdcuTRfeT9KB1YvQOKDz/9GD/7196qDKyAT9+8/ejoOkheZq1Br1Eg+EqrM5UFyYmmIrgNrpB4hMjZEMQpHKiG3Tk+sKDBBrsRygmS8riQlAfqM34HEGLRzhQ5KEMKrqhEn9DSqnOD7X71/qELOInMQcrFeztgqv/3SrwLXKdYRlHgIfQbRLx47G+h8GoFxkrGhiBB5B0V1Cw9dByYSiCA5KV67xJdF8x88cIw3b7kWIZo9ivvFa1eqvLIK6PNWJg2waQJqqRW/M89an5HUmgyTzCPuL56/hJfFRqpZl6hHbFE6MFGPAFQ5gaZ2ZQeod+dwJWNTOzZB3Pyt8ImWnnN4SrCakWJ7oc8mpxkYj2REMSQBHhUP7EBQioydiCInoryJ/zziGLkP/TQ6jiPQlVqTGAe0kigOxUmRw8qb6JDCIg7E3Tp9jB80DE2hYCQgOr7trNMs+e4CqMe3NwZWJDLlk3VoNEXW+WGdI1AHX3Uky9Cl1vDOW0yl1YxkZHwFNkKdGMmyJMgVNyEnOoehygl2HO+pERdUo64FnczI+oyDGbtoD1iwcI47Z/LkX5AIEtRhd17v9UmrN0XGczWygmrUIA7uQm01MnTWTa4YovT5vYGdZASOe6eDlS3ypgpEADowEHD3k1Pauq5wGINULSeooN350JtHAYeRZe4kSE7CatQgOQxwPILgWhVDI3CcfAdluFyQCaB+gQ0UdV1hy4TDCMryZEmQK25BCQvWb8oRyJNkgCB9NoJnqJDYyEicYXdd/UNAF3GyPus6PoxCY92JjOmpECMjeJ70GJ9u2F2XsAgEOYywYrucWkdxF+bH9FT4Y3x4arJwr85rkBFnTA/fRVSrn+smx8gkg3yRiQKJjemp8OfEGZ93gajFTteaJxx3Fo9uMPQe68gQ9SC5/2cvN39MT4Y/78Ij2aAuX3/3YFWBJspElHoSllrFdgz9Yz1wJ/DhYWN6CaNgdfdtwxPjc+HizBOuJSeIbjiCMOIEyZXvJliTCIU6Fw4wPWoNxJknrKt/8O9rHIE6GJp8xxaCwFmdnmTAZSRyem+9E1FkyHISVmwPKn2mhIpUANUz7RfnJlk0H6EEYfK0g1Qmq0SBbqY9/6w0O+KfhdoUxHEYQSfsJDgYWh9cZ5t8Pl/LnP0U9bSDsBN2WgIB5/IFnMfX3GhWEeYw4IUXbl6tGtNLrtjeIJQoBlr6jFSdnLRAxxaMqGekAq14brWof2zYMZR+xxYM7ZVc9JdiaILTaC84R63u7GTQJ3qSPd/czlcvNIkqX6xCe70Lftqq64zTOmqDyUTYx6HXIOJpoUMnaR16uE7Ni1tHu2RZwtMGVi+sc6wo/9taS0W7IKrrYEUFWocM5ibKR6MsGIlk3hyecKJb5gYpKaNQz3WVI1/a1+rN5tmKIx25NkcRAVfPhavrv+psaZYNVdlr9VpxIHgPD7g60Nj1k9cm0Q0RDDQ8Qct9PDtKrr3a78QQFQ0TDMSaBecuzA5Rh43L/eaofVFXJxeEWDcO8DtDZDsNHeHWhzXNLw+Z5t0Z+GawDWB5+zAyH2oroOCzcY+Ju+cYnDRbKfhDp3O0WoH7+H3rjDeqv0EwcsccAT5bBtWo1RnVRR69XX3DJgkGjEayDF74J/u4ybnPycE5SV10PKmbISZGskALk11k9dxzzbj5YeIkC0hkv0Lpajbq5CepmyabdRvPppEsgycyjj3Kfn0vNSeZAZlnGLnnTN4CLipSIVmG70hG2absMjhCXuR3+nXL/yBczSoFYmWkTrIKnkU+w+TEsYdwQQ5yhbS4uYDFQWaBX+iuXP6C//dILVAL4TtTSE24J5Fi7QAAAABJRU5ErkJggg==" alt="">
           <p contenteditable="true">생일자 축하</p>
-          <span class="benefit-desc" contenteditable="true">함께 축하해요!
+          <span contenteditable="true">함께 축하해요!
 생일 선물 증정</span>
         </div>
-        <div class="benefit-cell" id="b-challenge">
+        <div class="bcell" id="b-challenge">
           <img src="data:image/png;base64,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" alt="">
           <p contenteditable="true">원하면 도전!</p>
-          <span class="benefit-desc" contenteditable="true">업무 기회 제공과
+          <span contenteditable="true">업무 기회 제공과
 내부 승진 기회 보장!</span>
         </div>
+        </div>
       </div>
-    </div>
 
-  </div><!-- /poster-canvas -->
-  </div><!-- /preview-area -->
+    </div>
+  </div>
+  </div>
 
   <!-- ── 사이드바 ── -->
   <div class="sidebar">
@@ -568,443 +445,241 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
       클릭해서 직접 수정하세요.<br>
       <strong>Ctrl+B</strong> 굵게 &nbsp;·&nbsp; <strong>Ctrl+Shift+X</strong> 포인트 컬러
     </div>
-
-    <!-- 상단 이미지 URL -->
-    <div class="ctrl-section">
-      <div class="ctrl-label">상단 이미지</div>
-      <div class="ctrl-body">
-        <input class="top-img-input" id="top-img-url" type="text" placeholder="이미지 URL 붙여넣기" value="https://djat5i2cugmqc.cloudfront.net/design_contents/obliv_center_all_new_members_v260429_top.png" />
-        <button class="btn-apply-img" id="btn-apply-img">적용</button>
-      </div>
-    </div>
-
-    <!-- 모집 포지션 -->
-    <div class="ctrl-section">
-      <div class="ctrl-label">모집 포지션</div>
+    <div class="ctrl-sec">
+      <div class="ctrl-lbl">모집 포지션</div>
       <div class="ctrl-body">
         <ul class="pos-list" id="pos-list"></ul>
-        <button class="btn-add-pos" id="btn-add-pos">+ 포지션 추가</button>
+        <button class="btn-add" id="btn-add-pos">+ 포지션 추가</button>
       </div>
     </div>
-
-    <!-- 복리후생 표시/숨김 -->
-    <div class="ctrl-section">
-      <div class="ctrl-label">복리후생 표시/숨김</div>
+    <div class="ctrl-sec">
+      <div class="ctrl-lbl">복리후생 표시/숨김</div>
       <div class="ctrl-body">
-        <div class="benefit-toggle-grid">
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-annual"> 법적 연차제공</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-discount"> 직원 할인혜택</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-uniform"> 직원 유니폼 지급</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-holiday"> 명절 선물 제공</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-lunch"> 간식 제공</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-longterm"> 일할 맛 나요</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-referral"> 지인스카웃 인센티브</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-colleague"> 최고의 복지는 동료</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-birthday"> 생일자 축하</label>
-          <label class="benefit-toggle-item"><input type="checkbox" checked data-b="b-challenge"> 원하면 도전!</label>
+        <div class="btog-grid">
+          <label class="btog"><input type="checkbox" checked data-b="b-annual"> 법적 연차제공</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-discount"> 직원 할인혜택</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-holiday"> 명절 선물 제공</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-uniform"> 직원 유니폼 지급</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-lunch"> 간식 제공</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-longterm"> 일할 맛 나요</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-referral"> 지인스카웃 인센티브</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-colleague"> 최고의 복지는 동료</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-birthday"> 생일자 축하</label>
+          <label class="btog"><input type="checkbox" checked data-b="b-challenge"> 원하면 도전!</label>
         </div>
       </div>
     </div>
-
     <button class="btn-export" id="btn-export">이미지로 내보내기</button>
-
-    <!-- 히스토리 -->
-    <div class="ctrl-section" style="margin-top:14px;">
-      <div class="ctrl-label">히스토리</div>
+    <div class="ctrl-sec" style="margin-top:14px;">
+      <div class="ctrl-lbl">히스토리</div>
       <div class="ctrl-body">
-        <button class="btn-save-history" id="btn-save-history">현재 상태 저장</button>
+        <button class="btn-history" id="btn-save-history">현재 상태 저장</button>
         <ul class="history-list" id="history-list"></ul>
       </div>
     </div>
   </div>
-
-</div><!-- /app-wrapper -->
+</div>
 
 <script>
-const SAVE_KEY    = 'hq-songdo-unified-draft';
-const HISTORY_KEY = 'hq-songdo-unified-history';
-const MAX_HISTORY = 20;
+const SAVE_KEY='hq-songdo-v2-draft', HISTORY_KEY='hq-songdo-v2-history', MAX_HISTORY=20;
 
-// ── 저장/복원 ──
-function getEditables() {
-  return document.querySelectorAll('#poster-canvas [contenteditable]');
+function getEditables(){return document.querySelectorAll('#poster-canvas [contenteditable]');}
+function getRowsData(){var r=[];document.querySelectorAll('.recruit-row').forEach(function(row){r.push({id:row.id,html:row.innerHTML});});return r;}
+function getBStates(){var s={};document.querySelectorAll('[data-b]').forEach(function(cb){s[cb.dataset.b]=cb.checked;});return s;}
+
+function saveState(){
+  var texts=Array.from(getEditables()).map(function(el){return el.innerHTML;});
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({texts:texts,rowsData:getRowsData(),bStates:getBStates()}));}catch(e){}
 }
-function getRowsData() {
-  const rows = [];
-  document.querySelectorAll('.recruit-row').forEach(function(row) {
-    rows.push({ id: row.id, html: row.innerHTML });
+
+function restoreRows(rowsData){
+  var wrap=document.querySelector('.recruit-wrap');
+  wrap.querySelectorAll('.recruit-row').forEach(function(r){r.remove();});
+  rowsData.forEach(function(item){
+    var row=document.createElement('div');
+    row.className='recruit-row'; row.id=item.id; row.innerHTML=item.html;
+    wrap.appendChild(row);
   });
-  return rows;
-}
-function getBenefitStates() {
-  const states = {};
-  document.querySelectorAll('[data-b]').forEach(function(cb) {
-    states[cb.dataset.b] = cb.checked;
-  });
-  return states;
-}
-function getTopImgUrl() {
-  return document.getElementById('top-img-url').value;
+  rebuildPosList(); initDragSort();
 }
 
-function saveState() {
-  const editables = getEditables();
-  const texts = Array.from(editables).map(function(el) { return el.innerHTML; });
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({
-      texts: texts,
-      rowsData: getRowsData(),
-      benefitStates: getBenefitStates(),
-      topImgUrl: getTopImgUrl()
-    }));
-  } catch(e) {}
-}
-
-function restoreRows(rowsData) {
-  const table = document.querySelector('.recruit-table');
-  table.querySelectorAll('.recruit-row').forEach(function(r) { r.remove(); });
-  rowsData.forEach(function(item) {
-    const row = document.createElement('div');
-    row.className = 'recruit-row';
-    row.id = item.id;
-    row.innerHTML = item.html;
-    table.appendChild(row);
-  });
-  rebuildPosList();
-  initPosDragSort();
-}
-
-function restoreState() {
-  const raw = localStorage.getItem(SAVE_KEY);
-  if (!raw) return;
-  try {
-    const data = JSON.parse(raw);
-    if (data.rowsData) restoreRows(data.rowsData);
-    const editables = getEditables();
-    editables.forEach(function(el, i) {
-      if (data.texts[i] != null) el.innerHTML = data.texts[i];
+function restoreState(){
+  var raw=localStorage.getItem(SAVE_KEY); if(!raw)return;
+  try{
+    var d=JSON.parse(raw);
+    if(d.rowsData) restoreRows(d.rowsData);
+    var editables=getEditables();
+    editables.forEach(function(el,i){if(d.texts[i]!=null)el.innerHTML=d.texts[i];});
+    if(d.bStates) Object.entries(d.bStates).forEach(function(e){
+      var cb=document.querySelector('[data-b="'+e[0]+'"]'); if(!cb)return;
+      cb.checked=e[1];
+      var cell=document.getElementById(e[0]); if(cell)cell.classList.toggle('hidden',!e[1]);
     });
-    if (data.benefitStates) {
-      Object.entries(data.benefitStates).forEach(function(entry) {
-        const bId = entry[0], checked = entry[1];
-        const cb = document.querySelector('[data-b="' + bId + '"]');
-        if (!cb) return;
-        cb.checked = checked;
-        const cell = document.getElementById(bId);
-        if (cell) cell.classList.toggle('hidden', !checked);
-      });
-    }
-    if (data.topImgUrl) {
-      document.getElementById('top-img-url').value = data.topImgUrl;
-      applyTopImg(data.topImgUrl);
-    }
-  } catch(e) {}
+  }catch(e){}
 }
 
-// ── 스냅샷 ──
-function getSnapshot() {
-  const editables = getEditables();
-  const texts = Array.from(editables).map(function(el) { return el.innerHTML; });
-  return { texts: texts, rowsData: getRowsData(), benefitStates: getBenefitStates(), topImgUrl: getTopImgUrl() };
+function getSnapshot(){
+  var texts=Array.from(getEditables()).map(function(el){return el.innerHTML;});
+  return {texts:texts,rowsData:getRowsData(),bStates:getBStates()};
 }
-
-function applySnapshot(snap) {
-  if (snap.rowsData) restoreRows(snap.rowsData);
-  const editables = getEditables();
-  editables.forEach(function(el, i) {
-    if (snap.texts[i] != null) el.innerHTML = snap.texts[i];
+function applySnapshot(snap){
+  if(snap.rowsData) restoreRows(snap.rowsData);
+  var editables=getEditables();
+  editables.forEach(function(el,i){if(snap.texts[i]!=null)el.innerHTML=snap.texts[i];});
+  if(snap.bStates) Object.entries(snap.bStates).forEach(function(e){
+    var cb=document.querySelector('[data-b="'+e[0]+'"]'); if(!cb)return;
+    cb.checked=e[1];
+    var cell=document.getElementById(e[0]); if(cell)cell.classList.toggle('hidden',!e[1]);
   });
-  if (snap.benefitStates) {
-    Object.entries(snap.benefitStates).forEach(function(entry) {
-      const bId = entry[0], checked = entry[1];
-      const cb = document.querySelector('[data-b="' + bId + '"]');
-      if (!cb) return;
-      cb.checked = checked;
-      const cell = document.getElementById(bId);
-      if (cell) cell.classList.toggle('hidden', !checked);
-    });
-  }
-  if (snap.topImgUrl) {
-    document.getElementById('top-img-url').value = snap.topImgUrl;
-    applyTopImg(snap.topImgUrl);
-  }
 }
 
-// ── 히스토리 ──
-function loadHistory() {
-  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch(e) { return []; }
-}
-function saveHistory(list) {
-  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); } catch(e) {}
-}
-function renderHistoryList() {
-  const list = loadHistory();
-  const ul = document.getElementById('history-list');
-  if (!ul) return;
-  ul.innerHTML = '';
-  if (!list.length) {
-    ul.innerHTML = '<li class="history-empty">저장된 히스토리가 없습니다</li>';
-    return;
-  }
-  list.forEach(function(item, i) {
-    const li = document.createElement('li');
-    li.className = 'history-item';
-    li.innerHTML = '<button class="load">' + item.label + '</button><button class="del" title="삭제">✕</button>';
-    li.querySelector('.load').addEventListener('click', function() {
-      if (!confirm('"' + item.label + '" 상태로 불러올까요?')) return;
-      applySnapshot(item.snap);
-      saveState();
+function loadHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY))||[];}catch(e){return[];}}
+function saveHistory(l){try{localStorage.setItem(HISTORY_KEY,JSON.stringify(l));}catch(e){}}
+function renderHistory(){
+  var list=loadHistory(), ul=document.getElementById('history-list'); if(!ul)return;
+  ul.innerHTML='';
+  if(!list.length){ul.innerHTML='<li class="history-empty">저장된 히스토리가 없습니다</li>';return;}
+  list.forEach(function(item,i){
+    var li=document.createElement('li'); li.className='history-item';
+    li.innerHTML='<button class="load">'+item.label+'</button><button class="del">✕</button>';
+    li.querySelector('.load').addEventListener('click',function(){
+      if(!confirm('"'+item.label+'" 상태로 불러올까요?'))return;
+      applySnapshot(item.snap); saveState();
     });
-    li.querySelector('.del').addEventListener('click', function() {
-      const updated = loadHistory().filter(function(_, idx) { return idx !== i; });
-      saveHistory(updated);
-      renderHistoryList();
+    li.querySelector('.del').addEventListener('click',function(){
+      var u=loadHistory().filter(function(_,idx){return idx!==i;});
+      saveHistory(u); renderHistory();
     });
     ul.appendChild(li);
   });
 }
 
-// ── 상단 이미지 ──
-function applyTopImg(url) {
-  const img = document.getElementById('top-img');
-  if (url && url.trim()) {
-    img.src = url.trim();
-    img.style.display = 'block';
-  } else {
-    img.src = '';
-    img.style.display = 'none';
-  }
-}
-
-// ── 포지션 목록 재구성 ──
-function rebuildPosList() {
-  const ul = document.getElementById('pos-list');
-  ul.innerHTML = '';
-  document.querySelectorAll('.recruit-row').forEach(function(row) {
-    const nameEl = row.querySelector('.col-pos span');
-    const name = nameEl ? nameEl.textContent.trim() : '포지션';
-    addPosListItem(row.id, name, ul);
+function rebuildPosList(){
+  var ul=document.getElementById('pos-list'); ul.innerHTML='';
+  document.querySelectorAll('.recruit-row').forEach(function(row){
+    var n=row.querySelector('.col-pos span'); addPosItem(row.id, n?n.textContent.trim():'포지션', ul);
   });
 }
-
-function addPosListItem(rowId, name, ul) {
-  if (!ul) ul = document.getElementById('pos-list');
-  const li = document.createElement('li');
-  li.className = 'pos-list-item';
-  li.dataset.rowId = rowId;
-  li.draggable = true;
-  li.innerHTML = '<span class="pos-drag-handle">⠿</span><span class="pos-list-name">' + name + '</span><button class="pos-del">✕</button>';
-  li.querySelector('.pos-del').addEventListener('click', function() {
-    if (!confirm('이 포지션을 삭제할까요?')) return;
-    document.getElementById(rowId) && document.getElementById(rowId).remove();
-    li.remove();
-    saveState();
+function addPosItem(rowId,name,ul){
+  if(!ul) ul=document.getElementById('pos-list');
+  var li=document.createElement('li'); li.className='pos-item'; li.dataset.rowId=rowId; li.draggable=true;
+  li.innerHTML='<span class="drag-handle">⠿</span><span class="pos-name">'+name+'</span><button class="pos-del">✕</button>';
+  li.querySelector('.pos-del').addEventListener('click',function(){
+    if(!confirm('이 포지션을 삭제할까요?'))return;
+    var r=document.getElementById(rowId); if(r)r.remove(); li.remove(); saveState();
   });
   ul.appendChild(li);
 }
-
-// ── 포지션 추가 ──
-function addPosition(name) {
-  const uid = 'pos-' + Date.now();
-  const rowId = 'row-' + uid;
-
-  const row = document.createElement('div');
-  row.className = 'recruit-row';
-  row.id = rowId;
-  row.innerHTML =
-    '<div class="col-pos">' +
-      '<span contenteditable="true">' + name + '</span>' +
-      '<span contenteditable="true">0명</span>' +
-    '</div>' +
-    '<div class="col-duties" contenteditable="true">· </div>' +
-    '<div class="col-req">' +
-      '<span class="req-label">자격요건</span>' +
-      '<div contenteditable="true">· </div>' +
-      '<span class="req-label">우대사항</span>' +
-      '<div contenteditable="true">· </div>' +
-    '</div>';
-  document.querySelector('.recruit-table').appendChild(row);
-  addPosListItem(rowId, name);
-  saveState();
+function addPosition(name){
+  var uid='pos-'+Date.now(), rowId='row-'+uid;
+  var row=document.createElement('div'); row.className='recruit-row'; row.id=rowId;
+  row.innerHTML='<div class="col-pos"><span contenteditable="true">'+name+'</span><span contenteditable="true">0명</span></div>'+
+    '<div class="col-duties" contenteditable="true">· </div>'+
+    '<div class="col-req"><span class="req-label">자격요건</span><div contenteditable="true">· </div>'+
+    '<span class="req-label">우대사항</span><div contenteditable="true">· </div></div>';
+  document.querySelector('.recruit-wrap').appendChild(row);
+  addPosItem(rowId,name); saveState();
 }
 
-// ── 포지션 드래그 정렬 ──
-function initPosDragSort() {
-  const list = document.getElementById('pos-list');
-  let draggingEl = null;
-
-  list.addEventListener('dragstart', function(e) {
-    draggingEl = e.target.closest('.pos-list-item');
-    if (!draggingEl) return;
-    setTimeout(function() { draggingEl.classList.add('dragging'); }, 0);
-    e.dataTransfer.effectAllowed = 'move';
+function initDragSort(){
+  var list=document.getElementById('pos-list'), dragging=null;
+  list.addEventListener('dragstart',function(e){
+    dragging=e.target.closest('.pos-item'); if(!dragging)return;
+    setTimeout(function(){dragging.classList.add('dragging');},0);
+    e.dataTransfer.effectAllowed='move';
   });
-  list.addEventListener('dragend', function() {
-    if (draggingEl) draggingEl.classList.remove('dragging');
-    list.querySelectorAll('.pos-list-item').forEach(function(el) { el.classList.remove('drag-over'); });
-    draggingEl = null;
+  list.addEventListener('dragend',function(){
+    if(dragging)dragging.classList.remove('dragging');
+    list.querySelectorAll('.pos-item').forEach(function(el){el.classList.remove('drag-over');});
+    dragging=null;
   });
-  list.addEventListener('dragover', function(e) {
+  list.addEventListener('dragover',function(e){
     e.preventDefault();
-    const target = e.target.closest('.pos-list-item');
-    if (!target || target === draggingEl) return;
-    list.querySelectorAll('.pos-list-item').forEach(function(el) { el.classList.remove('drag-over'); });
-    target.classList.add('drag-over');
+    var t=e.target.closest('.pos-item'); if(!t||t===dragging)return;
+    list.querySelectorAll('.pos-item').forEach(function(el){el.classList.remove('drag-over');});
+    t.classList.add('drag-over');
   });
-  list.addEventListener('drop', function(e) {
+  list.addEventListener('drop',function(e){
     e.preventDefault();
-    const target = e.target.closest('.pos-list-item');
-    if (!target || target === draggingEl || !draggingEl) return;
-    target.classList.remove('drag-over');
-    const items = Array.from(list.querySelectorAll('.pos-list-item'));
-    const fromIdx = items.indexOf(draggingEl);
-    const toIdx = items.indexOf(target);
-    if (fromIdx < toIdx) list.insertBefore(draggingEl, target.nextSibling);
-    else list.insertBefore(draggingEl, target);
-    // 포스터 테이블 순서 동기화
-    const table = document.querySelector('.recruit-table');
-    Array.from(list.querySelectorAll('.pos-list-item')).forEach(function(li) {
-      const rowEl = document.getElementById(li.dataset.rowId);
-      if (rowEl) table.appendChild(rowEl);
+    var t=e.target.closest('.pos-item'); if(!t||t===dragging||!dragging)return;
+    t.classList.remove('drag-over');
+    var items=Array.from(list.querySelectorAll('.pos-item'));
+    if(items.indexOf(dragging)<items.indexOf(t)) list.insertBefore(dragging,t.nextSibling);
+    else list.insertBefore(dragging,t);
+    var wrap=document.querySelector('.recruit-wrap');
+    Array.from(list.querySelectorAll('.pos-item')).forEach(function(li){
+      var r=document.getElementById(li.dataset.rowId); if(r)wrap.appendChild(r);
     });
     saveState();
   });
 }
 
-// ── 서식 단축키 ──
-document.addEventListener('keydown', function(e) {
-  if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'x' || e.key === 'X')) {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    const ancestor = sel.getRangeAt(0).commonAncestorContainer;
-    const inEditable = ancestor.nodeType === 3
-      ? ancestor.parentElement.closest('[contenteditable]')
-      : (ancestor.closest ? ancestor.closest('[contenteditable]') : null);
-    if (!inEditable) return;
-    e.preventDefault();
-    document.execCommand('foreColor', false, '#cd6d2e');
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==='x'||e.key==='X')){
+    var sel=window.getSelection(); if(!sel||sel.isCollapsed)return;
+    var anc=sel.getRangeAt(0).commonAncestorContainer;
+    var ie=anc.nodeType===3?anc.parentElement.closest('[contenteditable]'):(anc.closest?anc.closest('[contenteditable]'):null);
+    if(!ie)return; e.preventDefault(); document.execCommand('foreColor',false,'#cd6d2e');
   }
 });
-
-// ── 사이드바 접기/펼치기 ──
-document.querySelectorAll('.ctrl-label').forEach(function(label) {
-  label.addEventListener('click', function() {
-    label.closest('.ctrl-section').classList.toggle('collapsed');
+document.querySelectorAll('.ctrl-lbl').forEach(function(l){
+  l.addEventListener('click',function(){l.closest('.ctrl-sec').classList.toggle('collapsed');});
+});
+document.querySelectorAll('[data-b]').forEach(function(cb){
+  cb.addEventListener('change',function(){
+    var cell=document.getElementById(cb.dataset.b); if(cell)cell.classList.toggle('hidden',!cb.checked); saveState();
   });
 });
 
-// ── 복리후생 토글 ──
-document.querySelectorAll('[data-b]').forEach(function(cb) {
-  cb.addEventListener('change', function() {
-    const cell = document.getElementById(cb.dataset.b);
-    if (cell) cell.classList.toggle('hidden', !cb.checked);
-    saveState();
-  });
-});
+var _st;
+document.getElementById('poster-canvas').addEventListener('input',function(){clearTimeout(_st);_st=setTimeout(saveState,500);});
 
-// ── 자동저장 ──
-let _saveTimer;
-document.getElementById('poster-canvas').addEventListener('input', function() {
-  clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(saveState, 500);
-});
-
-// ── 이미지 내보내기 ──
-document.getElementById('btn-export').addEventListener('click', async function() {
-  const btn = document.getElementById('btn-export');
-  btn.disabled = true;
-  btn.textContent = '내보내는 중…';
-
-  const posterEl = document.getElementById('poster-canvas');
-  try {
-    const SCALE = 1;
-    const MAX_H = 5000;
-
-    const posterTop = posterEl.getBoundingClientRect().top;
-    const totalH    = posterEl.offsetHeight;
-    const safeCutsSet = new Set();
-    posterEl.querySelectorAll('.poster-section').forEach(function(sec) {
-      safeCutsSet.add(Math.round(sec.getBoundingClientRect().top    - posterTop));
-      safeCutsSet.add(Math.round(sec.getBoundingClientRect().bottom - posterTop));
-      sec.querySelectorAll('.recruit-row').forEach(function(row) {
-        safeCutsSet.add(Math.round(row.getBoundingClientRect().bottom - posterTop));
-      });
+document.getElementById('btn-export').addEventListener('click',async function(){
+  var btn=document.getElementById('btn-export'); btn.disabled=true; btn.textContent='내보내는 중…';
+  var posterEl=document.getElementById('poster-canvas');
+  try{
+    var SCALE=1,MAX_H=5000;
+    var pt=posterEl.getBoundingClientRect().top, totalH=posterEl.offsetHeight;
+    var cutsSet=new Set();
+    posterEl.querySelectorAll('.ps,.recruit-row').forEach(function(el){
+      cutsSet.add(Math.round(el.getBoundingClientRect().top-pt));
+      cutsSet.add(Math.round(el.getBoundingClientRect().bottom-pt));
     });
-    const safeCuts = Array.from(safeCutsSet).filter(function(c) { return c > 0 && c < totalH; }).sort(function(a,b){return a-b;});
-
-    const full = await html2canvas(posterEl, {
-      scale: SCALE, useCORS: true, allowTaint: true, backgroundColor: '#ffffff'
-    });
-
-    const ranges = [];
-    let s = 0;
-    while (s < full.height) {
-      const idealEnd = s + MAX_H;
-      if (idealEnd >= full.height) { ranges.push([s, full.height]); break; }
-      let bestCut = null;
-      for (let i = safeCuts.length - 1; i >= 0; i--) {
-        const c = safeCuts[i];
-        if (c <= idealEnd && c > s) { bestCut = c; break; }
-      }
-      if (bestCut === null) bestCut = idealEnd;
-      ranges.push([s, bestCut]);
-      s = bestCut;
+    var cuts=Array.from(cutsSet).filter(function(c){return c>0&&c<totalH;}).sort(function(a,b){return a-b;});
+    var full=await html2canvas(posterEl,{scale:SCALE,useCORS:true,allowTaint:true,backgroundColor:'#fff8f1'});
+    var ranges=[],s=0;
+    while(s<full.height){
+      var end=s+MAX_H;
+      if(end>=full.height){ranges.push([s,full.height]);break;}
+      var best=null;
+      for(var i=cuts.length-1;i>=0;i--){if(cuts[i]<=end&&cuts[i]>s){best=cuts[i];break;}}
+      if(best===null)best=end;
+      ranges.push([s,best]);s=best;
     }
-
-    for (let i = 0; i < ranges.length; i++) {
-      const y0 = ranges[i][0], y1 = ranges[i][1];
-      const h = y1 - y0;
-      const slice = document.createElement('canvas');
-      slice.width = full.width; slice.height = h;
-      slice.getContext('2d').drawImage(full, 0, y0, full.width, h, 0, 0, full.width, h);
-      const suffix = ranges.length > 1 ? ('_' + (i + 1)) : '';
-      dlCanvas(slice, 'obliv-songdo-채용공고' + suffix + '.png');
-      if (i < ranges.length - 1) await new Promise(function(r) { setTimeout(r, 300); });
+    for(var i=0;i<ranges.length;i++){
+      var y0=ranges[i][0],y1=ranges[i][1],h=y1-y0;
+      var slice=document.createElement('canvas'); slice.width=full.width; slice.height=h;
+      slice.getContext('2d').drawImage(full,0,y0,full.width,h,0,0,full.width,h);
+      var suf=ranges.length>1?('_'+(i+1)):'';
+      var a=document.createElement('a'); a.download='obliv-songdo-채용공고'+suf+'.png';
+      a.href=slice.toDataURL('image/png'); a.click();
+      if(i<ranges.length-1)await new Promise(function(r){setTimeout(r,300);});
     }
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '이미지로 내보내기';
-  }
+  }finally{btn.disabled=false;btn.textContent='이미지로 내보내기';}
 });
 
-function dlCanvas(canvas, filename) {
-  const a = document.createElement('a');
-  a.download = filename;
-  a.href = canvas.toDataURL('image/png');
-  a.click();
-}
-
-// ── DOMContentLoaded ──
-document.addEventListener('DOMContentLoaded', function() {
-  rebuildPosList();
-  initPosDragSort();
-
-  document.getElementById('btn-add-pos').addEventListener('click', function() {
-    const name = prompt('포지션 이름을 입력하세요');
-    if (!name || !name.trim()) return;
-    addPosition(name.trim());
+document.addEventListener('DOMContentLoaded',function(){
+  rebuildPosList(); initDragSort();
+  document.getElementById('btn-add-pos').addEventListener('click',function(){
+    var name=prompt('포지션 이름을 입력하세요'); if(!name||!name.trim())return; addPosition(name.trim());
   });
-
-  document.getElementById('btn-apply-img').addEventListener('click', function() {
-    const url = document.getElementById('top-img-url').value;
-    applyTopImg(url);
-    saveState();
+  document.getElementById('btn-save-history').addEventListener('click',function(){
+    var now=new Date();
+    var label=(now.getMonth()+1)+'/'+now.getDate()+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+    var list=loadHistory(); list.unshift({label:label,snap:getSnapshot()});
+    if(list.length>MAX_HISTORY)list.pop(); saveHistory(list); renderHistory();
   });
-
-  document.getElementById('btn-save-history').addEventListener('click', function() {
-    const now = new Date();
-    const label = (now.getMonth()+1) + '/' + now.getDate() + ' ' +
-                  String(now.getHours()).padStart(2,'0') + ':' +
-                  String(now.getMinutes()).padStart(2,'0');
-    const list = loadHistory();
-    list.unshift({ label: label, snap: getSnapshot() });
-    if (list.length > MAX_HISTORY) list.pop();
-    saveHistory(list);
-    renderHistoryList();
-  });
-
-  renderHistoryList();
-  restoreState();
+  renderHistory(); restoreState();
 });
 </script>
 </body>
