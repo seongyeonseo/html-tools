@@ -71,7 +71,7 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
 .info-key {
   font-family: "Pretendard", sans-serif;
   font-weight: 700; font-size: 17px; color: #2d1819;
-  white-space: nowrap; letter-spacing: -0.04em;
+  white-space: nowrap; letter-spacing: -0.04em; line-height: 1.7;
 }
 .info-val {
   font-family: "Pretendard", sans-serif;
@@ -79,7 +79,7 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
   line-height: 1.7; letter-spacing: -0.04em; white-space: pre-wrap;
 }
 /* contenteditable Enter div 래핑 방지 */
-[contenteditable] { caret-color: #cd6d2e; }
+[contenteditable] { caret-color: #1010FF; }
 /* ── 전형절차 ── */
 .process-steps {
   display: flex; align-items: center; justify-content: center;
@@ -129,7 +129,7 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
   line-height: 1.55; white-space: pre-wrap; display: block;
 }
 /* ── contenteditable ── */
-[contenteditable]:focus { outline: 2px solid rgba(205,109,46,0.3); border-radius: 3px; }
+[contenteditable]:focus { outline: 2px solid rgba(16,16,255,0.2); border-radius: 3px; }
 /* ── 사이드바 ── */
 .sidebar {
   width: 310px; flex-shrink: 0; position: sticky; top: 32px;
@@ -138,15 +138,15 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
 .hint-box {
-  font-size: 11px; color: #666; background: #fff7f0;
-  border: 1px solid #f0d8c4; border-radius: 6px;
+  font-size: 11px; color: #666; background: #f6f6ff;
+  border: 1px solid #dcdcff; border-radius: 6px;
   padding: 8px 11px; margin-bottom: 14px; line-height: 1.7; letter-spacing: -0.02em;
 }
-.hint-box strong { color: #cd6d2e; font-weight: 700; }
-.ctrl-sec { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e8d8c8; }
+.hint-box strong { color: #1010FF; font-weight: 700; }
+.ctrl-sec { padding-bottom: 14px; margin-bottom: 14px; border-bottom: 1px solid #e0e0e0; }
 .ctrl-sec:last-of-type { border-bottom: none; }
 .ctrl-lbl {
-  font-size: 12px; font-weight: 700; color: #cd6d2e;
+  font-size: 12px; font-weight: 700; color: #1010FF;
   letter-spacing: -0.04em; margin-bottom: 10px;
   cursor: pointer; display: flex; align-items: center;
   justify-content: space-between; user-select: none;
@@ -158,52 +158,52 @@ body { font-family: "Pretendard", sans-serif; background: #e8e4e0; min-height: 1
 .pos-list { list-style: none; display: flex; flex-direction: column; gap: 4px; }
 .pos-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; background: #fdf6f0;
-  border: 1px solid #e8d8c8; border-radius: 5px;
+  padding: 7px 10px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
   font-size: 12px; font-weight: 600; color: #333;
   font-family: "Pretendard", sans-serif;
 }
-.drag-handle { cursor: grab; color: #c8b0a0; font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1; user-select: none; }
+.drag-handle { cursor: grab; color: #aaa; font-size: 13px; padding: 0 2px; flex-shrink: 0; line-height: 1; user-select: none; }
 .drag-handle:active { cursor: grabbing; }
-.pos-item.drag-over { border-color: #cd6d2e; background: #fff0e8; }
+.pos-item.drag-over { border-color: #1010FF; background: #eeeeff; }
 .pos-item.dragging { opacity: 0.4; }
 .pos-name { flex: 1; }
 .pos-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0; }
 .pos-del:hover { color: #e00; }
 .btn-add {
-  width: 100%; background: none; border: 1.5px dashed #cd6d2e;
-  color: #cd6d2e; border-radius: 6px; padding: 8px 0;
+  width: 100%; background: none; border: 1.5px dashed #1010FF;
+  color: #1010FF; border-radius: 6px; padding: 8px 0;
   font-size: 11px; font-weight: 700; font-family: "Pretendard", sans-serif;
   cursor: pointer; margin-top: 6px; letter-spacing: -0.02em;
 }
-.btn-add:hover { background: #fff0e8; }
+.btn-add:hover { background: #f0f0ff; }
 .btog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
 .btog {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 8px; background: #fdf6f0;
-  border: 1px solid #e8d8c8; border-radius: 5px;
+  padding: 5px 8px; background: #f8f8f8;
+  border: 1px solid #e0e0e0; border-radius: 5px;
   font-size: 11px; font-weight: 600; color: #333;
   font-family: "Pretendard", sans-serif; cursor: pointer;
 }
-.btog input[type="checkbox"] { width: 13px; height: 13px; accent-color: #cd6d2e; cursor: pointer; flex-shrink: 0; }
+.btog input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1010FF; cursor: pointer; flex-shrink: 0; }
 .btn-export {
-  width: 100%; background: #cd6d2e; color: #fff; border: none;
+  width: 100%; background: #1010FF; color: #fff; border: none;
   border-radius: 7px; padding: 12px 0; font-size: 13px; font-weight: 700;
   font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 8px;
   transition: background 0.15s; letter-spacing: -0.04em;
 }
-.btn-export:hover { background: #b05a20; }
+.btn-export:hover { background: #0000cc; }
 .btn-export:disabled { background: #aaa; cursor: default; }
 .btn-history {
-  width: 100%; background: #fff; border: 1.5px solid #cd6d2e; color: #cd6d2e;
+  width: 100%; background: #fff; border: 1.5px solid #1010FF; color: #1010FF;
   border-radius: 7px; padding: 9px 0; font-size: 12px; font-weight: 700;
   font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 6px; letter-spacing: -0.03em;
 }
-.btn-history:hover { background: #fff0e8; }
+.btn-history:hover { background: #f0f0ff; }
 .history-list { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-.history-item { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: #fdf6f0; border: 1px solid #e8d8c8; border-radius: 5px; }
+.history-item { display: flex; align-items: center; gap: 6px; padding: 7px 9px; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 5px; }
 .history-item button.load { flex: 1; background: none; border: none; cursor: pointer; text-align: left; font-size: 11px; font-weight: 600; color: #333; font-family: "Pretendard", sans-serif; letter-spacing: -0.02em; }
-.history-item button.load:hover { color: #cd6d2e; }
+.history-item button.load:hover { color: #1010FF; }
 .history-item button.del { background: none; border: none; cursor: pointer; font-size: 13px; color: #ccc; line-height: 1; padding: 0; }
 .history-item button.del:hover { color: #e00; }
 .history-empty { font-size: 11px; color: #aaa; text-align: center; padding: 10px 0; }
