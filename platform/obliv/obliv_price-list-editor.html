@@ -1,0 +1,2530 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오블리브 수가표 에디터</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@font-face {
+  font-family: 'BernhardModern';
+  src: url('../fonts/BernhardModern.otf') format('opentype');
+  font-weight: normal; font-style: normal; font-display: swap;
+}
+
+:root {
+  --primary:    #1010FF;
+  --pri-hov:    #0a0acc;
+  --pri-alpha:  rgba(16,16,255,.07);
+  --pri-border: rgba(16,16,255,.16);
+  --ui-bg:      #F2F4F6;
+  --ui-panel:   #ffffff;
+  --ui-border:  #E5E8EB;
+  --ui-hi:      #191F28;
+  --ui-md:      #6B7684;
+  --ui-lo:      #8B95A1;
+  --ui-surface: #F7F8FA;
+  --topbar-h:   56px;
+  --panel-w:    260px;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-hi);
+  -webkit-font-smoothing: antialiased;
+  padding-top: var(--topbar-h);
+}
+
+/* ══ TOPBAR ══ */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 12px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+}
+.tb-brand { font-size: 15px; font-weight: 700; color: var(--ui-hi); letter-spacing: -.3px; }
+
+/* right panel category selector */
+.rp-cat-wrap { position: relative; }
+.rp-cat-btn {
+  width: 100%; height: 36px; padding: 0 12px;
+  background: var(--ui-surface); border: 1px solid var(--ui-border);
+  border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 14px; font-weight: 700; color: var(--ui-hi);
+  font-family: 'Pretendard', sans-serif;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all .12s;
+}
+.rp-cat-btn:hover { background: var(--pri-alpha); border-color: var(--pri-border); color: var(--primary); }
+.rp-cat-arr { font-size: 11px; color: var(--ui-lo); }
+
+/* save info */
+.rp-save-info {
+  margin-top: auto; padding-top: 16px;
+  border-top: 1px solid var(--ui-border);
+}
+.rp-save-clinic { font-size: 11px; font-weight: 600; color: var(--ui-md); margin-bottom: 3px; }
+.rp-save-time   { font-size: 10px; color: var(--ui-lo); }
+.tb-space { flex: 1; }
+
+/* split btn */
+.split { display: flex; border-radius: var(--radius-sm); overflow: hidden; }
+.split.secondary { border: 1px solid var(--ui-border); }
+.split.secondary .s-main {
+  height: 34px; padding: 0 14px;
+  background: var(--ui-panel); color: var(--ui-hi);
+  border: none; border-right: 1px solid var(--ui-border);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.split.secondary .s-main:hover { background: var(--ui-surface); }
+.split.secondary .s-arr {
+  height: 34px; width: 32px; background: var(--ui-panel); border: none;
+  color: var(--ui-lo); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.secondary .s-arr:hover { background: var(--ui-surface); color: var(--ui-md); }
+.split.primary { border: 1px solid var(--primary); margin-left: 8px; }
+.split.primary .s-main {
+  height: 34px; padding: 0 14px;
+  background: var(--primary); color: #fff;
+  border: none; border-right: 1px solid rgba(255,255,255,.15);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.split.primary .s-main:hover { background: var(--pri-hov); }
+.split.primary .s-arr {
+  height: 34px; width: 32px; background: var(--primary); border: none;
+  color: rgba(255,255,255,.6); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.primary .s-arr:hover { background: var(--pri-hov); color: #fff; }
+
+/* topbar dropdown */
+.tb-dropdown {
+  position: fixed; top: calc(var(--topbar-h) + 6px);
+  background: var(--ui-panel); border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  z-index: 300; overflow: hidden; display: none; min-width: 160px;
+}
+.tb-dropdown.open { display: block; }
+.dd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .1s; border-bottom: 1px solid var(--ui-border);
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--ui-surface); }
+.dd-item .dd-icon { font-size: 15px; }
+
+/* ══ RIGHT PANEL ══ */
+.right-panel {
+  position: fixed;
+  top: var(--topbar-h);
+  right: 0;
+  width: var(--panel-w);
+  height: calc(100vh - var(--topbar-h));
+  background: var(--ui-panel);
+  border-left: 1px solid var(--ui-border);
+  overflow-y: auto;
+  z-index: 100;
+  padding: 20px 16px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.rp-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+.rp-label {
+  font-size: 10px; font-weight: 600; color: var(--ui-lo);
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 0 2px; margin-bottom: 2px;
+}
+.rp-divider { height: 1px; background: var(--ui-border); margin: 12px 0; }
+
+/* tab list in panel */
+.rp-tab-list { display: flex; flex-direction: column; gap: 2px; }
+.rp-tab {
+  width: 100%; padding: 9px 12px; text-align: left;
+  border: none; border-radius: var(--radius-sm);
+  background: none; font-size: 13px; font-weight: 500;
+  color: var(--ui-md); cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: all .12s;
+}
+.rp-tab:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.rp-tab.active { background: var(--pri-alpha); color: var(--primary); font-weight: 700; }
+
+/* logo buttons in panel */
+.rp-logo-row { display: flex; gap: 6px; }
+.rp-logo-btn {
+  flex: 1; padding: 8px 4px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--ui-border); background: var(--ui-surface);
+  font-size: 12px; font-weight: 500; color: var(--ui-md);
+  cursor: pointer; font-family: 'Pretendard', sans-serif; transition: all .12s;
+  text-align: center;
+}
+.rp-logo-btn:hover { border-color: var(--primary); color: var(--primary); }
+.rp-logo-btn.active { border-color: var(--primary); background: var(--pri-alpha); color: var(--primary); font-weight: 700; }
+
+/* action buttons in panel */
+.rp-btn {
+  width: 100%; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px dashed var(--ui-border); background: none;
+  font-size: 13px; font-weight: 500; color: var(--ui-md);
+  cursor: pointer; font-family: 'Pretendard', sans-serif;
+  transition: all .12s; text-align: left;
+}
+.rp-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--ui-surface); }
+.rp-btn-excel { border-color: var(--pri-border); color: var(--primary); background: var(--pri-alpha); }
+.rp-btn-excel:hover { border-color: var(--primary); background: rgba(16,16,255,.13); }
+
+/* ══ TABLE TOOLBAR ══ */
+#tbl-toolbar {
+  position: fixed;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  padding: 4px 6px;
+  display: none; align-items: center; gap: 1px;
+  z-index: 250;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+#tbl-toolbar.visible { display: flex; }
+.tbl-sep { width: 1px; height: 18px; background: var(--ui-border); margin: 0 4px; flex-shrink: 0; }
+.tbl-btn {
+  height: 30px; padding: 0 9px; border-radius: 6px; border: none;
+  background: transparent; color: var(--ui-md);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Pretendard', sans-serif;
+  display: inline-flex; align-items: center; gap: 3px;
+  transition: background .1s, color .1s; flex-shrink: 0;
+}
+.tbl-btn:hover:not(:disabled) { background: var(--ui-surface); color: var(--ui-hi); }
+.tbl-btn:disabled { opacity: .3; cursor: not-allowed; }
+.tbl-btn.act { color: var(--primary); }
+.tbl-btn.act:hover:not(:disabled) { background: var(--pri-alpha); }
+.tbl-btn.del { color: #ef4444; }
+.tbl-btn.del:hover:not(:disabled) { background: #fef2f2; }
+.tbl-lbl { font-size: 10px; color: var(--ui-lo); padding: 0 4px; letter-spacing: .06em; font-weight: 600; }
+/* 표 셀 색상 스와치 */
+.tbl-swatch-wrap { display: flex; align-items: center; gap: 3px; padding: 0 2px; }
+.tbl-swatch {
+  width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+  border: 1.5px solid transparent; cursor: pointer;
+  transition: transform .1s, border-color .1s;
+}
+.tbl-swatch:hover { transform: scale(1.2); }
+.tbl-swatch.on { border-color: var(--ui-hi) !important; }
+.tbl-swatch[data-color="reset"] {
+  background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 8px 8px;
+}
+td.tbl-sel, th.tbl-sel {
+  background: rgba(59,130,246,.08) !important;
+  outline: 2px solid rgba(16,16,255,.35); outline-offset: -2px;
+}
+
+/* ══ TEXT FORMAT TOOLBAR ══ */
+#txt-toolbar {
+  position: fixed;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  padding: 3px 5px;
+  display: none; align-items: center; gap: 1px;
+  z-index: 260;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+#txt-toolbar.visible { display: flex; }
+.txt-btn {
+  width: 28px; height: 28px; border-radius: 5px;
+  border: none; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; color: var(--ui-md);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; font-family: 'Pretendard', sans-serif; flex-shrink: 0;
+}
+.txt-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.txt-btn.on { background: var(--pri-alpha); color: var(--primary); }
+.txt-sep { width: 1px; height: 16px; background: var(--ui-border); margin: 0 3px; flex-shrink: 0; }
+.txt-size-wrap { display: flex; align-items: center; gap: 1px; }
+.txt-size-btn {
+  width: 20px; height: 24px; border: 1px solid var(--ui-border);
+  background: var(--ui-surface); border-radius: 4px; cursor: pointer;
+  font-size: 11px; color: var(--ui-md); display: flex; align-items: center; justify-content: center;
+  transition: all .1s;
+}
+.txt-size-btn:hover { background: var(--ui-bg); color: var(--ui-hi); }
+.txt-size-val {
+  width: 30px; text-align: center; font-size: 12px; font-weight: 600;
+  color: var(--ui-hi); font-family: 'Pretendard', sans-serif;
+}
+.txt-swatch-wrap { display: flex; align-items: center; gap: 3px; padding: 0 2px; }
+.txt-swatch {
+  width: 16px; height: 16px; border-radius: 3px;
+  border: 1.5px solid transparent; cursor: pointer; flex-shrink: 0;
+  transition: transform .1s;
+}
+.txt-swatch:hover { transform: scale(1.2); }
+
+/* ══ ROW REORDER CONTROLS — 인라인, hover 버그 없음 ══ */
+.row-controls {
+  display: flex; flex-direction: column; gap: 2px;
+  opacity: 0; transition: opacity .15s;
+  flex-shrink: 0; margin-left: 8px;
+}
+.fixed-row:hover .row-controls,
+.combo-row:hover .row-controls,
+.iv-item:hover .row-controls { opacity: 1; }
+.row-ctrl-btn {
+  width: 20px; height: 15px; border-radius: 3px;
+  border: 1px solid var(--ui-border); background: #fff;
+  color: var(--ui-lo); cursor: pointer; font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; line-height: 1;
+}
+.row-ctrl-btn:hover { background: var(--ui-surface); color: var(--ui-hi); border-color: var(--ui-md); }
+/* pkg-table 전용 플로팅 컨트롤 */
+#row-float-ctrl {
+  position: fixed; z-index: 280; display: none;
+  flex-direction: column; gap: 2px; padding: 4px;
+  background: #fff; border: 1px solid var(--ui-border);
+  border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
+
+/* ══ FORMAT MODAL ══ */
+#fmt-modal {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; align-items: center; justify-content: center;
+}
+#fmt-modal.open { display: flex; }
+.fmt-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
+}
+.fmt-dialog {
+  position: relative; z-index: 1;
+  background: var(--ui-panel); border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  width: 560px; max-width: 95vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+}
+.fmt-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.fmt-sub { font-size: 13px; color: var(--ui-md); margin-bottom: 20px; }
+.fmt-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.fmt-card {
+  border: 1.5px solid var(--ui-border); border-radius: var(--radius-md);
+  padding: 14px 16px; cursor: pointer; transition: all .15s;
+}
+.fmt-card:hover { border-color: var(--ui-hi); background: var(--ui-surface); }
+.fmt-card.selected { border-color: var(--ui-hi); background: var(--pri-alpha); }
+.fmt-card-icon { font-size: 20px; margin-bottom: 8px; }
+.fmt-card-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.fmt-card-desc { font-size: 12px; color: var(--ui-md); line-height: 1.5; }
+.fmt-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.fmt-btn {
+  height: 38px; padding: 0 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.fmt-btn.cancel { background: var(--ui-surface); border: 1px solid var(--ui-border); color: var(--ui-md); }
+.fmt-btn.cancel:hover { background: var(--ui-border); }
+.fmt-btn.confirm { background: var(--ui-hi); border: 1px solid var(--ui-hi); color: #fff; }
+.fmt-btn.confirm:hover { background: var(--pri-hov); }
+
+/* ══ SAVES MODAL ══ */
+#saves-modal {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; align-items: center; justify-content: center;
+}
+#saves-modal.open { display: flex; }
+.saves-dialog {
+  position: relative; z-index: 1;
+  background: var(--ui-panel); border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  width: 480px; max-width: 95vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+}
+.saves-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+.saves-sub   { font-size: 13px; color: var(--ui-md); margin-bottom: 18px; }
+.saves-list  { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow-y: auto; margin-bottom: 20px; }
+.saves-empty { font-size: 13px; color: var(--ui-lo); text-align: center; padding: 32px 0; }
+.saves-item {
+  display: flex; align-items: center; gap: 12px;
+  border: 1.5px solid var(--ui-border); border-radius: var(--radius-md);
+  padding: 12px 14px; cursor: pointer; transition: all .15s;
+}
+.saves-item:hover { border-color: var(--primary); background: var(--pri-alpha); }
+.saves-item-body { flex: 1; min-width: 0; }
+.saves-item-clinic { font-size: 13px; font-weight: 700; color: var(--ui-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.saves-item-time   { font-size: 11px; color: var(--ui-lo); margin-top: 3px; }
+.saves-item-del {
+  flex-shrink: 0; width: 26px; height: 26px;
+  border: none; border-radius: 50%; background: none;
+  color: var(--ui-lo); cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .12s;
+}
+.saves-item-del:hover { background: #fee2e2; color: #dc2626; }
+
+/* ══ CONTENT AREA ══ */
+.tab-panel { display: none; margin-right: var(--panel-w); }
+.tab-panel.active { display: block; }
+.page-wrap { padding: 32px 24px 48px; }
+.page {
+  width: 794px; min-height: 1123px;
+  background: #fff; margin: 0 auto 32px;
+  padding: 72px 72px 80px;
+  position: relative;
+  box-shadow: 0 2px 24px rgba(0,0,0,.1);
+  border-radius: 4px;
+}
+
+/* ══ EDITABLE ══ */
+[contenteditable] { outline: none; cursor: text; }
+[contenteditable]:hover { background: rgba(0,0,0,.025); border-radius: 2px; }
+[contenteditable]:focus { background: rgba(59,130,246,.05); outline: 1px solid rgba(59,130,246,.3); border-radius: 2px; }
+[contenteditable]:empty:before { content: attr(data-ph); color: #ccc; font-style: italic; }
+
+/* ══ PAGE HEADER ══ */
+.p-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 48px;
+}
+.p-title {
+  font-family: 'BernhardModern', 'Playfair Display', serif;
+  font-size: 72px; line-height: 1; letter-spacing: -.01em;
+}
+.p-clinic-block { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.logo-svg-wrap svg { width: auto; display: block; }
+.clinic-ko { font-size: 12px; font-weight: 400; color: #666; font-family: 'Pretendard', sans-serif; }
+
+/* ══ PAGE SELECTION ══ */
+.page-wrap { counter-reset: page-counter; }
+.page {
+  counter-increment: page-counter;
+  cursor: default;
+  transition: outline .12s;
+}
+.page::before {
+  content: counter(page-counter) '페이지';
+  position: absolute; top: -24px; left: 0;
+  font-size: 11px; font-weight: 500;
+  color: var(--ui-lo); font-family: 'Pretendard', sans-serif;
+  pointer-events: none;
+}
+.page.page-selected { outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 5px; }
+.page.page-selected::before { color: var(--primary); font-weight: 700; }
+.rp-page-info {
+  font-size: 11px; color: var(--ui-lo); padding: 0 2px;
+  font-family: 'Pretendard', sans-serif;
+}
+.rp-page-info.on { color: var(--primary); font-weight: 600; }
+@media print {
+  .page::before { display: none !important; }
+  .page.page-selected { outline: none !important; }
+}
+
+/* ══ SECTION COMMON ══ */
+.sec-header {
+  border-top: 2px solid #111;
+  padding: 10px 0 8px;
+  display: flex; align-items: baseline; gap: 12px; margin-bottom: 0;
+}
+.sec-en {
+  font-family: 'BernhardModern', 'Playfair Display', serif;
+  font-size: 20px; font-style: italic; color: #111; line-height: 1;
+}
+.sec-ko {
+  font-size: 14px; font-weight: 500; color: #666;
+  font-family: 'Pretendard', sans-serif; line-height: 1;
+}
+.section-block { margin-bottom: 36px; }
+
+/* ghost add btn */
+.ghost-add {
+  width: 100%; padding: 8px; margin-top: 8px;
+  border: 1px dashed #ccc; border-radius: 5px;
+  background: none; color: #bbb; font-size: 12px; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: all .15s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.ghost-add:hover { border-color: #888; color: #555; background: #f9f9f9; }
+
+/* section del btn */
+.sec-del {
+  margin-left: auto; padding: 3px 10px; border-radius: var(--radius-sm);
+  border: 1px solid #fecaca; background: none; color: #f87171;
+  font-size: 11px; font-weight: 500; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: all .12s;
+  flex-shrink: 0;
+}
+.sec-del:hover { background: #fef2f2; }
+
+/* row del */
+.row-del {
+  position: absolute; right: -26px; top: 50%; transform: translateY(-50%);
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 1px solid #e0e0e0; background: #fff; color: #ccc;
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .1s;
+}
+.fixed-row:hover .row-del,
+.iv-item:hover .row-del,
+.med-item:hover .row-del,
+.combo-row:hover .row-del { opacity: 1; }
+.row-del:hover { background: #fef2f2; color: #ef4444; border-color: #fecaca; }
+
+/* ══ FORMAT A — 고정가 목록 ══ */
+.fixed-table { width: 100%; }
+.fixed-row {
+  display: flex; align-items: center; padding: 11px 0;
+  border-bottom: 1px solid #f5f5f5; position: relative;
+}
+.fixed-row:last-child { border-bottom: none; }
+.fixed-cat { font-size: 13px; font-weight: 700; min-width: 108px; flex-shrink: 0; color: #444; }
+.fixed-info { flex: 1; min-width: 0; display: flex; flex-direction: row; align-items: baseline; gap: 8px; }
+.fixed-name { font-size: 15px; }
+.fixed-desc { font-size: 12px; color: #aaa; }
+.fixed-count { font-size: 13px; color: #888; margin-left: 16px; min-width: 28px; text-align: right; flex-shrink: 0; }
+.fixed-price { display: flex; align-items: baseline; gap: 1px; margin-left: 10px; flex-shrink: 0; }
+.fpr-num {
+  font-family: 'BernhardModern', serif;
+  font-size: 19px; font-weight: normal;
+}
+.fpr-unit { font-family: 'Pretendard', sans-serif; font-size: 13px; }
+
+/* ══ FORMAT B — 패키지 표 ══ */
+.pkg-table { width: 100%; border-collapse: collapse; }
+.pkg-table th {
+  font-size: 14px; font-weight: 600; text-align: center;
+  padding: 11px 8px; border: 1px solid #ddd; background: #fafafa;
+  font-family: 'Pretendard', sans-serif;
+}
+.pkg-table td {
+  font-size: 14px; text-align: center;
+  padding: 13px 8px; border: 1px solid #ddd;
+  font-family: 'Pretendard', sans-serif;
+}
+.pkg-table .col-rnd { font-weight: 700; font-size: 15px; }
+
+/* ══ FORMAT C — 가격 강조형 ══ */
+.iv-item { margin-bottom: 4px; }
+.iv-item-head { display: flex; align-items: baseline; gap: 8px; padding-bottom: 6px; }
+.iv-cat { font-size: 15px; font-weight: 700; }
+.iv-desc { font-size: 14px; color: #777; }
+.iv-prices {
+  display: flex; align-items: baseline; gap: 0;
+  padding: 12px 0 5px;
+  border-top: 1px solid #ddd; border-bottom: 1px solid #f0f0f0;
+}
+.iv-price-item { display: flex; align-items: baseline; gap: 2px; flex: 1; }
+.iv-price-n { font-size: 13px; color: #888; margin-right: 2px; }
+.iv-price-num {
+  font-family: 'BernhardModern', serif;
+  font-size: 44px; font-weight: normal; line-height: 1;
+}
+.iv-price-unit { font-size: 15px; margin-left: 2px; }
+.iv-price-add {
+  align-self: center; width: 22px; height: 22px; border-radius: 50%;
+  border: 1px dashed #ccc; background: none; color: #bbb;
+  font-size: 16px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .12s; flex-shrink: 0; margin-left: 8px;
+}
+.iv-price-add:hover { border-color: #555; color: #555; background: #f5f5f5; }
+.iv-price-del {
+  align-self: center; width: 18px; height: 18px; border-radius: 50%;
+  border: 1px solid #fecaca; background: none; color: #fca5a5;
+  font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all .12s; flex-shrink: 0; margin-left: 2px; opacity: 0;
+}
+.iv-price-item:hover .iv-price-del { opacity: 1; }
+.iv-price-del:hover { background: #fef2f2; color: #ef4444; }
+.iv-vat { font-size: 11px; color: #aaa; text-align: right; margin: 4px 0 18px; }
+
+/* ══ FORMAT D — 결합 패키지 ══ */
+.combo-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 13px 0; border-bottom: 1px solid #f0f0f0; position: relative;
+}
+.combo-row:last-child { border-bottom: none; }
+.combo-desc { font-size: 14px; flex: 1; }
+.combo-price-wrap { display: flex; align-items: baseline; gap: 3px; }
+.combo-lbl { font-size: 13px; color: #888; margin-right: 3px; }
+.combo-num {
+  font-family: 'BernhardModern', serif;
+  font-size: 40px; font-weight: normal; line-height: 1;
+}
+.combo-unit { font-size: 15px; }
+.combo-vat {
+  text-align: right; font-size: 11px; color: #aaa;
+  margin-top: 8px; font-family: 'Pretendard', sans-serif;
+}
+
+/* ══ NOTES ══ */
+.notes-block { margin-top: 14px; }
+.note-line {
+  display: flex; align-items: flex-start; gap: 4px;
+  font-size: 12px; color: #666; line-height: 1.6; margin-bottom: 3px;
+}
+.note-sym { flex-shrink: 0; }
+.note-del {
+  border: none; background: none; color: #ccc; cursor: pointer;
+  font-size: 14px; padding: 0; opacity: 0; transition: opacity .1s; flex-shrink: 0;
+}
+.note-line:hover .note-del { opacity: 1; }
+.note-del:hover { color: #ef4444; }
+
+/* ══ PAGE FOOTER ══ */
+.page-footer { position: absolute; bottom: 40px; right: 72px; text-align: right; }
+.footer-logo-svg svg { width: auto; opacity: .7; display: block; }
+
+/* ══ PRINT ══ */
+@media print {
+  body { background: #fff; }
+  .topbar, .right-panel, #tbl-toolbar, #fmt-modal, #saves-modal,
+  .ghost-add, .row-del, .sec-del,
+  .iv-price-add, .iv-price-del, .note-del { display: none !important; }
+  .tab-panel { margin-right: 0 !important; }
+  .tab-panel.active { display: block !important; }
+  .page-wrap { padding: 0; }
+  .page { box-shadow: none; border-radius: 0; margin: 0; width: 100%; page-break-after: always; }
+  [contenteditable]:hover, [contenteditable]:focus { background: none !important; outline: none !important; }
+}
+
+/* ══ TOAST ══ */
+.toast {
+  position: fixed; bottom: 24px; right: calc(var(--panel-w) + 24px);
+  background: var(--ui-hi); color: #fff; padding: 12px 18px;
+  border-radius: var(--radius-md); font-size: 13px;
+  font-family: 'Pretendard', sans-serif;
+  opacity: 0; transform: translateY(8px); transition: all .25s;
+  z-index: 999; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ══ TABLE TOOLBAR ══ -->
+<div id="tbl-toolbar">
+  <button class="tbl-btn act" id="btn-merge" onclick="mergeCells()" disabled>병합</button>
+  <button class="tbl-btn act" id="btn-split" onclick="splitCell()" disabled>분할</button>
+  <div class="tbl-sep"></div>
+  <button class="tbl-btn" onclick="addTableRow('above')" title="위에 행 추가">↑행</button>
+  <button class="tbl-btn" onclick="addTableRow('below')" title="아래에 행 추가">↓행</button>
+  <button class="tbl-btn" onclick="addTableCol('left')" title="왼쪽에 열 추가">←열</button>
+  <button class="tbl-btn" onclick="addTableCol('right')" title="오른쪽에 열 추가">→열</button>
+  <div class="tbl-sep"></div>
+  <button class="tbl-btn del" onclick="delTableRow()">행×</button>
+  <button class="tbl-btn del" onclick="delTableCol()">열×</button>
+  <div class="tbl-sep"></div>
+  <span class="tbl-lbl">배경색</span>
+  <div class="tbl-swatch-wrap">
+    <div class="tbl-swatch" data-color="reset"   title="없음"       onclick="setTableColor(null)"></div>
+    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색"          onclick="setTableColor('#ffffff')"></div>
+    <div class="tbl-swatch" style="background:#F2F4F6;border-color:#E5E8EB" title="라이트 그레이" onclick="setTableColor('#F2F4F6')"></div>
+    <div class="tbl-swatch" style="background:#E8E8FF;border-color:#C7C7FF" title="라이트 블루" onclick="setTableColor('#E8E8FF')"></div>
+    <div class="tbl-swatch" style="background:#B4B4FF" title="미디엄 블루" onclick="setTableColor('#B4B4FF')"></div>
+    <div class="tbl-swatch" style="background:#6666FF" title="소프트 블루" onclick="setTableColor('#6666FF')"></div>
+    <div class="tbl-swatch" style="background:#1010FF" title="오블리브 블루" onclick="setTableColor('#1010FF')"></div>
+    <div class="tbl-swatch" style="background:#0A0ACC" title="딥 블루"    onclick="setTableColor('#0A0ACC')"></div>
+    <div class="tbl-swatch" style="background:#191F28" title="다크"       onclick="setTableColor('#191F28')"></div>
+    <div class="tbl-swatch" style="background:#000000" title="블랙"       onclick="setTableColor('#000000')"></div>
+  </div>
+  <div class="tbl-sep"></div>
+  <span class="tbl-lbl">글자색</span>
+  <div class="tbl-swatch-wrap">
+    <div class="tbl-swatch" style="background:#191F28" title="다크"     onclick="setTableTextColor('#191F28')"></div>
+    <div class="tbl-swatch" style="background:#6B7684" title="그레이"   onclick="setTableTextColor('#6B7684')"></div>
+    <div class="tbl-swatch" style="background:#1010FF" title="블루"     onclick="setTableTextColor('#1010FF')"></div>
+    <div class="tbl-swatch" style="background:#B4B4FF" title="라이트 블루" onclick="setTableTextColor('#B4B4FF')"></div>
+    <div class="tbl-swatch" style="background:#ef4444" title="레드"     onclick="setTableTextColor('#ef4444')"></div>
+    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색" onclick="setTableTextColor('#ffffff')"></div>
+  </div>
+</div>
+
+<!-- ══ TEXT FORMAT TOOLBAR ══ -->
+<div id="txt-toolbar">
+  <button class="txt-btn" id="txt-b"  onmousedown="event.preventDefault();applyFmt('bold')"      title="굵게 (⌘B)"><b>B</b></button>
+  <button class="txt-btn" id="txt-i"  onmousedown="event.preventDefault();applyFmt('italic')"    title="기울임 (⌘I)"><i>I</i></button>
+  <button class="txt-btn" id="txt-u"  onmousedown="event.preventDefault();applyFmt('underline')" title="밑줄 (⌘U)"><u>U</u></button>
+  <div class="txt-sep"></div>
+  <div class="txt-size-wrap">
+    <button class="txt-size-btn" onmousedown="event.preventDefault();changeFontSize(-1)">−</button>
+    <span class="txt-size-val" id="txt-size-val">—</span>
+    <button class="txt-size-btn" onmousedown="event.preventDefault();changeFontSize(+1)">＋</button>
+  </div>
+  <div class="txt-sep"></div>
+  <div class="txt-swatch-wrap">
+    <div class="txt-swatch" style="background:#191F28"              title="다크"      onmousedown="event.preventDefault();applyColor('#191F28')"></div>
+    <div class="txt-swatch" style="background:#6B7684"              title="그레이"    onmousedown="event.preventDefault();applyColor('#6B7684')"></div>
+    <div class="txt-swatch" style="background:#aaaaaa"              title="라이트 그레이" onmousedown="event.preventDefault();applyColor('#aaaaaa')"></div>
+    <div class="txt-swatch" style="background:#1010FF"              title="오블리브 블루" onmousedown="event.preventDefault();applyColor('#1010FF')"></div>
+    <div class="txt-swatch" style="background:#6666FF"              title="소프트 블루" onmousedown="event.preventDefault();applyColor('#6666FF')"></div>
+    <div class="txt-swatch" style="background:#B4B4FF"              title="라이트 블루" onmousedown="event.preventDefault();applyColor('#B4B4FF')"></div>
+    <div class="txt-swatch" style="background:#ef4444"              title="레드"      onmousedown="event.preventDefault();applyColor('#ef4444')"></div>
+    <div class="txt-swatch" style="background:#f59e0b"              title="앰버"      onmousedown="event.preventDefault();applyColor('#f59e0b')"></div>
+    <div class="txt-swatch" style="background:#10b981"              title="그린"      onmousedown="event.preventDefault();applyColor('#10b981')"></div>
+    <div class="txt-swatch" style="background:#fff;border:1.5px solid #ddd" title="흰색" onmousedown="event.preventDefault();applyColor('#ffffff')"></div>
+  </div>
+</div>
+
+<!-- ══ SAVES MODAL ══ -->
+<div id="saves-modal">
+  <div class="fmt-backdrop" onclick="closeSavesModal()"></div>
+  <div class="saves-dialog">
+    <div class="saves-title">저장본 불러오기</div>
+    <div class="saves-sub">저장된 버전을 선택해 복원하세요 (최대 10개)</div>
+    <div class="saves-list" id="saves-list"></div>
+    <div class="fmt-actions">
+      <button class="fmt-btn cancel" onclick="closeSavesModal()">닫기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FORMAT MODAL ══ -->
+<div id="fmt-modal">
+  <div class="fmt-backdrop" onclick="closeFmtModal()"></div>
+  <div class="fmt-dialog">
+    <div class="fmt-title">섹션 형식 선택</div>
+    <div class="fmt-sub">추가할 섹션의 레이아웃 형식을 선택하세요</div>
+    <div class="fmt-grid">
+      <div class="fmt-card selected" data-fmt="A" onclick="selectFmt(this)">
+        <div class="fmt-card-icon">☰</div>
+        <div class="fmt-card-name">고정가 목록</div>
+        <div class="fmt-card-desc">카테고리 · 시술명 · 가격<br>행 형태의 기본 수가표</div>
+      </div>
+      <div class="fmt-card" data-fmt="B" onclick="selectFmt(this)">
+        <div class="fmt-card-icon">⊞</div>
+        <div class="fmt-card-name">패키지 표</div>
+        <div class="fmt-card-desc">셀 병합 가능한<br>그리드 테이블</div>
+      </div>
+      <div class="fmt-card" data-fmt="C" onclick="selectFmt(this)">
+        <div class="fmt-card-icon">◉</div>
+        <div class="fmt-card-name">가격 강조형</div>
+        <div class="fmt-card-desc">1회 <b>11</b> 만원 · 12회 <b>120</b> 만원<br>큰 숫자 강조 스타일</div>
+      </div>
+      <div class="fmt-card" data-fmt="D" onclick="selectFmt(this)">
+        <div class="fmt-card-icon">◈</div>
+        <div class="fmt-card-name">결합 패키지</div>
+        <div class="fmt-card-desc">설명 + 총 <b>362</b> 만원<br>좌우 배치 패키지</div>
+      </div>
+    </div>
+    <div class="fmt-actions">
+      <button class="fmt-btn cancel" onclick="closeFmtModal()">취소</button>
+      <button class="fmt-btn confirm" onclick="confirmFmt()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div class="tb-space"></div>
+  <div class="split secondary" id="split-save">
+    <button class="s-main" onclick="saveAll()">저장</button>
+    <button class="s-arr" onclick="toggleDD('dd-save')">▾</button>
+  </div>
+  <div class="tb-dropdown" id="dd-save" style="right:110px;">
+    <div class="dd-item" onclick="openSavesModal(); closeAllDD()">저장본 불러오기</div>
+    <div class="dd-item" onclick="clearSave(); closeAllDD()">저장 초기화</div>
+  </div>
+  <div class="split primary" id="split-print">
+    <button class="s-main" onclick="window.print()">인쇄 / PDF</button>
+    <button class="s-arr" onclick="toggleDD('dd-print')">▾</button>
+  </div>
+  <div class="tb-dropdown" id="dd-print" style="right:24px;">
+    <div class="dd-item" onclick="printTab(); closeAllDD()">현재 탭만</div>
+    <div class="dd-item" onclick="window.print(); closeAllDD()">전체 출력</div>
+  </div>
+</div>
+
+<!-- ══ RIGHT PANEL ══ -->
+<div class="right-panel">
+  <!-- 카테고리 선택 -->
+  <div class="rp-cat-wrap">
+    <button class="rp-cat-btn" onclick="toggleDD('dd-cat')">
+      <span id="tb-cat-name">발톱</span>
+      <span class="rp-cat-arr">▾</span>
+    </button>
+    <div class="tb-dropdown" id="dd-cat" style="right:16px; top:calc(var(--topbar-h) + 54px);">
+      <div class="dd-item" onclick="switchTab('beauty'); closeAllDD()">뷰티</div>
+      <div class="dd-item" onclick="switchTab('longlasting'); closeAllDD()">롱래스팅</div>
+      <div class="dd-item" onclick="switchTab('toenail'); closeAllDD()">발톱</div>
+      <div class="dd-item" onclick="switchTab('rehab'); closeAllDD()">재활의학</div>
+    </div>
+  </div>
+
+  <div class="rp-divider"></div>
+
+  <!-- 로고 -->
+  <div class="rp-group">
+    <div class="rp-label">로고</div>
+    <div class="rp-logo-row">
+      <button class="rp-logo-btn active" data-type="basic" onclick="setPanelLogo('basic',this)">기본</button>
+      <button class="rp-logo-btn" data-type="seoul" onclick="setPanelLogo('seoul',this)">서울 오리진</button>
+    </div>
+  </div>
+
+  <div class="rp-divider"></div>
+
+  <!-- 구성 -->
+  <div class="rp-group">
+    <div class="rp-label">구성</div>
+    <div class="rp-page-info" id="rp-page-info">페이지를 클릭해서 선택</div>
+    <button class="rp-btn" onclick="openFmtModalFromPanel()">＋ 섹션 추가</button>
+    <button class="rp-btn" onclick="addPageFromPanel()">＋ 페이지 추가</button>
+    <button class="rp-btn" id="btn-title-toggle" onclick="toggleTitleFromPanel(this)">— 타이틀 숨기기</button>
+  </div>
+
+  <div class="rp-divider"></div>
+
+  <!-- 엑셀 가져오기 -->
+  <div class="rp-group">
+    <div class="rp-label">엑셀 가져오기</div>
+    <button class="rp-btn" onclick="downloadExcelTemplate()">↓ 템플릿 다운로드</button>
+    <button class="rp-btn rp-btn-excel" onclick="document.getElementById('excel-upload').click()">↑ 엑셀 업로드</button>
+    <input type="file" id="excel-upload" accept=".xlsx,.xls" style="display:none" onchange="handleExcelUpload(this)">
+  </div>
+
+  <!-- 저장 정보 -->
+  <div class="rp-save-info" id="rp-save-info" style="display:none;">
+    <div class="rp-save-clinic" id="rp-save-clinic"></div>
+    <div class="rp-save-time"   id="rp-save-time"></div>
+  </div>
+</div>
+
+<!-- ════ TAB: 뷰티 ════ -->
+<div class="tab-panel" id="tab-beauty">
+  <div class="page-wrap">
+    <div class="page">
+      <div class="p-header">
+        <div class="p-title" contenteditable="true">Price list</div>
+        <div class="p-clinic-block">
+          <div id="logo-beauty" class="logo-svg-wrap"></div>
+          <div class="clinic-ko" contenteditable="true">오블리브 뷰티클리닉</div>
+        </div>
+      </div>
+      <div id="sections-beauty"></div>
+      <button class="ghost-add" style="margin-top:24px;" onclick="openFmtModal('beauty', this.closest('.page'))">＋ 섹션 추가</button>
+      <div class="page-footer"><div id="footer-logo-beauty" class="footer-logo-svg"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ TAB: 롱래스팅 ════ -->
+<div class="tab-panel" id="tab-longlasting">
+  <div class="page-wrap">
+    <div class="page">
+      <div class="p-header">
+        <div class="p-title" contenteditable="true">Price list</div>
+        <div class="p-clinic-block">
+          <div id="logo-longlasting" class="logo-svg-wrap"></div>
+          <div class="clinic-ko" contenteditable="true">오블리브 롱래스팅클리닉</div>
+        </div>
+      </div>
+      <div id="sections-longlasting"></div>
+      <button class="ghost-add" style="margin-top:24px;" onclick="openFmtModal('longlasting', this.closest('.page'))">＋ 섹션 추가</button>
+      <div class="page-footer"><div id="footer-logo-longlasting" class="footer-logo-svg"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ TAB: 발톱 ════ -->
+<div class="tab-panel active" id="tab-toenail">
+  <div class="page-wrap">
+
+    <!-- PAGE 1 -->
+    <div class="page">
+      <div class="p-header">
+        <div class="p-title" contenteditable="true">Price list</div>
+        <div class="p-clinic-block">
+          <div id="logo-toenail" class="logo-svg-wrap"></div>
+          <div class="clinic-ko" contenteditable="true">오블리브 문제성발톱클리닉</div>
+        </div>
+      </div>
+
+      <!-- SECTION: Fixed Price -->
+      <div class="section-block" id="sec-toenail-fixed">
+        <div class="sec-header">
+          <span class="sec-en" contenteditable="true">Fixed Price</span>
+          <span class="sec-ko" contenteditable="true">정찰가</span>
+          <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+        </div>
+        <div class="fixed-table">
+          <div class="fixed-row">
+            <div class="fixed-cat" contenteditable="true">[ 가열레이저 ]</div>
+            <div class="fixed-info">
+              <div class="fixed-name" contenteditable="true">힐러</div>
+              <div class="fixed-desc" contenteditable="true">(큰 발톱 5만원 / 작은 발톱 3만원)</div>
+            </div>
+            <div class="fixed-count" contenteditable="true">1회</div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">350,000</span><span class="fpr-unit">원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+          </div>
+          <div class="fixed-row">
+            <div class="fixed-cat" contenteditable="true">[ 비가열레이저 ]</div>
+            <div class="fixed-info">
+              <div class="fixed-name" contenteditable="true">오니코 레이저</div>
+              <div class="fixed-desc" contenteditable="true"></div>
+            </div>
+            <div class="fixed-count" contenteditable="true">1회</div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">260,000</span><span class="fpr-unit">원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+          </div>
+          <div class="fixed-row">
+            <div class="fixed-cat" contenteditable="true"></div>
+            <div class="fixed-info">
+              <div class="fixed-name" contenteditable="true">아톰 레이저</div>
+              <div class="fixed-desc" contenteditable="true"></div>
+            </div>
+            <div class="fixed-count" contenteditable="true">1회</div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">280,000</span><span class="fpr-unit">원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+          </div>
+          <div class="fixed-row">
+            <div class="fixed-cat" contenteditable="true"></div>
+            <div class="fixed-info">
+              <div class="fixed-name" contenteditable="true">AF 레이저</div>
+              <div class="fixed-desc" contenteditable="true"></div>
+            </div>
+            <div class="fixed-count" contenteditable="true">1회</div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit">원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+          </div>
+          <div class="fixed-row">
+            <div class="fixed-cat" contenteditable="true">[ 내성발톱 ]</div>
+            <div class="fixed-info">
+              <div class="fixed-name" contenteditable="true">포돌로게</div>
+              <div class="fixed-desc" contenteditable="true">(개당)</div>
+            </div>
+            <div class="fixed-count" contenteditable="true">1회</div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit">원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+          </div>
+        </div>
+        <button class="ghost-add" onclick="addFixedRow(this)">＋ 항목 추가</button>
+        <div class="notes-block" id="notes-toenail-fixed"></div>
+        <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>
+      </div>
+
+      <!-- SECTION: Package -->
+      <div class="section-block" id="sec-toenail-pkg">
+        <div class="sec-header">
+          <span class="sec-en" contenteditable="true">Package</span>
+          <span class="sec-ko" contenteditable="true">패키지 프로그램</span>
+          <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+        </div>
+        <table class="pkg-table" id="pkg-toenail">
+          <thead>
+            <tr>
+              <th contenteditable="true" style="width:14%;"></th>
+              <th contenteditable="true">가열성 레이저</th>
+              <th contenteditable="true">비가열성 레이저</th>
+              <th contenteditable="true">총 합계</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="col-rnd" contenteditable="true">12회</td>
+              <td contenteditable="true">회당 32만원 &nbsp;│&nbsp; 1회</td>
+              <td rowspan="4" contenteditable="true" style="vertical-align:middle;">회당 24만원</td>
+              <td contenteditable="true">296만원</td>
+            </tr>
+            <tr>
+              <td class="col-rnd" contenteditable="true">24회</td>
+              <td contenteditable="true">회당 30만원 &nbsp;│&nbsp; 4회</td>
+              <td contenteditable="true">600만원</td>
+            </tr>
+            <tr>
+              <td class="col-rnd" contenteditable="true">36회</td>
+              <td contenteditable="true">회당 28만원 &nbsp;│&nbsp; 6회</td>
+              <td contenteditable="true">888만원</td>
+            </tr>
+            <tr>
+              <td class="col-rnd" contenteditable="true">48회</td>
+              <td contenteditable="true">회당 25만원 &nbsp;│&nbsp; 8회</td>
+              <td contenteditable="true">1160만원</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="notes-block" id="notes-toenail-pkg">
+          <div class="note-line"><span class="note-sym">※</span><span contenteditable="true">3,000샷 기준 6,000샷 진행 시 회당 5만원 추가</span><button class="note-del" onclick="this.closest('.note-line').remove()">×</button></div>
+          <div class="note-line"><span class="note-sym">※</span><span contenteditable="true">패키지 프로그램 비가열 <strong>AF레이저 미포함</strong>, 회당 4만원 추가 시 업그레이드 가능합니다.</span><button class="note-del" onclick="this.closest('.note-line').remove()">×</button></div>
+        </div>
+        <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>
+      </div>
+
+      <button class="ghost-add" onclick="openFmtModal('toenail', this.closest('.page'))">＋ 섹션 추가</button>
+      <div class="page-footer"><div id="footer-logo-toenail" class="footer-logo-svg"></div></div>
+    </div>
+
+    <!-- PAGE 2 -->
+    <div class="page">
+      <div class="p-title" style="font-family:'Pretendard',sans-serif;font-size:48px;font-weight:700;line-height:1.2;margin-bottom:40px;" contenteditable="true">발톱 재생 및 전신 순환을 돕는<br>부스팅 수액 3가지</div>
+
+      <!-- SECTION: IV -->
+      <div class="section-block" id="sec-toenail-iv">
+        <div id="iv-list-toenail">
+          <div class="iv-item" style="position:relative;">
+            <div class="iv-item-head">
+              <div class="iv-cat" contenteditable="true">[ 발톱 재생 수액 ]</div>
+              <div class="iv-desc" contenteditable="true">잠든 발톱 세포를 깨우는 재생 부스터</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">11</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">12회</span><span class="iv-price-num" contenteditable="true">120</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">24회</span><span class="iv-price-num" contenteditable="true">220</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT별도</div>
+            <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>
+          </div>
+          <div class="iv-item" style="position:relative;">
+            <div class="iv-item-head">
+              <div class="iv-cat" contenteditable="true">[ 항염 순환 수액 ]</div>
+              <div class="iv-desc" contenteditable="true">혈관 뚫는 온기 가득 수액</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">11</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">12회</span><span class="iv-price-num" contenteditable="true">120</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">24회</span><span class="iv-price-num" contenteditable="true">220</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT별도</div>
+            <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>
+          </div>
+          <div class="iv-item" style="position:relative;">
+            <div class="iv-item-head">
+              <div class="iv-cat" contenteditable="true">[ 글로우 부스팅 수액 ]</div>
+              <div class="iv-desc" contenteditable="true">면역력과 피부를 모두 Glow 하게!</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">9</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">12회</span><span class="iv-price-num" contenteditable="true">92</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT별도</div>
+            <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>
+          </div>
+        </div>
+        <button class="ghost-add" onclick="addIvItem(this.previousElementSibling)">＋ 수액 항목 추가</button>
+        <div class="notes-block" id="notes-toenail-iv"></div>
+        <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>
+      </div>
+
+      <!-- SECTION: Combo -->
+      <div class="section-block" id="sec-toenail-combo">
+        <div class="sec-header" style="margin-top:32px;">
+          <span class="sec-en" style="font-style:normal;font-size:22px;font-family:'Pretendard',sans-serif;font-weight:700;" contenteditable="true">[ 레이저 치료 X 재생 순환 결합 패키지 ]</span>
+          <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+        </div>
+        <div id="combo-toenail">
+          <div class="combo-row" style="position:relative;">
+            <div class="combo-desc" contenteditable="true">레이저 12회 + 항염 or 재생 수액 6회 60만원</div>
+            <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">362</span><span class="combo-unit" contenteditable="true">만원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.combo-row').remove()">×</button>
+          </div>
+          <div class="combo-row" style="position:relative;">
+            <div class="combo-desc" contenteditable="true">레이저 24회 + 항염 or 재생 수액 12회 120만원</div>
+            <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">732</span><span class="combo-unit" contenteditable="true">만원</span></div>
+            <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+            <button class="row-del" onclick="this.closest('.combo-row').remove()">×</button>
+          </div>
+        </div>
+        <div class="combo-vat" contenteditable="true">*VAT별도</div>
+        <button class="ghost-add" onclick="addComboRow(this.previousElementSibling.previousElementSibling)">＋ 결합 패키지 추가</button>
+        <div class="notes-block" id="notes-toenail-combo"></div>
+        <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>
+      </div>
+
+      <button class="ghost-add" onclick="openFmtModal('toenail', this.closest('.page'))">＋ 섹션 추가</button>
+      <div class="page-footer"><div class="footer-logo-svg" id="footer-logo-toenail2"></div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════ TAB: 재활의학 ════ -->
+<div class="tab-panel" id="tab-rehab">
+  <div class="page-wrap">
+    <div class="page">
+      <div style="font-family:'Pretendard',sans-serif;font-size:53px;font-weight:700;line-height:1.25;margin-bottom:48px;" contenteditable="true">피로회복<br>영양수액</div>
+
+      <div class="section-block" id="sec-rehab-main">
+        <div id="med-list-rehab">
+          <div class="med-item" style="position:relative;">
+            <div style="padding:14px 0 5px;">
+              <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">성장호르몬</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">성인을 위한 성장호르몬</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">20</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">10회</span><span class="iv-price-num" contenteditable="true">170</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true"></div>
+            <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>
+          </div>
+          <div class="med-item" style="position:relative;">
+            <div style="padding:14px 0 5px;">
+              <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">태반 주사</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">재생 촉진 프리미엄 회복 솔루션</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">9</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">10회</span><span class="iv-price-num" contenteditable="true">70</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT 별도</div>
+            <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>
+          </div>
+          <div class="med-item" style="position:relative;">
+            <div style="padding:14px 0 5px;">
+              <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">사이모신 알파 주사</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">면역력 증진</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">15</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">3회</span><span class="iv-price-num" contenteditable="true">40</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT 별도</div>
+            <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>
+          </div>
+          <div class="med-item" style="position:relative;">
+            <div style="padding:14px 0 5px;">
+              <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">비타민D 주사</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">따스한 햇살 충전</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">5</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">5회</span><span class="iv-price-num" contenteditable="true">20</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT 별도</div>
+            <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>
+          </div>
+          <div class="med-item" style="position:relative;">
+            <div style="padding:14px 0 5px;">
+              <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">비타민C (메가도즈) 주사</div>
+              <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">면역과 피부를 동시에 채우는 비타민 충전</div>
+            </div>
+            <div class="iv-prices">
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">9</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">10회</span><span class="iv-price-num" contenteditable="true">70</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+              <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+            </div>
+            <div class="iv-vat" contenteditable="true">*VAT 별도</div>
+            <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>
+          </div>
+        </div>
+        <button class="ghost-add" onclick="addMedItem(this.previousElementSibling)">＋ 항목 추가</button>
+        <div class="notes-block" id="notes-rehab-main"></div>
+        <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>
+      </div>
+
+      <button class="ghost-add" onclick="openFmtModal('rehab', this.closest('.page'))">＋ 섹션 추가</button>
+      <div class="page-footer"><div id="footer-logo-rehab" class="footer-logo-svg"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══ UNDO ══ */
+const undoStack = [];
+const MAX_UNDO = 30;
+
+function saveSnapshot() {
+  const t = getCurrentTab();
+  const el = document.getElementById('tab-' + t);
+  if (!el) return;
+  undoStack.push({ tab: t, html: el.innerHTML });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undo() {
+  if (!undoStack.length) { toast('더 이상 되돌릴 수 없습니다'); return; }
+  const snap = undoStack.pop();
+  const el = document.getElementById('tab-' + snap.tab);
+  if (!el) return;
+  el.innerHTML = snap.html;
+  initTableCells();
+  initPageClick();
+  applyLogoToTab(snap.tab, LOGO_STATE[snap.tab] || 'basic');
+  selectedPage = null;
+  updatePageInfo();
+  toast('↩ 실행 취소됐습니다');
+}
+
+// 텍스트 편집 undo: contenteditable focus 진입 시 현재 탭 상태를 기록
+// → blur 시 내용이 바뀌었으면 스냅샷으로 저장
+let _textEditBase = null;
+document.addEventListener('focusin', e => {
+  if (!e.target.isContentEditable) return;
+  const t = getCurrentTab();
+  const el = document.getElementById('tab-' + t);
+  if (el) _textEditBase = { tab: t, html: el.innerHTML };
+}, true);
+document.addEventListener('focusout', e => {
+  if (!e.target.isContentEditable || !_textEditBase) return;
+  const el = document.getElementById('tab-' + _textEditBase.tab);
+  if (el && el.innerHTML !== _textEditBase.html) {
+    undoStack.push(_textEditBase);
+    if (undoStack.length > MAX_UNDO) undoStack.shift();
+  }
+  _textEditBase = null;
+}, true);
+
+// 삭제 버튼 클릭 전 자동 스냅샷 (capture phase)
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('row-del') ||
+      e.target.classList.contains('sec-del') ||
+      e.target.classList.contains('note-del') ||
+      e.target.classList.contains('iv-price-del')) {
+    saveSnapshot();
+  }
+}, true);
+
+/* ══ PAGE SELECTION ══ */
+let selectedPage = null;
+
+function selectPage(pageEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('page-selected'));
+  selectedPage = pageEl;
+  if (pageEl) pageEl.classList.add('page-selected');
+  updatePageInfo();
+}
+
+function updatePageInfo() {
+  const info = document.getElementById('rp-page-info');
+  if (!info) return;
+  if (!selectedPage) {
+    info.textContent = '페이지를 클릭해서 선택';
+    info.classList.remove('on');
+    return;
+  }
+  const t = getCurrentTab();
+  const tabEl = document.getElementById('tab-' + t);
+  const pages = [...(tabEl?.querySelectorAll('.page') || [])];
+  const idx = pages.indexOf(selectedPage);
+  info.textContent = idx >= 0 ? `${idx + 1}페이지 선택됨` : '페이지 선택됨';
+  info.classList.add('on');
+}
+
+function onPageClick() { selectPage(this); }
+
+function initPageClick() {
+  document.querySelectorAll('.page').forEach(page => {
+    page.removeEventListener('click', onPageClick);
+    page.addEventListener('click', onPageClick);
+  });
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.page') &&
+      !e.target.closest('.right-panel') &&
+      !e.target.closest('#fmt-modal') &&
+      !e.target.closest('#saves-modal') &&
+      !e.target.closest('#tbl-toolbar')) {
+    selectPage(null);
+  }
+});
+
+/* ══ LOGO ══ */
+const LOGOS = {
+  basic: `<svg width="139" height="24" viewBox="0 0 139 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.19 13.29C20.19 18.96 16.17 23.61 9.87 23.61C3.96 23.61 0 19.2 0 13.98C0 8.31 4.02 3.66 10.32 3.66C16.23 3.66 20.19 8.07 20.19 13.29ZM11.7 22.47C15.3 22.47 18.87 19.35 18.87 15.15C18.87 9.39 13.38 4.8 8.49 4.8C4.92 4.8 1.32 7.92 1.32 12.12C1.32 17.88 6.81 22.47 11.7 22.47Z" fill="black"/>
+<path d="M26.0496 22.29V23.28C25.5096 23.22 25.0296 23.1 24.4896 23.1C23.2896 23.1 22.5696 23.28 22.3896 23.28C22.2396 23.28 22.0596 23.25 22.0596 23.07C22.0596 22.89 22.1496 22.8 22.3596 22.77C22.8996 22.62 23.5296 22.5 24.1896 22.41C24.2796 19.86 24.3096 16.59 24.3096 12.27C24.3096 9.96 24.3396 6.93 24.1596 3.06C24.1296 2.43 24.0096 1.68 23.5596 1.68C22.9596 1.68 22.4796 2.25 22.1796 2.25C22.0296 2.25 21.9696 2.13 21.9696 1.98C21.9696 1.53 24.4596 0 25.7196 0C26.2596 0 26.2596 0.45 26.2596 0.930001C26.2596 2.88 26.1396 11.37 26.1396 15.12C27.0696 14.43 28.5696 13.26 30.2496 13.26C32.7096 13.26 33.7296 15.57 33.7296 17.85C33.7296 21.06 32.1396 23.46 29.1696 23.46C27.4296 23.46 26.4096 22.62 26.0496 22.29ZM28.9896 22.77C30.7596 22.77 31.7196 20.82 31.7196 18.21C31.7196 16.11 30.8196 14.4 29.1096 14.4C27.8496 14.4 26.8596 15.3 26.1396 15.9C26.1096 16.83 26.0496 18.03 26.0496 18.75C26.0496 19.41 26.0496 20.67 26.5596 21.48C26.9796 22.26 28.0596 22.77 28.9896 22.77Z" fill="black"/>
+<path d="M41.8097 22.77C42.0197 22.8 42.1097 22.89 42.1097 23.07C42.1097 23.25 41.9297 23.28 41.7797 23.28C41.5397 23.28 40.5497 23.1 39.1097 23.1C37.6697 23.1 36.6797 23.28 36.4397 23.28C36.2897 23.28 36.1097 23.25 36.1097 23.07C36.1097 22.89 36.1997 22.8 36.4097 22.77C36.8597 22.62 37.5497 22.5 38.1197 22.41C38.1797 19.29 38.2097 14.31 38.2097 11.85C38.2097 9.54 38.0897 5.22 38.0897 3.06C38.0897 2.43 37.9397 1.68 37.4897 1.68C36.8897 1.68 36.4097 2.25 36.1097 2.25C35.9597 2.25 35.8997 2.13 35.8997 1.98C35.8997 1.53 38.3897 0 39.6497 0C40.1897 0 40.1897 0.45 40.1897 0.930001C40.1897 2.46 40.0397 9.54 40.0397 11.85C40.0397 14.31 40.0397 19.29 40.0997 22.41C40.6697 22.5 41.3597 22.62 41.8097 22.77Z" fill="black"/>
+<path d="M49.4834 23.28C49.2434 23.28 48.2534 23.1 46.8134 23.1C45.3734 23.1 44.3834 23.28 44.1434 23.28C43.9934 23.28 43.8134 23.25 43.8134 23.07C43.8134 22.89 43.9034 22.8 44.1134 22.77C44.5634 22.62 45.2534 22.5 45.8234 22.41C45.8834 21.63 45.9134 19.44 45.9134 18.54C45.9134 17.67 45.8834 15.24 45.8534 14.43C45.3434 14.43 44.5034 14.49 43.8734 14.49C43.6934 14.49 43.6334 14.37 43.6334 14.28C43.6334 13.95 44.3234 13.92 45.4934 13.65C46.6034 13.38 47.3834 13.11 47.5934 13.11C47.7734 13.11 47.8334 13.23 47.8334 13.5C47.8334 13.74 47.8034 14.1 47.8034 14.43C47.7734 15.24 47.7434 17.61 47.7434 18.54C47.7434 19.44 47.7734 21.63 47.8334 22.41C48.4034 22.5 49.0634 22.62 49.5134 22.77C49.7234 22.8 49.8134 22.89 49.8134 23.07C49.8134 23.25 49.6334 23.28 49.4834 23.28ZM47.9834 7.26C47.9834 8.01 47.3534 8.64 46.6034 8.64C45.8534 8.64 45.2234 8.01 45.2234 7.26C45.2234 6.51 45.8534 5.88 46.6034 5.88C47.3534 5.88 47.9834 6.51 47.9834 7.26Z" fill="black"/>
+<path d="M57.397 23.13C57.217 23.49 57.157 23.61 56.917 23.61C56.707 23.61 56.557 23.31 56.467 23.13C55.807 21.81 54.217 18.27 53.077 15.69C52.867 15.24 52.657 14.79 52.447 14.31C51.997 14.19 51.517 14.1 51.187 13.95C51.007 13.86 50.887 13.83 50.887 13.65C50.887 13.47 51.067 13.44 51.217 13.44C51.457 13.44 52.447 13.62 53.767 13.62C54.877 13.62 55.627 13.44 55.807 13.44C55.957 13.44 56.137 13.47 56.137 13.65C56.137 13.95 56.017 13.86 55.837 13.95C55.507 14.13 54.997 14.22 54.517 14.31C55.117 15.6 56.407 18.78 57.607 21.45C58.897 18.66 59.767 16.14 60.307 14.31C59.887 14.19 59.437 14.1 59.137 13.95C58.957 13.86 58.837 13.92 58.837 13.65C58.837 13.47 59.017 13.44 59.167 13.44C59.347 13.44 60.097 13.62 61.117 13.62C62.107 13.62 62.857 13.44 63.037 13.44C63.187 13.44 63.367 13.47 63.367 13.65C63.367 13.92 63.247 13.86 63.067 13.95C62.707 14.1 62.227 14.22 61.747 14.31C60.907 16.2 58.177 21.57 57.397 23.13Z" fill="black"/>
+<path d="M87.7409 20.7C87.2009 21.57 84.7409 23.61 81.1409 23.61C75.7109 23.61 71.8709 19.65 71.8709 14.07C71.8709 8.22 76.0109 3.66 81.5009 3.66C83.4209 3.66 85.5809 4.2 86.9609 4.62C87.0509 4.14 87.2009 3.06 87.3809 2.7C87.4409 2.52 87.5609 2.43 87.6809 2.43C87.8309 2.43 87.9209 2.55 87.9209 2.73C87.9209 2.97 87.6509 5.55 87.6509 6.81C87.6509 8.16 87.8009 10.68 87.8009 10.98C87.8009 11.28 87.7109 11.4 87.5609 11.4C87.3809 11.4 87.3209 11.28 87.2609 11.01C86.9909 10.02 86.8109 7.59 86.8109 6.99C85.5809 6 83.4509 4.56 80.6609 4.56C76.8509 4.56 73.7009 7.14 73.7009 11.97C73.7009 17.52 77.3909 22.53 82.4609 22.53C85.9409 22.53 87.2009 20.19 87.6209 20.19C87.7409 20.19 87.8609 20.28 87.8609 20.4C87.8609 20.49 87.8009 20.61 87.7409 20.7Z" fill="black"/>
+<path d="M96.214 22.77C96.424 22.8 96.514 22.89 96.514 23.07C96.514 23.25 96.334 23.28 96.184 23.28C95.944 23.28 94.954 23.1 93.514 23.1C92.074 23.1 91.084 23.28 90.844 23.28C90.694 23.28 90.514 23.25 90.514 23.07C90.514 22.89 90.604 22.8 90.814 22.77C91.264 22.62 91.954 22.5 92.524 22.41C92.584 19.29 92.614 14.31 92.614 11.85C92.614 9.54 92.494 5.22 92.494 3.06C92.494 2.43 92.344 1.68 91.894 1.68C91.294 1.68 90.814 2.25 90.514 2.25C90.364 2.25 90.304 2.13 90.304 1.98C90.304 1.53 92.794 0 94.054 0C94.594 0 94.594 0.45 94.594 0.930001C94.594 2.46 94.444 9.54 94.444 11.85C94.444 14.31 94.444 19.29 94.504 22.41C95.074 22.5 95.764 22.62 96.214 22.77Z" fill="black"/>
+<path d="M103.888 23.28C103.648 23.28 102.658 23.1 101.218 23.1C99.7777 23.1 98.7877 23.28 98.5477 23.28C98.3977 23.28 98.2177 23.25 98.2177 23.07C98.2177 22.89 98.3077 22.8 98.5177 22.77C98.9677 22.62 99.6577 22.5 100.228 22.41C100.288 21.63 100.318 19.44 100.318 18.54C100.318 17.67 100.288 15.24 100.258 14.43C99.7477 14.43 98.9077 14.49 98.2777 14.49C98.0977 14.49 98.0377 14.37 98.0377 14.28C98.0377 13.95 98.7277 13.92 99.8977 13.65C101.008 13.38 101.788 13.11 101.998 13.11C102.178 13.11 102.238 13.23 102.238 13.5C102.238 13.74 102.208 14.1 102.208 14.43C102.178 15.24 102.148 17.61 102.148 18.54C102.148 19.44 102.178 21.63 102.238 22.41C102.808 22.5 103.468 22.62 103.918 22.77C104.128 22.8 104.218 22.89 104.218 23.07C104.218 23.25 104.038 23.28 103.888 23.28ZM102.388 7.26C102.388 8.01 101.758 8.64 101.008 8.64C100.258 8.64 99.6277 8.01 99.6277 7.26C99.6277 6.51 100.258 5.88 101.008 5.88C101.758 5.88 102.388 6.51 102.388 7.26Z" fill="black"/>
+<path d="M119.451 23.07C119.451 23.25 119.271 23.28 119.121 23.28C118.881 23.28 117.891 23.1 116.451 23.1C115.011 23.1 114.021 23.28 113.781 23.28C113.631 23.28 113.451 23.25 113.451 23.07C113.451 22.89 113.541 22.8 113.751 22.77C114.201 22.62 114.891 22.5 115.461 22.41C115.521 21.63 115.551 19.44 115.551 18.54C115.551 16.23 115.551 14.4 113.481 14.4C112.101 14.4 110.871 15.15 110.061 15.63C110.061 16.59 110.031 17.55 110.031 18.54C110.031 19.44 110.031 21.63 110.121 22.41C110.691 22.5 111.351 22.62 111.801 22.77C112.011 22.8 112.101 22.89 112.101 23.07C112.101 23.25 111.921 23.28 111.771 23.28C111.531 23.28 110.541 23.1 109.101 23.1C107.661 23.1 106.671 23.28 106.431 23.28C106.281 23.28 106.101 23.25 106.101 23.07C106.101 22.89 106.191 22.8 106.401 22.77C106.851 22.62 107.541 22.5 108.111 22.41C108.171 21.63 108.201 19.44 108.201 18.54C108.201 17.61 108.171 15.24 108.111 14.43C107.871 14.43 106.461 14.49 106.101 14.49C105.951 14.49 105.831 14.43 105.831 14.28C105.831 13.89 106.131 14.01 108.201 13.5C109.221 13.26 109.521 13.11 109.791 13.11C110.031 13.11 110.091 13.29 110.091 13.5C110.091 13.74 110.031 14.61 110.031 15C111.351 14.28 113.391 13.26 114.651 13.26C116.811 13.26 117.441 14.31 117.441 15.96C117.441 16.83 117.381 17.73 117.381 18.54C117.381 19.44 117.411 21.63 117.471 22.41C118.041 22.5 118.701 22.62 119.151 22.77C119.361 22.8 119.451 22.89 119.451 23.07Z" fill="black"/>
+<path d="M126.651 23.28C126.411 23.28 125.421 23.1 123.981 23.1C122.541 23.1 121.551 23.28 121.311 23.28C121.161 23.28 120.981 23.25 120.981 23.07C120.981 22.89 121.071 22.8 121.281 22.77C121.731 22.62 122.421 22.5 122.991 22.41C123.051 21.63 123.081 19.44 123.081 18.54C123.081 17.67 123.051 15.24 123.021 14.43C122.511 14.43 121.671 14.49 121.041 14.49C120.861 14.49 120.801 14.37 120.801 14.28C120.801 13.95 121.491 13.92 122.661 13.65C123.771 13.38 124.551 13.11 124.761 13.11C124.941 13.11 125.001 13.23 125.001 13.5C125.001 13.74 124.971 14.1 124.971 14.43C124.941 15.24 124.911 17.61 124.911 18.54C124.911 19.44 124.941 21.63 125.001 22.41C125.571 22.5 126.231 22.62 126.681 22.77C126.891 22.8 126.981 22.89 126.981 23.07C126.981 23.25 126.801 23.28 126.651 23.28ZM125.151 7.26C125.151 8.01 124.521 8.64 123.771 8.64C123.021 8.64 122.391 8.01 122.391 7.26C122.391 6.51 123.021 5.88 123.771 5.88C124.521 5.88 125.151 6.51 125.151 7.26Z" fill="black"/>
+<path d="M138.135 20.61C138.135 20.88 136.845 23.46 133.725 23.46C131.565 23.46 129.015 21.96 129.015 18.66C129.015 15.75 131.355 13.26 134.385 13.26C135.645 13.26 136.455 13.59 137.085 13.86C137.265 13.26 137.355 12.69 137.655 12.69C137.775 12.69 137.865 12.81 137.865 12.99C137.865 13.35 137.685 14.49 137.685 15.51C137.685 16.41 137.775 17.28 137.775 17.55C137.775 17.7 137.715 17.82 137.565 17.82C137.205 17.82 137.085 16.26 136.965 15.66C136.485 14.97 135.165 13.95 133.665 13.95C132.135 13.95 130.665 15 130.665 17.37C130.665 20.37 132.705 22.17 134.715 22.17C136.725 22.17 137.505 20.37 137.895 20.37C138.075 20.37 138.135 20.46 138.135 20.61Z" fill="black"/>
+</svg>`,
+  seoul: `<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_레이어_2" data-name="레이어 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 518.18 150.54">
+  <g id="_레이어_1-2" data-name="레이어 1">
+    <g>
+      <g>
+        <path d="M137.79,136.2c-1-.26-2.15-.43-3.26-.58-3.75-.53-6.21-1.06-6.21-3.46,0-2.87,2.72-4.58,5.34-4.58,2.49,0,4.07,1.06,5.7,2.36l.02.39c.08,1.81.15,3.37,1.09,3.37.36,0,.74-.33.74-.87v-2.26c0-.81.1-2.41.24-3.35.06-.63.16-1.13.22-1.45.04-.23.06-.38.06-.44,0-.41-.31-.74-.7-.74-.66,0-.92.84-1.22,1.82,0,.03-.02.06-.03.09-1.19-.43-3.21-1.11-5.32-1.11-3.91,0-8.1,3.07-8.1,7.65,0,3.08,1.7,5.13,4.93,5.93.86.21,1.86.33,2.91.45,3.57.42,6.1.91,6.1,3.34,0,2.57-2.31,4.51-5.38,4.51-2.9,0-5.25-1.65-6.47-2.73-.27-3.52-.57-4.5-1.35-4.5-.36,0-.77.34-.77.84,0,.05.02.26.04.56.07.81.2,2.32.2,3.33,0,.71-.04,2.18-.14,3.1-.1.87-.17,1.15-.22,1.32-.03.13-.06.24-.06.44,0,.45.36.74.7.74.69,0,.95-.9,1.27-2.05,1.65.57,3.37,1.14,5.47,1.14,5.02,0,8.66-3.32,8.66-7.89,0-2.91-1.38-4.57-4.47-5.38Z"/>
+        <path d="M166.58,143.8c0-.5-.34-.84-.84-.84-.84,0-1.05,1.24-1.19,2.96-2.74.79-5.66,1.17-8.92,1.17-.31,0-.6,0-.9-.01-.19-2.27-.2-6.26-.2-8.94h.17c3.51,0,6.22.08,8.69.49.21,1.96.48,3.02,1.29,3.02.37,0,.77-.27.77-.87,0-.1-.02-.4-.05-.81-.06-.79-.15-1.98-.15-2.73,0-.6.08-1.66.15-2.43.04-.46.06-.82.06-.94,0-.58-.39-.84-.77-.84-.88,0-1.16,1.21-1.29,2.6-2.27.52-4.83.74-8.68.74h-.17c0-2.55.01-6.32.2-8.57.24,0,.51,0,.77-.01.4,0,.79-.02,1.07-.02,3.03,0,5.5.26,7.74.8v.11c.18,1.96.34,3.15,1.19,3.15.5,0,.87-.42.87-.98,0-.13-.03-.55-.07-1.06-.06-.74-.14-1.75-.14-2.2,0-.55.08-1.34.14-1.98.04-.43.07-.78.07-.94,0-.42-.33-.74-.77-.74-.73,0-.93.78-1.1,1.5-2.27.25-5.2.55-11.62.55-.86,0-1.63-.04-2.28-.08l-.49-.03c-.76-.07-1.22-.11-1.33-.11-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.4.12,6.55.12,9.62s0,7.29-.12,9.72c-.67.06-1.91.19-2.6.41-.28.09-.58.37-.58.75,0,.48.36.84.84.84.04,0,.14,0,.27-.02.21-.02.56-.06,1.06-.08.7-.07,1.66-.1,2.77-.1,2.49,0,8.52.05,11.86.54,0,.01,0,.03.01.04.15.48.35,1.09.98,1.09.51,0,.84-.32.84-.8,0-.29-.05-.72-.1-1.17-.05-.46-.11-.94-.11-1.26,0-.57.07-1.39.12-2.12.05-.59.09-1.1.09-1.39Z"/>
+        <path d="M185.51,125.38c-7.21,0-12.44,5.23-12.44,12.44,0,6.64,5.13,11.65,11.92,11.65,7.21,0,12.44-5.23,12.44-12.44,0-6.64-5.13-11.65-11.92-11.65ZM187.11,147.16c-5.33,0-11.53-5.02-11.53-11.49,0-4.71,4.12-7.99,7.81-7.99,5.33,0,11.53,5.02,11.53,11.49,0,4.78-4.04,7.99-7.81,7.99Z"/>
+        <path d="M225.71,125.76s-.17.01-.36.03c-.55.06-1.7.18-3.14.18-1.53,0-2.84-.11-3.54-.17-.26-.02-.43-.04-.49-.04-.48,0-.84.36-.84.84,0,.38.3.65.6.75.79.22,2.21.35,2.91.41v.05c.16,1.72.48,5.3.48,7.3,0,4.42,0,9-2.07,10.87-.9.73-2.39,1.7-4.83,1.7-2.62,0-3.96-1.16-4.63-2.14-.79-1.24-.79-4.34-.79-6.61,0-3.06,0-8.61.12-11.17.95-.06,2.42-.2,3.27-.41.28-.09.58-.37.58-.75,0-.48-.36-.84-.84-.84-.08,0-.26.01-.53.03-.72.06-2.23.17-4.06.17s-3.22-.12-3.88-.18c-.21-.02-.34-.03-.4-.03-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.43.12,6.76.12,9.69,0,5.7,0,7.83,2.18,9.75,1.78,1.58,3.79,2.28,6.51,2.28,2.29,0,4.14-.65,5.97-2.12,2.69-2.13,2.69-7.73,2.69-12.23,0-2,.32-5.57.48-7.29v-.08c.61-.06,1.72-.18,2.42-.41.28-.09.58-.37.58-.75,0-.48-.36-.84-.84-.84Z"/>
+        <path d="M249.52,143.69c0-.88-.64-.94-.84-.94-.79,0-1.02,1.02-1.19,3.17-2.74.79-5.66,1.17-8.92,1.17h-.99c-.11-2.44-.11-6.78-.11-9.72s0-7.21.12-9.62c.67-.06,1.91-.19,2.61-.41.29-.1.58-.36.58-.74,0-.48-.36-.84-.84-.84-.05,0-.2.01-.41.03-.64.06-1.98.18-3.69.18s-3.05-.12-3.69-.18c-.22-.02-.36-.03-.41-.03-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.4.12,6.55.12,9.62s0,7.29-.12,9.72c-.67.06-1.91.19-2.6.41-.28.09-.58.37-.58.75,0,.48.36.84.84.84.17,0,.39-.02.65-.04.22-.02.49-.05.83-.06.69-.07,1.54-.1,2.63-.1,2.49,0,8.52.05,11.86.54,0,.01,0,.03.01.04.15.48.35,1.08.98,1.08.38,0,.84-.18.84-1.01,0-.19-.03-.41-.07-.68-.06-.38-.13-.85-.13-1.54,0-.82.06-1.56.12-2.21.05-.53.09-1,.09-1.4Z"/>
+        <path d="M278.56,125.38c-7.21,0-12.44,5.23-12.44,12.44,0,6.64,5.13,11.65,11.92,11.65,7.21,0,12.44-5.23,12.44-12.44,0-6.64-5.13-11.65-11.92-11.65ZM280.15,147.16c-5.33,0-11.53-5.02-11.53-11.49,0-4.71,4.12-7.99,7.81-7.99,5.33,0,11.53,5.02,11.53,11.49,0,4.78-4.04,7.99-7.81,7.99Z"/>
+        <path d="M315.73,146.81c-.23,0-.42.1-.6.2-.22.12-.45.25-.83.25-.85,0-1.13-.32-2.68-2.26-.57-.72-1.29-1.62-2.25-2.76-1.28-1.62-2.14-2.68-2.72-3.41-.04-.05-.08-.1-.12-.15,3.5-.36,7.74-2.58,7.74-7.04,0-5.55-6.09-5.98-7.96-5.98-.79,0-1.85.07-2.97.14-1.11.11-2.06.17-2.7.17-.86,0-1.63-.04-2.28-.08l-.49-.03c-.76-.07-1.22-.11-1.33-.11-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.43.12,6.74.12,9.65s0,7.26-.12,9.69c-.67.06-1.91.19-2.6.41-.28.09-.58.37-.58.75,0,.48.36.84.84.84.05,0,.19-.01.41-.03.64-.06,1.98-.18,3.69-.18,1.86,0,3.3.12,3.99.18.24.02.4.03.46.03.48,0,.84-.36.84-.84,0-.38-.3-.65-.6-.75-.79-.22-2.21-.35-2.93-.4-.1-2.22-.11-5.93-.12-8.64.11.17.26.34.41.52l.14.17c.95,1.17,2.1,2.73,3.21,4.23,1.13,1.54,2.31,3.12,3.33,4.4.82.96,1.8,1.84,3.4,1.84,1.72,0,3.69-1.11,3.69-2.09,0-.39-.33-.7-.74-.7ZM302.29,137.21c0-2.72,0-7.01.12-9.47.22-.03.48-.07.75-.11.57-.09,1.21-.19,1.63-.19,3.46,0,6.07,2.34,6.07,5.45,0,3.41-3.19,4.13-5.87,4.13h-2.08c-.28,0-.48.08-.62.19Z"/>
+        <path d="M329.51,127.34c.28-.09.58-.37.58-.75,0-.48-.36-.84-.84-.84-.05,0-.19.01-.41.03-.64.06-1.98.18-3.69.18s-3.05-.12-3.69-.18c-.22-.02-.36-.03-.41-.03-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.43.12,6.74.12,9.65s0,7.26-.12,9.69c-.67.06-1.91.19-2.6.41-.28.09-.58.37-.58.75,0,.48.36.84.84.84.05,0,.19-.01.41-.03.64-.06,1.98-.18,3.69-.18s3.05.12,3.69.18c.22.02.36.03.41.03.48,0,.84-.36.84-.84,0-.38-.3-.65-.58-.75h0c-.69-.22-1.93-.35-2.6-.41-.12-2.52-.12-6.97-.12-9.69s0-7.13.12-9.65c.67-.06,1.91-.19,2.6-.41Z"/>
+        <path d="M357.95,136.95s-.15.01-.31.03c-.42.06-1.29.18-2.4.18-1.77,0-3.19-.12-3.87-.18-.24-.02-.41-.03-.47-.03-.48,0-.84.36-.84.84,0,.38.29.65.6.75.78.22,2.1.34,2.8.4v6.82l-.25.13c-1.41.75-2.52,1.34-4.61,1.34-5.92,0-9.58-5.88-9.58-11.32s4.02-8.37,7.99-8.37c3.74,0,5.96,1.92,7.44,3.28v.09c.16,2.91.38,4.2,1.25,4.2.29,0,.77-.13.77-1-.03-.72-.03-2.39-.03-3.87,0-1.56.22-3.58.32-4.56.04-.34.06-.56.06-.62,0-.46-.35-.84-.77-.84-.77,0-1.05,1.12-1.32,2.74-2.24-1.07-4.4-1.59-6.57-1.59-6.73,0-12.41,5.92-12.41,12.93s5.77,11.16,11.19,11.16c1.59,0,2.88-.27,4.75-1,.87-.31,1.49-.63,2-.88.6-.3,1.03-.52,1.6-.62.19-.03.36-.05.52-.06.57-.06,1.42-.15,1.42-1.05,0-.33-.17-.55-.26-.68-.08-.1-.08-.11-.08-.16,0-.17-.01-.43-.03-.73-.02-.38-.04-.83-.04-1.22,0-.95.09-2.48.15-3.5.02-.26.03-.48.04-.67.46-.08.95-.21,1.27-.4.27-.11.52-.37.52-.72,0-.48-.36-.84-.84-.84Z"/>
+        <path d="M373.11,127.34c.28-.09.58-.37.58-.75,0-.48-.36-.84-.84-.84-.05,0-.19.01-.41.03-.64.06-1.98.18-3.69.18s-3.05-.12-3.69-.18c-.22-.02-.36-.03-.41-.03-.48,0-.84.36-.84.84,0,.38.3.65.59.75.69.22,1.93.35,2.6.41.12,2.43.12,6.74.12,9.65s0,7.26-.12,9.69c-.67.06-1.91.19-2.6.41-.28.09-.58.37-.58.75,0,.48.36.84.84.84.05,0,.19-.01.41-.03.64-.06,1.98-.18,3.69-.18s3.05.12,3.69.18c.22.02.36.03.41.03.48,0,.84-.36.84-.84,0-.38-.3-.65-.58-.75h0c-.69-.22-1.93-.35-2.6-.41-.12-2.52-.12-6.97-.12-9.69s0-7.13.12-9.65c.67-.06,1.91-.19,2.6-.41Z"/>
+        <path d="M401.45,125.76c-.06,0-.21.01-.42.04-.55.06-1.71.17-3.09.17-1.68,0-2.96-.13-3.51-.18-.18-.02-.3-.03-.35-.03-.48,0-.84.36-.84.84,0,.38.29.65.59.75.7.22,1.99.35,2.64.41.34,2.34.52,7.87.52,12.15,0,.87-.03,1.97-.09,2.88-2.81-3.44-9.85-12.45-12.13-15.48-.18-.23-.36-.5-.53-.74-.15-.23-.3-.43-.41-.58l-.17-.22-.68.08c-.47.06-.96.12-1.31.12-.19,0-.51-.04-.84-.08-.39-.05-.79-.09-1.03-.09-.58,0-.94.35-.94.91,0,.26.18.61.64.74,1.53.56,2.37,1.74,2.42,2,0,.54.02,1.18.04,1.89.03.85.06,1.78.06,2.73,0,4.71-.19,10.54-.56,13.02-.6.06-1.72.19-2.3.41-.28.09-.58.37-.58.74,0,.48.36.84.84.84.05,0,.16-.01.35-.03.54-.06,1.67-.18,3.2-.18,1.8,0,3.2.12,3.87.17.26.02.43.03.51.03.48,0,.84-.36.84-.84,0-.38-.3-.65-.61-.75-.87-.23-2.46-.36-3.19-.41-.42-2.48-.62-8.21-.62-13.01,0-.76,0-1.7,0-2.53.6.76,1.24,1.57,1.9,2.4,3.7,4.68,8.31,10.51,11.39,14.71.29.43.58.81,1,.81.53,0,.8-.36.8-1.08,0-.42-.01-1.26-.03-2.32-.03-1.78-.07-4.17-.07-6.16,0-4.37.19-9.88.61-12.15.58-.06,1.68-.18,2.35-.41.29-.09.58-.4.58-.75,0-.48-.36-.84-.84-.84Z"/>
+      </g>
+      <g>
+        <path d="M107.15,85.81c-1.99-.22-3.76-.66-5.75-.66-4.42,0-7.08.66-7.74.66-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.99-.55,4.31-1,6.75-1.33.33-9.4.44-21.45.44-37.38,0-8.51.11-19.68-.55-33.95-.11-2.32-.55-5.09-2.21-5.09-2.21,0-3.98,2.1-5.09,2.1-.55,0-.77-.44-.77-1,0-1.66,9.18-7.3,13.82-7.3,1.99,0,1.99,1.66,1.99,3.43,0,7.19-.44,38.48-.44,52.3,3.43-2.54,8.96-6.86,15.15-6.86,9.07,0,12.83,8.51,12.83,16.92,0,11.83-5.86,20.68-16.81,20.68-6.41,0-10.17-3.1-11.5-4.31v3.65ZM128.05,67.12c0-7.74-3.32-14.04-9.62-14.04-4.64,0-8.29,3.32-10.95,5.53-.11,3.43-.33,7.85-.33,10.5,0,2.43,0,7.08,1.88,10.06,1.55,2.88,5.53,4.75,8.96,4.75,6.52,0,10.06-7.19,10.06-16.81Z"/>
+        <path d="M166.31,85.04c0,.66-.66.77-1.22.77-.88,0-4.53-.66-9.84-.66s-8.96.66-9.84.66c-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-11.5.33-29.86.33-38.92,0-8.51-.44-24.44-.44-32.4,0-2.32-.55-5.09-2.21-5.09-2.21,0-3.98,2.1-5.09,2.1-.55,0-.77-.44-.77-1,0-1.66,9.18-7.3,13.82-7.3,1.99,0,1.99,1.66,1.99,3.43,0,5.64-.55,31.74-.55,40.25,0,9.07,0,27.42.22,38.92,2.1.33,4.64.77,6.3,1.33.77.11,1.11.44,1.11,1.11Z"/>
+        <path d="M183.67,85.15c-5.31,0-8.96.66-9.84.66-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-2.88.33-10.95.33-14.26s-.11-12.16-.22-15.15c-1.88,0-4.98.22-7.3.22-.66,0-.88-.44-.88-.77,0-1.22,2.54-1.33,6.86-2.32,4.09-1,6.97-1.99,7.74-1.99.66,0,.88.44.88,1.44,0,.88-.11,2.21-.11,3.43-.11,2.99-.22,11.72-.22,15.15s.11,11.39.33,14.26c2.1.33,4.53.77,6.19,1.33.77.11,1.11.44,1.11,1.11s-.66.77-1.22.77c-.88,0-4.53-.66-9.84-.66ZM182.9,31.85c-2.76,0-5.09-2.32-5.09-5.09s2.32-5.09,5.09-5.09,5.09,2.32,5.09,5.09-2.32,5.09-5.09,5.09Z"/>
+        <path d="M220.94,87.03c-.77,0-1.33-1.11-1.66-1.77-2.43-4.87-8.29-17.91-12.5-27.42-.77-1.66-1.55-3.32-2.32-5.09-1.66-.44-3.43-.77-4.64-1.33-.66-.33-1.11-.44-1.11-1.11s.66-.77,1.22-.77c.88,0,4.53.66,9.4.66,4.09,0,6.86-.66,7.52-.66.55,0,1.22.11,1.22.77,0,1.11-.44.77-1.11,1.11-1.22.66-3.1,1-4.87,1.33,2.21,4.75,6.97,16.48,11.39,26.32,4.75-10.28,7.96-19.57,9.95-26.32-1.55-.44-3.21-.77-4.31-1.33-.66-.33-1.11-.11-1.11-1.11,0-.66.66-.77,1.22-.77.66,0,3.43.66,7.19.66s6.41-.66,7.08-.66c.55,0,1.22.11,1.22.77,0,1-.44.77-1.11,1.11-1.33.55-3.1,1-4.87,1.33-3.1,6.97-13.16,26.76-16.03,32.51-.66,1.33-.88,1.77-1.77,1.77Z"/>
+        <path d="M308.07,87.03c-20.01,0-34.17-14.6-34.17-35.16s15.26-38.37,35.5-38.37c7.08,0,15.04,1.99,20.13,3.54.33-1.77.88-5.75,1.55-7.08.22-.66.66-1,1.11-1,.55,0,.88.44.88,1.11,0,.88-1,10.39-1,15.04,0,4.98.55,14.27.55,15.37s-.33,1.55-.88,1.55c-.66,0-.88-.44-1.11-1.44-1-3.65-1.66-12.61-1.66-14.82-4.53-3.65-12.38-8.96-22.67-8.96-14.04,0-25.66,9.51-25.66,27.31,0,20.46,13.6,38.92,32.29,38.92,12.83,0,17.47-8.62,19.02-8.62.44,0,.88.33.88.77,0,.33-.22.77-.44,1.11-1.99,3.21-11.06,10.73-24.33,10.73Z"/>
+        <path d="M364.69,85.04c0,.66-.66.77-1.22.77-.88,0-4.53-.66-9.84-.66s-8.96.66-9.84.66c-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-11.5.33-29.86.33-38.92,0-8.51-.44-24.44-.44-32.4,0-2.32-.55-5.09-2.21-5.09-2.21,0-3.98,2.1-5.09,2.1-.55,0-.77-.44-.77-1,0-1.66,9.18-7.3,13.82-7.3,1.99,0,1.99,1.66,1.99,3.43,0,5.64-.55,31.74-.55,40.25,0,9.07,0,27.42.22,38.92,2.1.33,4.64.77,6.3,1.33.77.11,1.11.44,1.11,1.11Z"/>
+        <path d="M382.05,85.15c-5.31,0-8.96.66-9.84.66-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-2.88.33-10.95.33-14.26s-.11-12.16-.22-15.15c-1.88,0-4.98.22-7.3.22-.66,0-.88-.44-.88-.77,0-1.22,2.54-1.33,6.86-2.32,4.09-1,6.97-1.99,7.74-1.99.66,0,.88.44.88,1.44,0,.88-.11,2.21-.11,3.43-.11,2.99-.22,11.72-.22,15.15s.11,11.39.33,14.26c2.1.33,4.53.77,6.19,1.33.77.11,1.11.44,1.11,1.11s-.66.77-1.22.77c-.88,0-4.53-.66-9.84-.66ZM381.28,31.85c-2.76,0-5.09-2.32-5.09-5.09s2.32-5.09,5.09-5.09,5.09,2.32,5.09,5.09-2.32,5.09-5.09,5.09Z"/>
+        <path d="M448.07,85.81c-.88,0-4.53-.66-9.84-.66s-8.96.66-9.84.66c-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-2.88.33-10.95.33-14.26,0-8.51,0-15.26-7.63-15.26-5.09,0-9.62,2.76-12.61,4.53,0,3.54-.11,7.08-.11,10.73,0,3.32,0,11.39.33,14.26,2.1.33,4.53.77,6.19,1.33.77.11,1.11.44,1.11,1.11s-.66.77-1.22.77c-.88,0-4.53-.66-9.84-.66s-8.96.66-9.84.66c-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-2.88.33-10.95.33-14.26s-.11-12.16-.33-15.15c-.88,0-6.08.22-7.41.22-.55,0-1-.22-1-.77,0-1.44,1.11-1,8.74-2.88,3.76-.88,4.87-1.44,5.86-1.44.88,0,1.11.66,1.11,1.44,0,.88-.22,4.09-.22,5.53,4.87-2.65,12.38-6.41,17.03-6.41,7.96,0,10.28,3.87,10.28,9.95,0,3.21-.22,6.52-.22,9.51,0,3.32.11,11.39.33,14.26,2.1.33,4.53.77,6.19,1.33.77.11,1.11.44,1.11,1.11s-.66.77-1.22.77Z"/>
+        <path d="M465.98,85.15c-5.31,0-8.96.66-9.84.66-.55,0-1.22-.11-1.22-.77s.33-1,1.11-1.11c1.66-.55,4.2-1,6.3-1.33.22-2.88.33-10.95.33-14.26s-.11-12.16-.22-15.15c-1.88,0-4.98.22-7.3.22-.66,0-.88-.44-.88-.77,0-1.22,2.54-1.33,6.86-2.32,4.09-1,6.97-1.99,7.74-1.99.66,0,.88.44.88,1.44,0,.88-.11,2.21-.11,3.43-.11,2.99-.22,11.72-.22,15.15s.11,11.39.33,14.26c2.1.33,4.53.77,6.19,1.33.77.11,1.11.44,1.11,1.11s-.66.77-1.22.77c-.88,0-4.53-.66-9.84-.66ZM465.21,31.85c-2.76,0-5.09-2.32-5.09-5.09s2.32-5.09,5.09-5.09,5.09,2.32,5.09,5.09-2.32,5.09-5.09,5.09Z"/>
+        <path d="M501.92,86.47c-7.96,0-17.36-5.53-17.36-17.69,0-10.73,8.63-19.9,19.79-19.9,4.64,0,7.63,1.22,9.95,2.21.66-2.21,1-4.31,2.1-4.31.44,0,.77.44.77,1.11,0,1.33-.66,5.53-.66,9.29,0,3.32.33,6.52.33,7.52,0,.55-.22,1-.77,1-1.33,0-1.77-5.75-2.21-7.96-1.77-2.54-6.63-6.3-12.16-6.3s-11.06,3.87-11.06,12.61c0,11.06,7.52,17.69,14.93,17.69s10.28-6.63,11.72-6.63c.66,0,.88.33.88.88,0,1-4.75,10.51-16.26,10.51Z"/>
+      </g>
+      <g>
+        <path d="M53.6,87.24c8.34-2.18,16.86-8.1,22.31-16.5,9.3-14.35,5.93-32.94,3.56-41.59-.1-.37-.66-.26-.61.12.66,5.89.58,16.12-4.84,26.87-7.39,14.68-19.62,18.84-25.53,20.58-4.42,1.3-14.64,3.24-29.51-2.85C7.27,67.61,2.05,58,.39,53.42c-.08-.23-.43-.13-.39.11,2.13,11.99,11.22,25.72,25.27,31.63,9.42,3.96,20.08,4.24,28.33,2.09Z"/>
+        <path d="M15.01,53.75c.08.3-.32.47-.49.21-5.44-8.48-6.99-20.73-2.22-31.28C18.11,9.85,29.27,3.21,43.02,3.04c13.74-.17,24.63,7.1,29.28,14.86.17.28-.19.57-.43.35-6.63-6.16-13.94-8.42-22.25-8.91-10.32-.61-19.75,2.29-27.48,11.44-4.76,5.63-10.78,19.12-7.13,32.98Z"/>
+        <path d="M14.82,11.99c.17-.11.34.12.2.26-5.06,5.06-7.36,11.44-8.44,18.4-1.3,8.32-.02,16.18,4.51,23.38,4.75,7.54,11.43,13.07,20.11,15.53,5.11,1.45,9.06,2.47,16.54,1.74,4.66-.56,6.14-1.1,7.38-1.4.19-.05.29.21.12.31-7.97,4.63-20.37,5.73-32.51,1.07C8.99,65.99.58,53.1.86,38.44c.25-12.63,6.98-22.01,13.96-26.44Z"/>
+      </g>
+    </g>
+  </g>
+</svg>`
+};
+const LOGO_STATE = { beauty: 'basic', longlasting: 'basic', toenail: 'basic', rehab: 'basic' };
+const TITLE_STATE = { beauty: true, longlasting: true, toenail: true, rehab: true };
+
+function loadLogos() {
+  ['beauty','longlasting','toenail','rehab'].forEach(t => {
+    applyLogoToTab(t, LOGO_STATE[t] || 'basic');
+  });
+}
+
+function scaleSvg(svgStr, h) {
+  if (!svgStr) return '';
+  return svgStr.replace(/<svg([^>]*)>/i, (m, attrs) => {
+    attrs = attrs.replace(/height="[^"]*"/gi,'').replace(/width="[^"]*"/gi,'');
+    return `<svg${attrs} style="height:${h}px;width:auto;">`;
+  });
+}
+
+function applyLogoToTab(tab, type) {
+  const tabEl = document.getElementById('tab-' + tab);
+  if (!tabEl) return;
+  const h = type === 'seoul' ? 39 : 26;
+  tabEl.querySelectorAll('.logo-svg-wrap').forEach(el => {
+    el.innerHTML = scaleSvg(LOGOS[type], h);
+  });
+  tabEl.querySelectorAll('.footer-logo-svg').forEach(el => {
+    el.innerHTML = scaleSvg(LOGOS[type], 18);
+  });
+  LOGO_STATE[tab] = type;
+}
+
+function setPanelLogo(type, btn) {
+  const t = getCurrentTab();
+  applyLogoToTab(t, type);
+  document.querySelectorAll('.rp-logo-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function updatePanelLogoState(tabName) {
+  const type = LOGO_STATE[tabName] || 'basic';
+  document.querySelectorAll('.rp-logo-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.type === type);
+  });
+}
+
+/* ══ TABS ══ */
+function getCurrentTab() {
+  const p = document.querySelector('.tab-panel.active');
+  return p ? p.id.replace('tab-', '') : 'toenail';
+}
+
+const TAB_NAMES = { beauty: '뷰티', longlasting: '롱래스팅', toenail: '발톱', rehab: '재활의학' };
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const nameEl = document.getElementById('tb-cat-name');
+  if (nameEl) nameEl.textContent = TAB_NAMES[name] || name;
+  clearSel();
+  selectPage(null);
+  updatePanelLogoState(name);
+  updatePanelTitleState(name);
+}
+
+function updatePanelTitleState(tabName) {
+  const on = TITLE_STATE[tabName] !== false;
+  const btn = document.getElementById('btn-title-toggle');
+  if (btn) btn.textContent = on ? '— 타이틀 숨기기' : '＋ 타이틀 추가';
+}
+
+/* ══ TITLE TOGGLE ══ */
+function toggleTitleFromPanel(btn) {
+  const t = getCurrentTab();
+  const tabEl = document.getElementById('tab-' + t);
+  saveSnapshot();
+  // 선택된 페이지만, 없으면 전체
+  const scope = (selectedPage && tabEl.contains(selectedPage)) ? selectedPage : tabEl;
+  const targets = [...scope.querySelectorAll('.p-title')];
+  const nowVisible = targets.length > 0 && targets[0].style.display !== 'none';
+  const newVisible = !nowVisible;
+  targets.forEach(el => { el.style.display = newVisible ? '' : 'none'; });
+  TITLE_STATE[t] = newVisible;
+  btn.textContent = newVisible ? '— 타이틀 숨기기' : '＋ 타이틀 추가';
+}
+
+/* ══ PANEL ACTIONS ══ */
+function openFmtModalFromPanel() {
+  // selectedPage 를 fmtTargetPage 로 전달
+  openFmtModal(getCurrentTab(), selectedPage);
+}
+
+function addPageFromPanel() {
+  const t = getCurrentTab();
+  const tabEl = document.getElementById('tab-' + t);
+  const pageWrap = tabEl.querySelector('.page-wrap');
+  const type = LOGO_STATE[t] || 'basic';
+  saveSnapshot();
+
+  const page = document.createElement('div');
+  page.className = 'page';
+  page.innerHTML = `
+    <div class="p-title" style="font-family:'Pretendard',sans-serif;font-size:48px;font-weight:700;line-height:1.2;margin-bottom:40px;" contenteditable="true">타이틀을 입력하세요</div>
+    <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>
+    <div class="page-footer"><div class="footer-logo-svg">${scaleSvg(LOGOS[type], 18)}</div></div>`;
+
+  // 선택된 페이지 다음에 삽입, 없으면 맨 끝
+  if (selectedPage && tabEl.contains(selectedPage)) {
+    selectedPage.insertAdjacentElement('afterend', page);
+  } else {
+    pageWrap.appendChild(page);
+  }
+  initPageClick();
+  selectPage(page);
+  toast('페이지가 추가됐습니다');
+}
+
+/* ══ TOPBAR DROPDOWNS ══ */
+function toggleDD(id) {
+  const dd = document.getElementById(id);
+  const wasOpen = dd.classList.contains('open');
+  closeAllDD();
+  if (!wasOpen) dd.classList.add('open');
+}
+function closeAllDD() {
+  document.querySelectorAll('.tb-dropdown').forEach(d => d.classList.remove('open'));
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.split') && !e.target.closest('.tb-dropdown') && !e.target.closest('.rp-cat-btn')) closeAllDD();
+});
+
+/* ══ FORMAT MODAL ══ */
+let fmtTarget = null;
+let fmtTargetPage = null;
+let fmtSelected = 'A';
+
+function openFmtModal(tab, pageEl) {
+  fmtTarget = tab;
+  // 명시적 pageEl 이 있으면 그 페이지, 없으면 현재 selectedPage 사용
+  fmtTargetPage = (pageEl !== undefined) ? pageEl : selectedPage;
+  fmtSelected = 'A';
+  document.querySelectorAll('.fmt-card').forEach(c => c.classList.remove('selected'));
+  document.querySelector('.fmt-card[data-fmt="A"]').classList.add('selected');
+  document.getElementById('fmt-modal').classList.add('open');
+}
+function closeFmtModal() { document.getElementById('fmt-modal').classList.remove('open'); }
+function selectFmt(card) {
+  document.querySelectorAll('.fmt-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  fmtSelected = card.dataset.fmt;
+}
+function confirmFmt() {
+  if (!fmtTarget) return;
+  saveSnapshot();
+  const tabEl = document.getElementById('tab-' + fmtTarget);
+  let addBtn;
+  // 타겟 페이지(인라인 버튼) → 선택된 페이지 → 마지막 페이지 순서로 탐색
+  if (fmtTargetPage && tabEl.contains(fmtTargetPage)) {
+    addBtn = fmtTargetPage.querySelector('.ghost-add[onclick*="openFmtModal"]');
+  }
+  if (!addBtn) {
+    const btns = tabEl.querySelectorAll('.ghost-add[onclick*="openFmtModal"]');
+    addBtn = btns[btns.length - 1];
+  }
+  if (!addBtn) return;
+  const block = buildSection(fmtSelected);
+  addBtn.parentNode.insertBefore(block, addBtn);
+  initTableCells();
+  initPageClick();
+  closeFmtModal();
+}
+
+function buildSection(fmt) {
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  const id = 'notes-new-' + Date.now();
+
+  if (fmt === 'A') {
+    div.innerHTML = `
+      <div class="sec-header">
+        <span class="sec-en" contenteditable="true">Fixed Price</span>
+        <span class="sec-ko" contenteditable="true">정찰가</span>
+        <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+      </div>
+      <div class="fixed-table">
+        <div class="fixed-row">
+          <div class="fixed-cat" contenteditable="true" data-ph="카테고리"></div>
+          <div class="fixed-info">
+            <div class="fixed-name" contenteditable="true" data-ph="시술명">시술명</div>
+            <div class="fixed-desc" contenteditable="true" data-ph="설명"></div>
+          </div>
+          <div class="fixed-count" contenteditable="true">1회</div>
+          <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
+          <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+          <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+        </div>
+      </div>
+      <button class="ghost-add" onclick="addFixedRow(this)">＋ 항목 추가</button>
+      <div class="notes-block" id="${id}"></div>
+      <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  } else if (fmt === 'B') {
+    const tid = 'pkg-' + Date.now();
+    div.innerHTML = `
+      <div class="sec-header">
+        <span class="sec-en" contenteditable="true">Package</span>
+        <span class="sec-ko" contenteditable="true">패키지 프로그램</span>
+        <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+      </div>
+      <table class="pkg-table" id="${tid}">
+        <thead><tr>
+          <th contenteditable="true" style="width:14%;"></th>
+          <th contenteditable="true">항목 1</th>
+          <th contenteditable="true">항목 2</th>
+          <th contenteditable="true">합계</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="col-rnd" contenteditable="true">1회</td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+            <td contenteditable="true"></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="notes-block" id="${id}"></div>
+      <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  } else if (fmt === 'C') {
+    const lid = 'iv-' + Date.now();
+    div.innerHTML = `
+      <div class="sec-header">
+        <span class="sec-en" contenteditable="true">Price</span>
+        <span class="sec-ko" contenteditable="true">가격</span>
+        <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+      </div>
+      <div id="${lid}">
+        <div class="iv-item" style="position:relative;">
+          <div class="iv-item-head">
+            <div class="iv-cat" contenteditable="true">[ 시술명 ]</div>
+            <div class="iv-desc" contenteditable="true">설명</div>
+          </div>
+          <div class="iv-prices">
+            <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">0</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+            <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">N회</span><span class="iv-price-num" contenteditable="true">00</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+            <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+          </div>
+          <div class="iv-vat" contenteditable="true">*VAT별도</div>
+          <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>
+        </div>
+      </div>
+      <button class="ghost-add" onclick="addIvItem(this.previousElementSibling)">＋ 항목 추가</button>
+      <div class="notes-block" id="${id}"></div>
+      <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  } else if (fmt === 'D') {
+    const cid = 'combo-' + Date.now();
+    div.innerHTML = `
+      <div class="sec-header">
+        <span class="sec-en" style="font-style:normal;font-size:22px;font-family:'Pretendard',sans-serif;font-weight:700;" contenteditable="true">[ 결합 패키지 ]</span>
+        <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+      </div>
+      <div id="${cid}">
+        <div class="combo-row" style="position:relative;">
+          <div class="combo-desc" contenteditable="true">설명을 입력하세요</div>
+          <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">000</span><span class="combo-unit" contenteditable="true">만원</span></div>
+          <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+          <button class="row-del" onclick="this.closest('.combo-row').remove()">×</button>
+        </div>
+      </div>
+      <div class="combo-vat" contenteditable="true">*VAT별도</div>
+      <button class="ghost-add" onclick="addComboRow(this.previousElementSibling.previousElementSibling)">＋ 행 추가</button>
+      <div class="notes-block" id="${id}"></div>
+      <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  }
+  return div;
+}
+
+/* ══ ADD ROW HELPERS ══ */
+function addFixedRow(btn) {
+  saveSnapshot();
+  const table = btn.previousElementSibling;
+  const row = document.createElement('div');
+  row.className = 'fixed-row';
+  row.innerHTML = `
+    <div class="fixed-cat" contenteditable="true" data-ph="카테고리"></div>
+    <div class="fixed-info">
+      <div class="fixed-name" contenteditable="true" data-ph="시술명">시술명</div>
+      <div class="fixed-desc" contenteditable="true" data-ph="설명"></div>
+    </div>
+    <div class="fixed-count" contenteditable="true">1회</div>
+    <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
+    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+    <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>`;
+  table.appendChild(row);
+  row.querySelector('.fixed-name').focus();
+}
+
+function addPkgRow(table) {
+  saveSnapshot();
+  const cols = table.querySelector('thead tr').cells.length;
+  const tr = document.createElement('tr');
+  for (let i = 0; i < cols; i++) {
+    const td = document.createElement('td');
+    if (i === 0) td.className = 'col-rnd';
+    td.contentEditable = 'true';
+    td.addEventListener('mousedown', onCellMD);
+    td.addEventListener('mouseover', onCellMO);
+    tr.appendChild(td);
+  }
+  table.querySelector('tbody').appendChild(tr);
+  tr.cells[0].focus();
+}
+
+function addIvItem(list) {
+  saveSnapshot();
+  const div = document.createElement('div');
+  div.className = 'iv-item';
+  div.style.position = 'relative';
+  div.innerHTML = `
+    <div class="iv-item-head">
+      <div class="iv-cat" contenteditable="true">[ 시술명 ]</div>
+      <div class="iv-desc" contenteditable="true">설명</div>
+    </div>
+    <div class="iv-prices">
+      <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">0</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+      <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+    </div>
+    <div class="iv-vat" contenteditable="true">*VAT별도</div>
+    <div class="row-controls" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+    <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>`;
+  list.appendChild(div);
+  div.querySelector('.iv-cat').focus();
+}
+
+function addMedItem(list) {
+  saveSnapshot();
+  const div = document.createElement('div');
+  div.className = 'med-item';
+  div.style.position = 'relative';
+  div.innerHTML = `
+    <div style="padding:14px 0 5px;">
+      <div style="font-size:19px;font-weight:700;font-family:'Pretendard',sans-serif;" contenteditable="true">시술명</div>
+      <div style="font-size:13px;color:#888;margin-top:2px;font-family:'Pretendard',sans-serif;" contenteditable="true">설명</div>
+    </div>
+    <div class="iv-prices">
+      <div class="iv-price-item"><span class="iv-price-n" contenteditable="true">1회</span><span class="iv-price-num" contenteditable="true">0</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>
+      <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+    </div>
+    <div class="iv-vat" contenteditable="true">*VAT 별도</div>
+    <button class="row-del" onclick="this.closest('.med-item').remove()">×</button>`;
+  list.appendChild(div);
+}
+
+function addComboRow(list) {
+  saveSnapshot();
+  const div = document.createElement('div');
+  div.className = 'combo-row';
+  div.style.position = 'relative';
+  div.innerHTML = `
+    <div class="combo-desc" contenteditable="true">설명</div>
+    <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">000</span><span class="combo-unit" contenteditable="true">만원</span></div>
+    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+    <button class="row-del" onclick="this.closest('.combo-row').remove()">×</button>`;
+  list.appendChild(div);
+  div.querySelector('.combo-desc').focus();
+}
+
+function addPricePair(pricesEl) {
+  saveSnapshot();
+  const addBtn = pricesEl.querySelector('.iv-price-add');
+  const item = document.createElement('div');
+  item.className = 'iv-price-item';
+  item.innerHTML = `<span class="iv-price-n" contenteditable="true">N회</span><span class="iv-price-num" contenteditable="true">0</span><span class="iv-price-unit" contenteditable="true">만원</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button>`;
+  pricesEl.insertBefore(item, addBtn);
+  item.querySelector('.iv-price-n').focus();
+}
+
+function addNote(notesBlock) {
+  saveSnapshot();
+  const line = document.createElement('div');
+  line.className = 'note-line';
+  line.innerHTML = `<span class="note-sym">※</span><span contenteditable="true">내용을 입력하세요</span><button class="note-del" onclick="this.closest('.note-line').remove()">×</button>`;
+  notesBlock.appendChild(line);
+  line.querySelector('span[contenteditable]').focus();
+}
+
+/* ══ TABLE MERGE ══ */
+let selCells = [], selTable = null, dragStart = null;
+
+function buildGrid(table) {
+  const grid = [];
+  [...table.querySelectorAll('tr')].forEach((tr, ri) => {
+    if (!grid[ri]) grid[ri] = [];
+    let ci = 0;
+    [...tr.cells].forEach(cell => {
+      while (grid[ri][ci]) ci++;
+      const rs = cell.rowSpan||1, cs = cell.colSpan||1;
+      for (let r=0;r<rs;r++) for (let c=0;c<cs;c++) {
+        if (!grid[ri+r]) grid[ri+r]=[];
+        grid[ri+r][ci+c] = {cell, ri:ri+r, ci:ci+c, origin:r===0&&c===0};
+      }
+      ci += cs;
+    });
+  });
+  return grid;
+}
+function gridPos(grid, cell) {
+  for (let r=0;r<grid.length;r++)
+    for (let c=0;c<(grid[r]||[]).length;c++)
+      if (grid[r][c]&&grid[r][c].cell===cell&&grid[r][c].origin) return {r,c};
+  return null;
+}
+function gridCols(grid){ return Math.max(...grid.map(row=>(row?row.length:0))); }
+
+function clearSel() {
+  selCells.forEach(c=>c.classList.remove('tbl-sel'));
+  selCells=[]; selTable=null; dragStart=null;
+  updateTbar();
+}
+function selectRange(table,r1,c1,r2,c2) {
+  clearSel(); selTable=table;
+  const grid=buildGrid(table);
+  const minR=Math.min(r1,r2),maxR=Math.max(r1,r2),minC=Math.min(c1,c2),maxC=Math.max(c1,c2);
+  const seen=new Set();
+  for(let r=minR;r<=maxR;r++) for(let c=minC;c<=maxC;c++){
+    const g=grid[r]&&grid[r][c];
+    if(g&&!seen.has(g.cell)){seen.add(g.cell);g.cell.classList.add('tbl-sel');selCells.push(g.cell);}
+  }
+  updateTbar();
+}
+function updateTbar() {
+  const tb = document.getElementById('tbl-toolbar');
+  if (!selCells.length) { tb.classList.remove('visible'); return; }
+
+  // ── 셀 근처에 툴바 위치 ──
+  tb.classList.add('visible');
+  const cell = selCells[0];
+  const rect = cell.getBoundingClientRect();
+  const tbW  = tb.offsetWidth  || 480;
+  const tbH  = tb.offsetHeight || 42;
+  let left = rect.left;
+  let top  = rect.bottom + 8;
+  const maxLeft = window.innerWidth - tbW - 12;
+  left = Math.min(Math.max(8, left), maxLeft);
+  if (top + tbH + 8 > window.innerHeight) top = rect.top - tbH - 8;
+  tb.style.left = left + 'px';
+  tb.style.top  = top  + 'px';
+
+  document.getElementById('btn-merge').disabled = selCells.length < 2;
+  document.getElementById('btn-split').disabled = !(selCells.length === 1 && (selCells[0].colSpan > 1 || selCells[0].rowSpan > 1));
+}
+
+/* ── 표 셀 배경색 ── */
+function setTableColor(color) {
+  if (!selCells.length) return;
+  saveSnapshot();
+  selCells.forEach(cell => {
+    cell.style.background = color || '';
+    // 어두운 배경이면 글자 자동 흰색
+    const dark = ['#1010FF','#0A0ACC','#191F28','#000000','#6666FF'];
+    if (color && dark.includes(color.toUpperCase ? color.toUpperCase() : color)) {
+      cell.style.color = '#fff';
+    } else if (!color) {
+      cell.style.color = '';
+    }
+  });
+}
+
+/* ── 표 셀 글자색 ── */
+function setTableTextColor(color) {
+  if (!selCells.length) return;
+  saveSnapshot();
+  selCells.forEach(cell => { cell.style.color = color || ''; });
+}
+
+/* ── 열 직접 추가 (선택 없이) ── */
+function addTableColDirect(table) {
+  if (!table) return;
+  saveSnapshot();
+  const rows = [...table.querySelectorAll('tr')];
+  rows.forEach((tr, ri) => {
+    const nc = document.createElement(ri === 0 ? 'th' : 'td');
+    nc.contentEditable = 'true';
+    nc.addEventListener('mousedown', onCellMD);
+    nc.addEventListener('mouseover', onCellMO);
+    tr.appendChild(nc);
+  });
+}
+
+/* ── 행 순서 이동 (fixed-row / combo-row) ── */
+function moveRow(btn, dir) {
+  const row    = btn.closest('.fixed-row, .combo-row, .iv-item');
+  const parent = row?.parentElement;
+  if (!parent) return;
+  saveSnapshot();
+  if (dir === 'up') {
+    const prev = row.previousElementSibling;
+    if (prev) parent.insertBefore(row, prev);
+  } else {
+    const next = row.nextElementSibling;
+    if (next) parent.insertBefore(next, row);
+  }
+}
+
+/* ── 텍스트 서식 ── */
+let _txtSizeMap = [10,11,12,13,14,16,18,20,24,28,32,36,48,60,72];
+let _txtSizeIdx = 4; // 기본 14px
+
+function applyFmt(cmd) {
+  document.execCommand(cmd, false, null);
+  _updateTxtToolbar();
+}
+function applyColor(color) {
+  document.execCommand('foreColor', false, color);
+}
+function changeFontSize(delta) {
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+
+  // 현재 앵커 요소의 폰트 크기 읽기
+  const anchorNode = sel.anchorNode;
+  const anchorEl = anchorNode?.nodeType === 3 ? anchorNode.parentElement : anchorNode;
+  const editableEl = anchorEl?.closest('[contenteditable]');
+  if (!editableEl) return;
+
+  const curSizePx = parseFloat(window.getComputedStyle(anchorEl).fontSize) || 14;
+  let idx = _txtSizeMap.findIndex(s => s >= Math.round(curSizePx));
+  if (idx === -1) idx = 4;
+  idx = Math.max(0, Math.min(_txtSizeMap.length - 1, idx + delta));
+  const px = _txtSizeMap[idx];
+
+  // execCommand fontSize (font[size="7"]) → 즉시 span으로 교체
+  document.execCommand('styleWithCSS', false, false);
+  document.execCommand('fontSize', false, '7');
+
+  // editableEl 내부의 font[size="7"] 를 span으로 교체
+  editableEl.querySelectorAll('font[size="7"]').forEach(el => {
+    const span = document.createElement('span');
+    span.style.fontSize = px + 'px';
+    span.innerHTML = el.innerHTML;
+    el.replaceWith(span);
+  });
+
+  // 포커스 복원 후 표시값 업데이트
+  editableEl.focus();
+  document.getElementById('txt-size-val').textContent = px;
+}
+
+function _updateTxtToolbar() {
+  document.getElementById('txt-b')?.classList.toggle('on', document.queryCommandState('bold'));
+  document.getElementById('txt-i')?.classList.toggle('on', document.queryCommandState('italic'));
+  document.getElementById('txt-u')?.classList.toggle('on', document.queryCommandState('underline'));
+  const sel = window.getSelection();
+  if (sel && sel.anchorNode) {
+    const el = sel.anchorNode.nodeType === 3 ? sel.anchorNode.parentElement : sel.anchorNode;
+    const sz = el ? parseFloat(window.getComputedStyle(el).fontSize) : 14;
+    document.getElementById('txt-size-val').textContent = Math.round(sz) || '—';
+  }
+}
+
+// 텍스트 선택 시 txt-toolbar 표시
+document.addEventListener('selectionchange', () => {
+  const tb  = document.getElementById('txt-toolbar');
+  if (!tb) return;
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || !sel.rangeCount) { tb.classList.remove('visible'); return; }
+  const anchor = sel.anchorNode;
+  if (!anchor) { tb.classList.remove('visible'); return; }
+  const el = anchor.nodeType === 3 ? anchor.parentElement : anchor;
+  if (!el?.closest('[contenteditable]')) { tb.classList.remove('visible'); return; }
+  // 표 셀 선택 중이면 txt-toolbar 숨김
+  if (el.closest('.pkg-table')) { tb.classList.remove('visible'); return; }
+
+  const range = sel.getRangeAt(0);
+  const rect  = range.getBoundingClientRect();
+  if (!rect.width && !rect.height) { tb.classList.remove('visible'); return; }
+  const tbW = tb.offsetWidth || 300;
+  let left = rect.left + rect.width / 2 - tbW / 2;
+  left = Math.max(8, Math.min(window.innerWidth - tbW - 8, left));
+  let top = rect.top - 48;
+  if (top < 64) top = rect.bottom + 8;
+  tb.style.left = left + 'px';
+  tb.style.top  = top  + 'px';
+  tb.classList.add('visible');
+  _updateTxtToolbar();
+});
+
+function mergeCells() {
+  if(!selTable||selCells.length<2)return;
+  const grid=buildGrid(selTable);
+  let minR=Infinity,minC=Infinity,maxR=-Infinity,maxC=-Infinity;
+  selCells.forEach(cell=>{
+    const pos=gridPos(grid,cell); if(!pos)return;
+    const rs=cell.rowSpan||1,cs=cell.colSpan||1;
+    minR=Math.min(minR,pos.r);minC=Math.min(minC,pos.c);
+    maxR=Math.max(maxR,pos.r+rs-1);maxC=Math.max(maxC,pos.c+cs-1);
+  });
+  const keeper=grid[minR][minC].cell;
+  keeper.rowSpan=maxR-minR+1; keeper.colSpan=maxC-minC+1;
+  keeper.innerHTML=selCells.filter(c=>c!==keeper).reduce((a,c)=>a+(c.innerHTML.trim()?'<br>'+c.innerHTML:''),keeper.innerHTML);
+  keeper.contentEditable='true';
+  selCells.forEach(c=>{if(c!==keeper)c.remove();});
+  [...selTable.querySelectorAll('tr')].forEach(tr=>{if(tr.cells.length===0)tr.remove();});
+  clearSel(); keeper.classList.add('tbl-sel'); selCells=[keeper]; selTable=selTable; updateTbar();
+}
+function splitCell() {
+  if(selCells.length!==1)return;
+  const cell=selCells[0]; const rs=cell.rowSpan||1,cs=cell.colSpan||1;
+  if(rs===1&&cs===1)return;
+  const grid=buildGrid(selTable); const pos=gridPos(grid,cell); if(!pos)return;
+  cell.rowSpan=1; cell.colSpan=1;
+  const allRows=[...selTable.querySelectorAll('tr')];
+  for(let r=pos.r;r<pos.r+rs;r++) for(let c=pos.c;c<pos.c+cs;c++){
+    if(r===pos.r&&c===pos.c)continue;
+    const td=document.createElement(cell.tagName.toLowerCase());
+    td.contentEditable='true';
+    td.addEventListener('mousedown',onCellMD); td.addEventListener('mouseover',onCellMO);
+    if(!allRows[r]){const tr=document.createElement('tr');(selTable.querySelector('tbody')||selTable).appendChild(tr);allRows[r]=tr;}
+    const g2=buildGrid(selTable); let ins=null;
+    for(let ci=c+1;ci<gridCols(g2);ci++){const e=g2[r]&&g2[r][ci];if(e&&e.origin&&e.ri===r){ins=e.cell;break;}}
+    ins?allRows[r].insertBefore(td,ins):allRows[r].appendChild(td);
+  }
+  clearSel();
+}
+
+function addTableRow(dir) {
+  if(!selTable||!selCells.length)return;
+  const grid=buildGrid(selTable); const pos=gridPos(grid,selCells[0]); if(!pos)return;
+  const allRows=[...selTable.querySelectorAll('tr')];
+  const refRow=allRows[dir==='above'?pos.r:pos.r+(selCells[0].rowSpan||1)-1];
+  const cols=gridCols(grid);
+  const tr=document.createElement('tr');
+  for(let c=0;c<cols;c++){const td=document.createElement('td');td.contentEditable='true';td.addEventListener('mousedown',onCellMD);td.addEventListener('mouseover',onCellMO);tr.appendChild(td);}
+  dir==='above'?refRow.parentNode.insertBefore(tr,refRow):refRow.insertAdjacentElement('afterend',tr);
+}
+function delTableRow() {
+  if(!selTable||!selCells.length)return;
+  const grid=buildGrid(selTable); const pos=gridPos(grid,selCells[0]); if(!pos)return;
+  const allRows=[...selTable.querySelectorAll('tr')];
+  for(let r=pos.r;r<pos.r+(selCells[0].rowSpan||1);r++)if(allRows[r])allRows[r].remove();
+  clearSel();
+}
+function addTableCol(dir) {
+  if(!selTable||!selCells.length)return;
+  const grid=buildGrid(selTable); const pos=gridPos(grid,selCells[0]); if(!pos)return;
+  const targetC=dir==='left'?pos.c:pos.c+(selCells[0].colSpan||1);
+  grid.forEach((row,ri)=>{
+    const allRows=[...selTable.querySelectorAll('tr')]; const tr=allRows[ri]; if(!tr)return;
+    const nc=document.createElement(ri===0&&selTable.querySelector('thead')?'th':'td');
+    nc.contentEditable='true'; nc.addEventListener('mousedown',onCellMD); nc.addEventListener('mouseover',onCellMO);
+    const e=row[targetC];
+    e&&e.origin?tr.insertBefore(nc,e.cell):tr.appendChild(nc);
+  });
+}
+function delTableCol() {
+  if(!selTable||!selCells.length)return;
+  const grid=buildGrid(selTable); const pos=gridPos(grid,selCells[0]); if(!pos)return;
+  const seen=new Set();
+  grid.forEach(row=>{
+    for(let c=pos.c;c<pos.c+(selCells[0].colSpan||1);c++){
+      const e=row&&row[c];
+      if(e&&e.origin&&!seen.has(e.cell)){seen.add(e.cell);e.cell.remove();}
+    }
+  });
+  clearSel();
+}
+
+function onCellMD(e) {
+  if(e.button!==0)return;
+  const cell=e.currentTarget; const table=cell.closest('table');
+  if(!table||!table.classList.contains('pkg-table'))return;
+  if(e.shiftKey&&selTable===table&&selCells.length){
+    const grid=buildGrid(table);
+    const p1=gridPos(grid,selCells[0]),p2=gridPos(grid,cell);
+    if(p1&&p2)selectRange(table,p1.r,p1.c,p2.r,p2.c);
+    e.preventDefault(); return;
+  }
+  clearSel(); selTable=table; dragStart=cell;
+  cell.classList.add('tbl-sel'); selCells=[cell]; updateTbar();
+}
+/* ── 드래그 선택: mousemove + elementFromPoint 방식 (범위 확실히 잡힘) ── */
+function onTableMM(e) {
+  if(!dragStart||!selTable||!(e.buttons&1))return;
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  const cell=el?.closest('td,th');
+  if(!cell||cell.closest('table')!==selTable)return;
+  const grid=buildGrid(selTable);
+  const p1=gridPos(grid,dragStart),p2=gridPos(grid,cell);
+  if(p1&&p2)selectRange(selTable,p1.r,p1.c,p2.r,p2.c);
+}
+function initTableCells() {
+  document.querySelectorAll('.pkg-table').forEach(table=>{
+    table.removeEventListener('mousemove',onTableMM);
+    table.addEventListener('mousemove',onTableMM);
+  });
+  document.querySelectorAll('.pkg-table td,.pkg-table th').forEach(cell=>{
+    cell.removeEventListener('mousedown',onCellMD);
+    cell.addEventListener('mousedown',onCellMD);
+  });
+  /* pkg-table 행 이동 플로팅 컨트롤 */
+  initPkgRowReorder();
+}
+document.addEventListener('mousedown',e=>{
+  if(!e.target.closest('.pkg-table')&&!e.target.closest('#tbl-toolbar'))clearSel();
+});
+document.addEventListener('mouseup',()=>{dragStart=null;});
+
+/* ── pkg-table 행 이동 플로팅 ── */
+let _floatCtrl=null, _floatTarget=null;
+function initPkgRowReorder() {
+  if(!_floatCtrl){
+    _floatCtrl=document.createElement('div');
+    _floatCtrl.id='row-float-ctrl';
+    _floatCtrl.innerHTML=
+      '<button class="row-ctrl-btn" onclick="movePkgRow(\'up\')">▲</button>'+
+      '<button class="row-ctrl-btn" onclick="movePkgRow(\'down\')">▼</button>';
+    document.body.appendChild(_floatCtrl);
+    _floatCtrl.addEventListener('mouseleave',()=>{ _floatCtrl.style.display='none'; });
+  }
+  document.querySelectorAll('.pkg-table tr').forEach(tr=>{
+    tr.removeEventListener('mouseenter',_onTrEnter);
+    tr.removeEventListener('mouseleave',_onTrLeave);
+    tr.addEventListener('mouseenter',_onTrEnter);
+    tr.addEventListener('mouseleave',_onTrLeave);
+  });
+}
+function _onTrEnter(e){
+  const tr=e.currentTarget;
+  const rect=tr.getBoundingClientRect();
+  _floatCtrl.style.display='flex';
+  _floatCtrl.style.top=(rect.top+rect.height/2-18)+'px';
+  _floatCtrl.style.left=(rect.left-46)+'px';
+  _floatTarget=tr;
+}
+function _onTrLeave(e){
+  if(!_floatCtrl.contains(e.relatedTarget)) _floatCtrl.style.display='none';
+}
+function movePkgRow(dir){
+  if(!_floatTarget)return;
+  saveSnapshot();
+  const tbody=_floatTarget.closest('tbody');
+  if(!tbody)return; // thead는 이동 불가
+  if(dir==='up'){
+    const prev=_floatTarget.previousElementSibling;
+    if(prev) tbody.insertBefore(_floatTarget,prev);
+  } else {
+    const next=_floatTarget.nextElementSibling;
+    if(next) tbody.insertBefore(next,_floatTarget);
+  }
+  _floatCtrl.style.display='none';
+  initPkgRowReorder();
+}
+
+/* ══ SAVE / LOAD ══ */
+function getSaveLabel() {
+  const t = getCurrentTab();
+  const tabEl = document.getElementById('tab-' + t);
+  const clinic = tabEl?.querySelector('.clinic-ko')?.textContent?.trim() || '';
+  const now = new Date();
+  const date = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')}`;
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  return { clinic, datetime: `${date} ${time}` };
+}
+function showSaveInfo(label) {
+  const wrap = document.getElementById('rp-save-info');
+  if (!wrap) return;
+  document.getElementById('rp-save-clinic').textContent = label.clinic || '—';
+  document.getElementById('rp-save-time').textContent   = `마지막 저장  ${label.datetime}`;
+  wrap.style.display = '';
+}
+
+/* ══ SAVE HISTORY ══ */
+const SAVES_KEY  = 'obliv_saves_v1';
+const MAX_SAVES  = 10;
+
+function getSaves() {
+  try { return JSON.parse(localStorage.getItem(SAVES_KEY)) || []; }
+  catch(e) { return []; }
+}
+function putSaves(arr) {
+  localStorage.setItem(SAVES_KEY, JSON.stringify(arr));
+}
+
+function saveAll() {
+  const tabData = {};
+  ['beauty','longlasting','toenail','rehab'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (!el) return;
+    const clone = el.cloneNode(true);
+    clone.querySelectorAll('.logo-svg-wrap, .footer-logo-svg').forEach(e => e.innerHTML = '');
+    tabData[t] = clone.innerHTML;
+  });
+  tabData.__logoState  = LOGO_STATE;
+  tabData.__titleState = TITLE_STATE;
+
+  const label  = getSaveLabel();
+  const entry  = { id: Date.now(), label, data: tabData };
+
+  try {
+    const saves = getSaves();
+    saves.unshift(entry);                        // 최신이 맨 앞
+    if (saves.length > MAX_SAVES) saves.length = MAX_SAVES;
+    putSaves(saves);
+    showSaveInfo(label);
+    toast('저장됐습니다 ✓');
+  } catch(e) { toast('저장 실패: ' + e.message); }
+}
+
+function applyData(data) {
+  ['beauty','longlasting','toenail','rehab'].forEach(t => {
+    const el = document.getElementById('tab-' + t);
+    if (el && data[t]) el.innerHTML = data[t];
+  });
+  if (data.__logoState)  Object.assign(LOGO_STATE, data.__logoState);
+  if (data.__titleState) Object.assign(TITLE_STATE, data.__titleState);
+  loadLogos();
+  initTableCells();
+  initPageClick();
+  const t = getCurrentTab();
+  updatePanelLogoState(t);
+  updatePanelTitleState(t);
+}
+
+function loadAll() {
+  // 페이지 열 때 가장 최근 저장본 자동 적용
+  const saves = getSaves();
+  if (!saves.length) return;
+  applyData(saves[0].data);
+  showSaveInfo(saves[0].label);
+}
+
+/* 저장본 선택 모달 */
+function openSavesModal() {
+  const saves = getSaves();
+  const list  = document.getElementById('saves-list');
+  if (!saves.length) {
+    list.innerHTML = '<div class="saves-empty">저장된 버전이 없습니다</div>';
+  } else {
+    list.innerHTML = saves.map(s => `
+      <div class="saves-item" onclick="loadSaveById(${s.id})">
+        <div class="saves-item-body">
+          <div class="saves-item-clinic">${s.label.clinic || '(클리닉명 없음)'}</div>
+          <div class="saves-item-time">${s.label.datetime}</div>
+        </div>
+        <button class="saves-item-del" onclick="deleteSaveById(${s.id},event)" title="삭제">×</button>
+      </div>`).join('');
+  }
+  document.getElementById('saves-modal').classList.add('open');
+}
+function closeSavesModal() {
+  document.getElementById('saves-modal').classList.remove('open');
+}
+function loadSaveById(id) {
+  const saves = getSaves();
+  const entry = saves.find(s => s.id === id);
+  if (!entry) { toast('저장본을 찾을 수 없습니다'); return; }
+  saveSnapshot();          // 복원 전 현재 상태 백업
+  applyData(entry.data);
+  showSaveInfo(entry.label);
+  closeSavesModal();
+  toast('저장본을 불러왔습니다');
+}
+function deleteSaveById(id, e) {
+  e.stopPropagation();
+  let saves = getSaves().filter(s => s.id !== id);
+  putSaves(saves);
+  openSavesModal();        // 목록 새로고침
+  toast('삭제됐습니다');
+}
+
+function clearSave() {
+  localStorage.removeItem(SAVES_KEY);
+  const wrap = document.getElementById('rp-save-info');
+  if (wrap) wrap.style.display = 'none';
+  toast('저장 초기화됐습니다');
+}
+function exportJSON() {
+  const data={};
+  ['beauty','longlasting','toenail','rehab'].forEach(t=>{
+    const el=document.getElementById('tab-'+t); if(!el)return;
+    data[t]={sections:[]};
+    el.querySelectorAll('.section-block').forEach(sec=>{
+      const s={title:sec.querySelector('.sec-en')?.textContent||'',rows:[]};
+      sec.querySelectorAll('.fixed-row,[contenteditable]').forEach(r=>s.rows.push(r.textContent.trim()));
+      data[t].sections.push(s);
+    });
+  });
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='오블리브_수가표_'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  toast('JSON으로 내보냈습니다');
+}
+function printTab() {
+  const t = getCurrentTab();
+  document.querySelectorAll('.tab-panel').forEach(p=>{
+    if(p.id !== 'tab-'+t) p.style.display='none';
+  });
+  window.print();
+  document.querySelectorAll('.tab-panel').forEach(p=>{ p.style.display=''; });
+  document.getElementById('tab-'+t).classList.add('active');
+}
+function toast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveAll(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
+    if (document.activeElement && document.activeElement.isContentEditable) return;
+    e.preventDefault();
+    undo();
+  }
+});
+
+/* ══ EXCEL IMPORT ══ */
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function uid() { return 'x' + Date.now() + Math.random().toString(36).slice(2,6); }
+
+function downloadExcelTemplate() {
+  if (typeof XLSX === 'undefined') { toast('라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  const wb = XLSX.utils.book_new();
+
+  /* Sheet A : 고정가목록 */
+  const wsA = XLSX.utils.aoa_to_sheet([
+    ['섹션(영문)', '섹션(한글)', '카테고리', '시술명', '설명', '횟수', '가격'],
+    ['Fixed Price', '정찰가', '[ 가열레이저 ]', '힐러', '(큰 발톱 5만원 / 작은 발톱 3만원)', '1회', '350,000'],
+    ['', '', '[ 비가열레이저 ]', '오니코 레이저', '', '1회', '260,000'],
+    ['', '', '', '아톰 레이저', '', '1회', '280,000'],
+    ['', '', '', 'AF 레이저', '', '1회', '300,000'],
+  ]);
+  wsA['!cols'] = [{wch:14},{wch:10},{wch:18},{wch:20},{wch:32},{wch:8},{wch:12}];
+  XLSX.utils.book_append_sheet(wb, wsA, 'A. 고정가목록');
+
+  /* Sheet B : 패키지표  (열0=섹션영문 열1=섹션한글 열2~=헤더·데이터) */
+  const wsB = XLSX.utils.aoa_to_sheet([
+    ['섹션(영문)', '섹션(한글)', '회차', '항목 1', '항목 2', '합계'],
+    ['Package', '패키지 프로그램', '1회', '힐러 1회', '오니코 1회', '610,000'],
+    ['', '', '6회', '힐러 6회', '오니코 6회', '1,500,000'],
+    ['', '', '10회', '힐러 10회', '오니코 10회', '2,200,000'],
+  ]);
+  wsB['!cols'] = [{wch:14},{wch:14},{wch:8},{wch:18},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb, wsB, 'B. 패키지표');
+
+  /* Sheet C : 가격강조형  (같은 시술명 여러 줄 = 횟수·가격 추가) */
+  const wsC = XLSX.utils.aoa_to_sheet([
+    ['섹션(영문)', '섹션(한글)', '시술명', '설명', '횟수', '가격', '단위'],
+    ['Price', '가격', '[ 힐러 ]', '가열레이저 시술', '1회', '35', '만원'],
+    ['', '', '', '', '4회', '120', '만원'],
+    ['', '', '[ 오니코 ]', '비가열레이저', '1회', '26', '만원'],
+    ['', '', '', '', '6회', '130', '만원'],
+  ]);
+  wsC['!cols'] = [{wch:14},{wch:10},{wch:16},{wch:24},{wch:8},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, wsC, 'C. 가격강조형');
+
+  /* Sheet D : 결합패키지 */
+  const wsD = XLSX.utils.aoa_to_sheet([
+    ['섹션타이틀', '설명', '가격', '단위'],
+    ['[ 결합 패키지 ]', '레이저 12회 + 항염 or 재생 수액 6회 60만원', '362', '만원'],
+    ['', '레이저 24회 + 항염 or 재생 수액 12회 120만원', '732', '만원'],
+  ]);
+  wsD['!cols'] = [{wch:18},{wch:40},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, wsD, 'D. 결합패키지');
+
+  XLSX.writeFile(wb, '오블리브_수가표_템플릿.xlsx');
+  toast('4종 섹션 템플릿을 다운로드했습니다');
+}
+
+function handleExcelUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+  if (typeof XLSX === 'undefined') { toast('엑셀 라이브러리를 불러오는 중입니다'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'binary' });
+      const sections = [];
+
+      wb.SheetNames.forEach(name => {
+        const ws   = wb.Sheets[name];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        let parsed = [];
+        if      (name.startsWith('A')) parsed = parseSheetA(rows);
+        else if (name.startsWith('B')) parsed = parseSheetB(rows);
+        else if (name.startsWith('C')) parsed = parseSheetC(rows);
+        else if (name.startsWith('D')) parsed = parseSheetD(rows);
+        else                           parsed = parseSheetA(rows); // fallback
+        sections.push(...parsed);
+      });
+
+      if (!sections.length) { toast('불러올 항목이 없습니다. 템플릿 형식을 확인해주세요.'); return; }
+      const total = sections.reduce((a, s) => a + (s.rows ? s.rows.length : s.items ? s.items.length : 1), 0);
+      saveSnapshot();
+      insertExcelSections(sections);
+      toast(`${sections.length}개 섹션 · ${total}개 항목을 가져왔습니다 ✓`);
+    } catch(err) {
+      console.error(err);
+      toast('파일 오류: ' + err.message);
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+/* ── 시트별 파서 ── */
+function parseSheetA(all) {
+  if (all.length < 2) return [];
+  const sections = []; let cur = null;
+  all.slice(1).filter(r => r.some(c => String(c).trim())).forEach(r => {
+    const secEn = String(r[0]||'').trim(), secKo = String(r[1]||'').trim();
+    const cat   = String(r[2]||'').trim(), name  = String(r[3]||'').trim();
+    const desc  = String(r[4]||'').trim(), count = String(r[5]||'').trim();
+    const price = String(r[6]||'').trim();
+    if (secEn) { cur = { type:'A', secEn, secKo, rows:[] }; sections.push(cur); }
+    if (!cur)  { cur = { type:'A', secEn:'Fixed Price', secKo:'정찰가', rows:[] }; sections.push(cur); }
+    if (name || cat) cur.rows.push({ cat, name, desc, count: count||'1회', price });
+  });
+  return sections;
+}
+
+function parseSheetB(all) {
+  if (all.length < 2) return [];
+  const header = all[0];
+  const thCols = header.slice(2).map(h => String(h||'').trim());
+  let secEn = '', secKo = '';
+  const rows = [];
+  all.slice(1).filter(r => r.some(c => String(c).trim())).forEach(r => {
+    const en = String(r[0]||'').trim(), ko = String(r[1]||'').trim();
+    if (en) { secEn = en; secKo = ko; }
+    const cells = r.slice(2).map(c => String(c||'').trim());
+    if (cells.some(c => c)) rows.push(cells);
+  });
+  if (!rows.length) return [];
+  return [{ type:'B', secEn: secEn||'Package', secKo: secKo||'패키지 프로그램', thCols, rows }];
+}
+
+function parseSheetC(all) {
+  if (all.length < 2) return [];
+  const sections = []; let cur = null;
+  all.slice(1).filter(r => r.some(c => String(c).trim())).forEach(r => {
+    const secEn = String(r[0]||'').trim(), secKo = String(r[1]||'').trim();
+    const cat   = String(r[2]||'').trim(), desc  = String(r[3]||'').trim();
+    const count = String(r[4]||'').trim(), price = String(r[5]||'').trim();
+    const unit  = String(r[6]||'').trim();
+    if (secEn) { cur = { type:'C', secEn, secKo, items:[] }; sections.push(cur); }
+    if (!cur)  { cur = { type:'C', secEn:'Price', secKo:'가격', items:[] }; sections.push(cur); }
+    if (cat) {
+      cur.items.push({ cat, desc, pairs:[{ count: count||'1회', price: price||'0', unit: unit||'만원' }] });
+    } else if (cur.items.length && (count || price)) {
+      cur.items[cur.items.length-1].pairs.push({ count: count||'1회', price: price||'0', unit: unit||'만원' });
+    }
+  });
+  return sections;
+}
+
+function parseSheetD(all) {
+  if (all.length < 2) return [];
+  let title = ''; const rows = [];
+  all.slice(1).filter(r => r.some(c => String(c).trim())).forEach(r => {
+    const t = String(r[0]||'').trim(), desc = String(r[1]||'').trim();
+    const num = String(r[2]||'').trim(), unit = String(r[3]||'').trim();
+    if (t) title = t;
+    if (desc) rows.push({ desc, num: num||'0', unit: unit||'만원' });
+  });
+  if (!rows.length) return [];
+  return [{ type:'D', title: title||'[ 결합 패키지 ]', rows }];
+}
+
+/* ── 섹션 삽입 ── */
+function insertExcelSections(sections) {
+  const t      = getCurrentTab();
+  const tabEl  = document.getElementById('tab-' + t);
+  const pages  = tabEl.querySelectorAll('.page');
+  const target = (selectedPage && tabEl.contains(selectedPage))
+    ? selectedPage : pages[pages.length - 1];
+  if (!target) return;
+
+  const ghostAdd = target.querySelector('.ghost-add[onclick*="openFmtModal"]');
+  const builders = { A: buildTypeA, B: buildTypeB, C: buildTypeC, D: buildTypeD };
+  sections.forEach(sec => {
+    const fn = builders[sec.type];
+    if (!fn) return;
+    const block = fn(sec);
+    if (ghostAdd) target.insertBefore(block, ghostAdd);
+    else          target.appendChild(block);
+  });
+  initTableCells();
+  initPageClick();
+}
+
+/* ── 타입별 빌더 ── */
+function buildTypeA(sec) {
+  const nid = uid();
+  const rowsHtml = sec.rows.map(r => `
+    <div class="fixed-row">
+      <div class="fixed-cat" contenteditable="true">${escHtml(r.cat)}</div>
+      <div class="fixed-info">
+        <div class="fixed-name"  contenteditable="true">${escHtml(r.name)}</div>
+        <div class="fixed-desc"  contenteditable="true">${escHtml(r.desc)}</div>
+      </div>
+      <div class="fixed-count" contenteditable="true">${escHtml(r.count)}</div>
+      <div class="fixed-price"><span class="fpr-num" contenteditable="true">${escHtml(r.price)}</span><span class="fpr-unit">원</span></div>
+      <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+      <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
+    </div>`).join('');
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  div.innerHTML = `
+    <div class="sec-header">
+      <span class="sec-en" contenteditable="true">${escHtml(sec.secEn)}</span>
+      <span class="sec-ko" contenteditable="true">${escHtml(sec.secKo)}</span>
+      <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+    </div>
+    <div class="fixed-table">${rowsHtml}</div>
+    <button class="ghost-add" onclick="addFixedRow(this)">＋ 항목 추가</button>
+    <div class="notes-block" id="${nid}"></div>
+    <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  return div;
+}
+
+function buildTypeB(sec) {
+  const tid = uid(), nid = uid();
+  const thHtml = sec.thCols.map((h, i) =>
+    `<th contenteditable="true"${i===0?' style="width:14%;"':''}>${escHtml(h)}</th>`).join('');
+  const tbHtml = sec.rows.map(cells => {
+    const tds = cells.map((c, i) =>
+      i === 0
+        ? `<td class="col-rnd" contenteditable="true">${escHtml(c)}</td>`
+        : `<td contenteditable="true">${escHtml(c)}</td>`
+    ).join('');
+    return `<tr>${tds}</tr>`;
+  }).join('');
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  div.innerHTML = `
+    <div class="sec-header">
+      <span class="sec-en" contenteditable="true">${escHtml(sec.secEn)}</span>
+      <span class="sec-ko" contenteditable="true">${escHtml(sec.secKo)}</span>
+      <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+    </div>
+    <table class="pkg-table" id="${tid}">
+      <thead><tr>${thHtml}</tr></thead>
+      <tbody>${tbHtml}</tbody>
+    </table>
+    <div class="notes-block" id="${nid}"></div>
+    <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  return div;
+}
+
+function buildTypeC(sec) {
+  const lid = uid(), nid = uid();
+  const itemsHtml = sec.items.map(item => {
+    const pairsHtml = item.pairs.map(p =>
+      `<div class="iv-price-item"><span class="iv-price-n" contenteditable="true">${escHtml(p.count)}</span><span class="iv-price-num" contenteditable="true">${escHtml(p.price)}</span><span class="iv-price-unit" contenteditable="true">${escHtml(p.unit)}</span><button class="iv-price-del" onclick="this.closest('.iv-price-item').remove()">×</button></div>`
+    ).join('');
+    return `
+      <div class="iv-item" style="position:relative;">
+        <div class="iv-item-head">
+          <div class="iv-cat" contenteditable="true">${escHtml(item.cat)}</div>
+          <div class="iv-desc" contenteditable="true">${escHtml(item.desc)}</div>
+        </div>
+        <div class="iv-prices">
+          ${pairsHtml}
+          <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
+        </div>
+        <div class="iv-vat" contenteditable="true">*VAT별도</div>
+        <button class="row-del" onclick="this.closest('.iv-item').remove()">×</button>
+      </div>`;
+  }).join('');
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  div.innerHTML = `
+    <div class="sec-header">
+      <span class="sec-en" contenteditable="true">${escHtml(sec.secEn)}</span>
+      <span class="sec-ko" contenteditable="true">${escHtml(sec.secKo)}</span>
+      <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+    </div>
+    <div id="${lid}">${itemsHtml}</div>
+    <button class="ghost-add" onclick="addIvItem(this.previousElementSibling)">＋ 항목 추가</button>
+    <div class="notes-block" id="${nid}"></div>
+    <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  return div;
+}
+
+function buildTypeD(sec) {
+  const cid = uid(), nid = uid();
+  const rowsHtml = sec.rows.map(r => `
+    <div class="combo-row" style="position:relative;">
+      <div class="combo-desc" contenteditable="true">${escHtml(r.desc)}</div>
+      <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">${escHtml(r.num)}</span><span class="combo-unit" contenteditable="true">${escHtml(r.unit)}</span></div>
+      <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
+      <button class="row-del" onclick="this.closest('.combo-row').remove()">×</button>
+    </div>`).join('');
+  const div = document.createElement('div');
+  div.className = 'section-block';
+  div.innerHTML = `
+    <div class="sec-header">
+      <span class="sec-en" style="font-style:normal;font-size:22px;font-family:'Pretendard',sans-serif;font-weight:700;" contenteditable="true">${escHtml(sec.title)}</span>
+      <button class="sec-del" onclick="this.closest('.section-block').remove()">× 섹션 삭제</button>
+    </div>
+    <div id="${cid}">${rowsHtml}</div>
+    <div class="combo-vat" contenteditable="true">*VAT별도</div>
+    <button class="ghost-add" onclick="addComboRow(this.previousElementSibling.previousElementSibling)">＋ 행 추가</button>
+    <div class="notes-block" id="${nid}"></div>
+    <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  return div;
+}
+
+/* ══ INIT ══ */
+const _hasSaves = getSaves().length > 0;
+loadAll();                   // 저장본 있으면 applyData()가 내부에서 전부 처리
+if (!_hasSaves) {            // 저장본 없으면 직접 초기화
+  loadLogos();
+  initTableCells();
+  initPageClick();
+  const _initTab = getCurrentTab();
+  updatePanelLogoState(_initTab);
+  updatePanelTitleState(_initTab);
+}
+</script>
+</body>
+</html>
