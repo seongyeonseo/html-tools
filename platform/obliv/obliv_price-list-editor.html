@@ -6,7 +6,8 @@
 <title>오블리브 수가표 에디터</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 @font-face {
   font-family: 'BernhardModern';
@@ -2407,59 +2408,60 @@ function printTab() {
   document.getElementById('tab-'+t).classList.add('active');
 }
 
-function savePdf(mode) {
-  if (typeof html2pdf === 'undefined') { toast('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+async function savePdf(mode) {
+  if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
+    toast('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return;
+  }
   toast('PDF 생성 중...');
 
   const t = getCurrentTab();
-  // 렌더링할 페이지들 수집
   let pages = [];
   if (mode === 'tab') {
-    const tabEl = document.getElementById('tab-' + t);
-    pages = [...tabEl.querySelectorAll('.page')];
+    pages = [...document.getElementById('tab-' + t).querySelectorAll('.page')];
   } else {
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-      pages.push(...panel.querySelectorAll('.page'));
-    });
+    document.querySelectorAll('.tab-panel').forEach(p => pages.push(...p.querySelectorAll('.page')));
   }
   if (!pages.length) { toast('페이지가 없습니다'); return; }
 
-  // 임시 컨테이너 생성 (화면 밖)
-  const container = document.createElement('div');
-  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;';
-  pages.forEach((pg, i) => {
-    const clone = pg.cloneNode(true);
-    // 편집UI 숨기기
-    clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
-    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    clone.style.cssText = `
-      width:210mm; height:297mm; overflow:hidden; box-sizing:border-box;
-      padding:72px; position:relative; background:#fff;
-      margin:0; box-shadow:none; border-radius:0; display:block;
-    `;
-    // page-selected outline 제거
-    clone.classList.remove('page-selected');
-    container.appendChild(clone);
-  });
-  document.body.appendChild(container);
+  try {
+    const { jsPDF } = jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const PX_W = 794, PX_H = 1123;
 
-  const fileName = (mode === 'tab')
-    ? `오블리브_수가표_${t}_${new Date().toISOString().slice(0,10)}.pdf`
-    : `오블리브_수가표_전체_${new Date().toISOString().slice(0,10)}.pdf`;
+    for (let i = 0; i < pages.length; i++) {
+      // 페이지 하나씩 별도 클론으로 렌더링 → 분할 로직 없음
+      const clone = pages[i].cloneNode(true);
+      clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
+      clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+      clone.classList.remove('page-selected');
+      clone.style.cssText = `
+        position:fixed; left:-9999px; top:0;
+        width:${PX_W}px; height:${PX_H}px; overflow:hidden;
+        box-sizing:border-box; padding:72px;
+        background:#fff; margin:0; box-shadow:none; border-radius:0;
+      `;
+      document.body.appendChild(clone);
 
-  html2pdf().set({
-    margin: 0,
-    filename: fileName,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(container).save().then(() => {
-    document.body.removeChild(container);
+      const canvas = await html2canvas(clone, {
+        scale: 2, useCORS: true, letterRendering: true,
+        width: PX_W, height: PX_H,
+        windowWidth: PX_W, windowHeight: PX_H
+      });
+      document.body.removeChild(clone);
+
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 210, 297);
+    }
+
+    const fileName = (mode === 'tab')
+      ? `오블리브_수가표_${t}_${new Date().toISOString().slice(0,10)}.pdf`
+      : `오블리브_수가표_전체_${new Date().toISOString().slice(0,10)}.pdf`;
+
+    pdf.save(fileName);
     toast('PDF로 저장됐습니다 ✓');
-  }).catch(err => {
-    document.body.removeChild(container);
+  } catch(err) {
     toast('PDF 저장 실패: ' + err.message);
-  });
+  }
 }
 function toast(msg) {
   const t=document.getElementById('toast');
