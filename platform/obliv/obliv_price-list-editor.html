@@ -280,11 +280,11 @@ td.tbl-sel, th.tbl-sel {
 }
 .txt-swatch:hover { transform: scale(1.2); }
 
-/* ══ ROW REORDER CONTROLS — 인라인, hover 버그 없음 ══ */
+/* ══ ROW REORDER CONTROLS — absolute, 레이아웃 영향 없음 ══ */
 .row-controls {
   display: flex; flex-direction: column; gap: 2px;
   opacity: 0; transition: opacity .15s;
-  flex-shrink: 0; margin-left: 8px;
+  position: absolute; right: -46px; top: 50%; transform: translateY(-50%);
 }
 .fixed-row:hover .row-controls,
 .combo-row:hover .row-controls,
@@ -512,7 +512,7 @@ td.tbl-sel, th.tbl-sel {
 .pkg-table { width: 100%; border-collapse: collapse; }
 .pkg-table th {
   font-size: 14px; font-weight: 600; text-align: center;
-  padding: 11px 8px; border: 1px solid #ddd; background: #fafafa;
+  padding: 11px 8px; border: 1px solid #ddd; background: transparent;
   font-family: 'Pretendard', sans-serif;
 }
 .pkg-table td {
@@ -636,25 +636,28 @@ td.tbl-sel, th.tbl-sel {
   <span class="tbl-lbl">배경색</span>
   <div class="tbl-swatch-wrap">
     <div class="tbl-swatch" data-color="reset"   title="없음"       onclick="setTableColor(null)"></div>
-    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색"          onclick="setTableColor('#ffffff')"></div>
-    <div class="tbl-swatch" style="background:#F2F4F6;border-color:#E5E8EB" title="라이트 그레이" onclick="setTableColor('#F2F4F6')"></div>
-    <div class="tbl-swatch" style="background:#E8E8FF;border-color:#C7C7FF" title="라이트 블루" onclick="setTableColor('#E8E8FF')"></div>
-    <div class="tbl-swatch" style="background:#B4B4FF" title="미디엄 블루" onclick="setTableColor('#B4B4FF')"></div>
-    <div class="tbl-swatch" style="background:#6666FF" title="소프트 블루" onclick="setTableColor('#6666FF')"></div>
-    <div class="tbl-swatch" style="background:#1010FF" title="오블리브 블루" onclick="setTableColor('#1010FF')"></div>
-    <div class="tbl-swatch" style="background:#0A0ACC" title="딥 블루"    onclick="setTableColor('#0A0ACC')"></div>
-    <div class="tbl-swatch" style="background:#191F28" title="다크"       onclick="setTableColor('#191F28')"></div>
-    <div class="tbl-swatch" style="background:#000000" title="블랙"       onclick="setTableColor('#000000')"></div>
+    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색"   onclick="setTableColor('#ffffff')"></div>
+    <div class="tbl-swatch" style="background:#E8D9C1" title="라이트 베이지"   onclick="setTableColor('#E8D9C1')"></div>
+    <div class="tbl-swatch" style="background:#9FAC5E" title="올리브 그린"   onclick="setTableColor('#9FAC5E')"></div>
+    <div class="tbl-swatch" style="background:#B95F5F" title="더스티 로즈"   onclick="setTableColor('#B95F5F')"></div>
+    <div class="tbl-swatch" style="background:#D47D5A" title="코랄"           onclick="setTableColor('#D47D5A')"></div>
+    <div class="tbl-swatch" style="background:#9D4724" title="레드 브라운"    onclick="setTableColor('#9D4724')"></div>
+    <div class="tbl-swatch" style="background:#7F4800" title="미디엄 브라운"  onclick="setTableColor('#7F4800')"></div>
+    <div class="tbl-swatch" style="background:#512A15" title="다크 브라운"    onclick="setTableColor('#512A15')"></div>
+    <div class="tbl-swatch" style="background:#3A2414" title="딥 브라운"      onclick="setTableColor('#3A2414')"></div>
   </div>
   <div class="tbl-sep"></div>
   <span class="tbl-lbl">글자색</span>
   <div class="tbl-swatch-wrap">
-    <div class="tbl-swatch" style="background:#191F28" title="다크"     onclick="setTableTextColor('#191F28')"></div>
-    <div class="tbl-swatch" style="background:#6B7684" title="그레이"   onclick="setTableTextColor('#6B7684')"></div>
-    <div class="tbl-swatch" style="background:#1010FF" title="블루"     onclick="setTableTextColor('#1010FF')"></div>
-    <div class="tbl-swatch" style="background:#B4B4FF" title="라이트 블루" onclick="setTableTextColor('#B4B4FF')"></div>
-    <div class="tbl-swatch" style="background:#ef4444" title="레드"     onclick="setTableTextColor('#ef4444')"></div>
-    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색" onclick="setTableTextColor('#ffffff')"></div>
+    <div class="tbl-swatch" style="background:#3A2414" title="딥 브라운"      onclick="setTableTextColor('#3A2414')"></div>
+    <div class="tbl-swatch" style="background:#512A15" title="다크 브라운"    onclick="setTableTextColor('#512A15')"></div>
+    <div class="tbl-swatch" style="background:#7F4800" title="미디엄 브라운"  onclick="setTableTextColor('#7F4800')"></div>
+    <div class="tbl-swatch" style="background:#9D4724" title="레드 브라운"    onclick="setTableTextColor('#9D4724')"></div>
+    <div class="tbl-swatch" style="background:#D47D5A" title="코랄"           onclick="setTableTextColor('#D47D5A')"></div>
+    <div class="tbl-swatch" style="background:#B95F5F" title="더스티 로즈"    onclick="setTableTextColor('#B95F5F')"></div>
+    <div class="tbl-swatch" style="background:#9FAC5E" title="올리브 그린"    onclick="setTableTextColor('#9FAC5E')"></div>
+    <div class="tbl-swatch" style="background:#E8D9C1;border-color:#ccc" title="라이트 베이지" onclick="setTableTextColor('#E8D9C1')"></div>
+    <div class="tbl-swatch" style="background:#ffffff;border-color:#ddd" title="흰색"          onclick="setTableTextColor('#ffffff')"></div>
   </div>
 </div>
 
@@ -671,16 +674,16 @@ td.tbl-sel, th.tbl-sel {
   </div>
   <div class="txt-sep"></div>
   <div class="txt-swatch-wrap">
-    <div class="txt-swatch" style="background:#191F28"              title="다크"      onmousedown="event.preventDefault();applyColor('#191F28')"></div>
-    <div class="txt-swatch" style="background:#6B7684"              title="그레이"    onmousedown="event.preventDefault();applyColor('#6B7684')"></div>
-    <div class="txt-swatch" style="background:#aaaaaa"              title="라이트 그레이" onmousedown="event.preventDefault();applyColor('#aaaaaa')"></div>
-    <div class="txt-swatch" style="background:#1010FF"              title="오블리브 블루" onmousedown="event.preventDefault();applyColor('#1010FF')"></div>
-    <div class="txt-swatch" style="background:#6666FF"              title="소프트 블루" onmousedown="event.preventDefault();applyColor('#6666FF')"></div>
-    <div class="txt-swatch" style="background:#B4B4FF"              title="라이트 블루" onmousedown="event.preventDefault();applyColor('#B4B4FF')"></div>
-    <div class="txt-swatch" style="background:#ef4444"              title="레드"      onmousedown="event.preventDefault();applyColor('#ef4444')"></div>
-    <div class="txt-swatch" style="background:#f59e0b"              title="앰버"      onmousedown="event.preventDefault();applyColor('#f59e0b')"></div>
-    <div class="txt-swatch" style="background:#10b981"              title="그린"      onmousedown="event.preventDefault();applyColor('#10b981')"></div>
-    <div class="txt-swatch" style="background:#fff;border:1.5px solid #ddd" title="흰색" onmousedown="event.preventDefault();applyColor('#ffffff')"></div>
+    <div class="txt-swatch" style="background:#3A2414"                       title="딥 브라운"     onmousedown="event.preventDefault();applyColor('#3A2414')"></div>
+    <div class="txt-swatch" style="background:#512A15"                       title="다크 브라운"   onmousedown="event.preventDefault();applyColor('#512A15')"></div>
+    <div class="txt-swatch" style="background:#7F4800"                       title="미디엄 브라운" onmousedown="event.preventDefault();applyColor('#7F4800')"></div>
+    <div class="txt-swatch" style="background:#9D4724"                       title="레드 브라운"   onmousedown="event.preventDefault();applyColor('#9D4724')"></div>
+    <div class="txt-swatch" style="background:#D47D5A"                       title="코랄"          onmousedown="event.preventDefault();applyColor('#D47D5A')"></div>
+    <div class="txt-swatch" style="background:#B95F5F"                       title="더스티 로즈"   onmousedown="event.preventDefault();applyColor('#B95F5F')"></div>
+    <div class="txt-swatch" style="background:#9FAC5E"                       title="올리브 그린"   onmousedown="event.preventDefault();applyColor('#9FAC5E')"></div>
+    <div class="txt-swatch" style="background:#E8D9C1;border-color:#ccc"     title="라이트 베이지" onmousedown="event.preventDefault();applyColor('#E8D9C1')"></div>
+    <div class="txt-swatch" style="background:#191F28"                       title="다크"          onmousedown="event.preventDefault();applyColor('#191F28')"></div>
+    <div class="txt-swatch" style="background:#fff;border:1.5px solid #ddd"  title="흰색"          onmousedown="event.preventDefault();applyColor('#ffffff')"></div>
   </div>
 </div>
 
@@ -1469,11 +1472,35 @@ function confirmFmt() {
     addBtn = btns[btns.length - 1];
   }
   if (!addBtn) return;
+  const targetPage = addBtn.closest('.page');
   const block = buildSection(fmtSelected);
   addBtn.parentNode.insertBefore(block, addBtn);
   initTableCells();
   initPageClick();
   closeFmtModal();
+
+  // 페이지가 A4(1123px)를 초과하면 새 페이지를 자동 생성해서 섹션을 거기에 배치
+  requestAnimationFrame(() => {
+    if (!targetPage) return;
+    const A4_H = 1123;
+    if (targetPage.offsetHeight > A4_H + 10) {
+      block.remove();
+      const t = fmtTarget;
+      const type = LOGO_STATE[t] || 'basic';
+      const newPage = document.createElement('div');
+      newPage.className = 'page';
+      newPage.innerHTML = `
+        <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>
+        <div class="page-footer"><div class="footer-logo-svg">${scaleSvg(LOGOS[type], 18)}</div></div>`;
+      targetPage.insertAdjacentElement('afterend', newPage);
+      const newAddBtn = newPage.querySelector('.ghost-add');
+      newAddBtn.parentNode.insertBefore(block, newAddBtn);
+      initTableCells();
+      initPageClick();
+      selectPage(newPage);
+      toast('페이지가 꽉 차 새 페이지에 섹션을 추가했습니다');
+    }
+  });
 }
 
 function buildSection(fmt) {
@@ -1722,7 +1749,10 @@ function clearSel() {
   updateTbar();
 }
 function selectRange(table,r1,c1,r2,c2) {
-  clearSel(); selTable=table;
+  // clearSel() 대신 직접 처리 — dragStart 를 리셋하지 않기 위해
+  selCells.forEach(c=>c.classList.remove('tbl-sel'));
+  selCells=[];
+  selTable=table;
   const grid=buildGrid(table);
   const minR=Math.min(r1,r2),maxR=Math.max(r1,r2),minC=Math.min(c1,c2),maxC=Math.max(c1,c2);
   const seen=new Set();
@@ -1761,7 +1791,7 @@ function setTableColor(color) {
   selCells.forEach(cell => {
     cell.style.background = color || '';
     // 어두운 배경이면 글자 자동 흰색
-    const dark = ['#1010FF','#0A0ACC','#191F28','#000000','#6666FF'];
+    const dark = ['#3A2414','#512A15','#7F4800','#9D4724','#191F28','#000000'];
     if (color && dark.includes(color.toUpperCase ? color.toUpperCase() : color)) {
       cell.style.color = '#fff';
     } else if (!color) {
@@ -1809,6 +1839,7 @@ function moveRow(btn, dir) {
 /* ── 텍스트 서식 ── */
 let _txtSizeMap = [10,11,12,13,14,16,18,20,24,28,32,36,48,60,72];
 let _txtSizeIdx = 4; // 기본 14px
+let _suppressTxtHide = false; // 폰트크기 변경 중 툴바 숨김 방지
 
 function applyFmt(cmd) {
   document.execCommand(cmd, false, null);
@@ -1821,7 +1852,7 @@ function changeFontSize(delta) {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed || !sel.rangeCount) return;
 
-  // 현재 앵커 요소의 폰트 크기 읽기
+  const range = sel.getRangeAt(0).cloneRange();
   const anchorNode = sel.anchorNode;
   const anchorEl = anchorNode?.nodeType === 3 ? anchorNode.parentElement : anchorNode;
   const editableEl = anchorEl?.closest('[contenteditable]');
@@ -1833,21 +1864,32 @@ function changeFontSize(delta) {
   idx = Math.max(0, Math.min(_txtSizeMap.length - 1, idx + delta));
   const px = _txtSizeMap[idx];
 
-  // execCommand fontSize (font[size="7"]) → 즉시 span으로 교체
-  document.execCommand('styleWithCSS', false, false);
-  document.execCommand('fontSize', false, '7');
+  // execCommand undo 스택을 건드리지 않도록 직접 DOM 조작
+  saveSnapshot();
+  _suppressTxtHide = true;
 
-  // editableEl 내부의 font[size="7"] 를 span으로 교체
-  editableEl.querySelectorAll('font[size="7"]').forEach(el => {
-    const span = document.createElement('span');
-    span.style.fontSize = px + 'px';
-    span.innerHTML = el.innerHTML;
-    el.replaceWith(span);
-  });
+  const span = document.createElement('span');
+  span.style.fontSize = px + 'px';
+  try {
+    // 선택 범위가 단일 노드 안에 있을 때
+    range.surroundContents(span);
+  } catch(err) {
+    // 선택이 여러 노드에 걸칠 때: extract → wrap → insert
+    const frag = range.extractContents();
+    span.appendChild(frag);
+    range.insertNode(span);
+  }
 
-  // 포커스 복원 후 표시값 업데이트
-  editableEl.focus();
+  // 새 span 내용을 다시 선택 (툴바 유지)
+  const newRange = document.createRange();
+  newRange.selectNodeContents(span);
+  sel.removeAllRanges();
+  sel.addRange(newRange);
+
   document.getElementById('txt-size-val').textContent = px;
+
+  // 짧은 딜레이 후 suppress 해제 (selectionchange 안정화)
+  setTimeout(() => { _suppressTxtHide = false; }, 150);
 }
 
 function _updateTxtToolbar() {
@@ -1864,6 +1906,7 @@ function _updateTxtToolbar() {
 
 // 텍스트 선택 시 txt-toolbar 표시
 document.addEventListener('selectionchange', () => {
+  if (_suppressTxtHide) return; // 폰트크기 변경 중이면 무시
   const tb  = document.getElementById('txt-toolbar');
   if (!tb) return;
   const sel = window.getSelection();
@@ -2010,7 +2053,7 @@ document.addEventListener('mousedown',e=>{
 document.addEventListener('mouseup',()=>{dragStart=null;});
 
 /* ── pkg-table 행 이동 플로팅 ── */
-let _floatCtrl=null, _floatTarget=null;
+let _floatCtrl=null, _floatTarget=null, _floatHideTimer=null;
 function initPkgRowReorder() {
   if(!_floatCtrl){
     _floatCtrl=document.createElement('div');
@@ -2019,6 +2062,9 @@ function initPkgRowReorder() {
       '<button class="row-ctrl-btn" onclick="movePkgRow(\'up\')">▲</button>'+
       '<button class="row-ctrl-btn" onclick="movePkgRow(\'down\')">▼</button>';
     document.body.appendChild(_floatCtrl);
+    // 패널 위에 마우스 들어오면 타이머 취소
+    _floatCtrl.addEventListener('mouseenter',()=>{ clearTimeout(_floatHideTimer); });
+    // 패널에서 완전히 벗어나면 즉시 숨김
     _floatCtrl.addEventListener('mouseleave',()=>{ _floatCtrl.style.display='none'; });
   }
   document.querySelectorAll('.pkg-table tr').forEach(tr=>{
@@ -2029,6 +2075,7 @@ function initPkgRowReorder() {
   });
 }
 function _onTrEnter(e){
+  clearTimeout(_floatHideTimer);
   const tr=e.currentTarget;
   const rect=tr.getBoundingClientRect();
   _floatCtrl.style.display='flex';
@@ -2037,7 +2084,8 @@ function _onTrEnter(e){
   _floatTarget=tr;
 }
 function _onTrLeave(e){
-  if(!_floatCtrl.contains(e.relatedTarget)) _floatCtrl.style.display='none';
+  // 200ms 딜레이 — 그 사이에 마우스가 float panel로 가면 타이머 취소됨
+  _floatHideTimer = setTimeout(()=>{ _floatCtrl.style.display='none'; }, 200);
 }
 function movePkgRow(dir){
   if(!_floatTarget)return;
