@@ -2432,10 +2432,12 @@ function savePdf(mode) {
     // 편집UI 숨기기
     clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    const isLast = i === pages.length - 1;
     clone.style.cssText = `
-      width:210mm; min-height:297mm; box-sizing:border-box;
+      width:210mm; height:297mm; overflow:hidden; box-sizing:border-box;
       padding:72px; position:relative; background:#fff;
-      page-break-after:always; margin:0; box-shadow:none; border-radius:0;
+      ${isLast ? '' : 'page-break-after:always;'}
+      margin:0; box-shadow:none; border-radius:0;
     `;
     // page-selected outline 제거
     clone.classList.remove('page-selected');
