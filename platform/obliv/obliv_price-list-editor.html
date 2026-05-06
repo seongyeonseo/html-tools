@@ -2459,9 +2459,9 @@ async function savePdf(mode) {
       page.style.cssText = origStyle +
         ';box-shadow:none!important;border-radius:0!important;outline:none!important;';
 
-      // 해당 페이지로 스크롤 후 레이아웃 안정 대기
+      // 해당 페이지로 스크롤 후 레이아웃 안정 대기 (rAF는 백그라운드탭에서 동결되므로 setTimeout 사용)
       page.scrollIntoView({ behavior: 'instant', block: 'start' });
-      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+      await new Promise(r => setTimeout(r, 200));
 
       const rect = page.getBoundingClientRect();
       // html2canvas: 페이지 요소를 직접 타겟, x/y로 뷰포트 내 위치 전달
