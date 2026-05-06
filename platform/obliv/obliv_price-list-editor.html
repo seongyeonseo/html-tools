@@ -6,6 +6,7 @@
 <title>오블리브 수가표 에디터</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 @font-face {
   font-family: 'BernhardModern';
@@ -630,10 +631,6 @@ td.tbl-sel, th.tbl-sel {
 .note-line:hover .note-del { opacity: 1; }
 .note-del:hover { color: #ef4444; }
 
-/* ══ PAGE FOOTER ══ */
-.page-footer { position: absolute; bottom: 40px; right: 72px; text-align: right; }
-.footer-logo-svg svg { width: auto; opacity: .7; display: block; }
-
 /* ══ PRINT ══ */
 @media print {
   body { background: #fff; }
@@ -797,8 +794,10 @@ td.tbl-sel, th.tbl-sel {
     <button class="s-arr" onclick="toggleDD('dd-print')">▾</button>
   </div>
   <div class="tb-dropdown" id="dd-print" style="right:24px;">
-    <div class="dd-item" onclick="printTab(); closeAllDD()">현재 탭만</div>
-    <div class="dd-item" onclick="window.print(); closeAllDD()">전체 출력</div>
+    <div class="dd-item" onclick="printTab(); closeAllDD()">현재 탭만 인쇄</div>
+    <div class="dd-item" onclick="window.print(); closeAllDD()">전체 인쇄</div>
+    <div class="dd-item" style="border-top:1px solid #eee;margin-top:4px;padding-top:8px;" onclick="savePdf('tab'); closeAllDD()">📄 현재 탭 PDF 저장</div>
+    <div class="dd-item" onclick="savePdf('all'); closeAllDD()">📄 전체 PDF 저장</div>
   </div>
 </div>
 
@@ -881,7 +880,6 @@ td.tbl-sel, th.tbl-sel {
       </div>
       <div id="sections-beauty"></div>
       <button class="ghost-add" style="margin-top:24px;" onclick="openFmtModal('beauty', this.closest('.page'))">＋ 섹션 추가</button>
-      <div class="page-footer"><div id="footer-logo-beauty" class="footer-logo-svg"></div></div>
     </div>
   </div>
 </div>
@@ -899,7 +897,6 @@ td.tbl-sel, th.tbl-sel {
       </div>
       <div id="sections-longlasting"></div>
       <button class="ghost-add" style="margin-top:24px;" onclick="openFmtModal('longlasting', this.closest('.page'))">＋ 섹션 추가</button>
-      <div class="page-footer"><div id="footer-logo-longlasting" class="footer-logo-svg"></div></div>
     </div>
   </div>
 </div>
@@ -1035,7 +1032,6 @@ td.tbl-sel, th.tbl-sel {
       </div>
 
       <button class="ghost-add" onclick="openFmtModal('toenail', this.closest('.page'))">＋ 섹션 추가</button>
-      <div class="page-footer"><div id="footer-logo-toenail" class="footer-logo-svg"></div></div>
     </div>
 
     <!-- PAGE 2 -->
@@ -1119,7 +1115,6 @@ td.tbl-sel, th.tbl-sel {
       </div>
 
       <button class="ghost-add" onclick="openFmtModal('toenail', this.closest('.page'))">＋ 섹션 추가</button>
-      <div class="page-footer"><div class="footer-logo-svg" id="footer-logo-toenail2"></div></div>
     </div>
 
   </div>
@@ -1205,7 +1200,6 @@ td.tbl-sel, th.tbl-sel {
       </div>
 
       <button class="ghost-add" onclick="openFmtModal('rehab', this.closest('.page'))">＋ 섹션 추가</button>
-      <div class="page-footer"><div id="footer-logo-rehab" class="footer-logo-svg"></div></div>
     </div>
   </div>
 </div>
@@ -1391,9 +1385,6 @@ function applyLogoToTab(tab, type) {
   tabEl.querySelectorAll('.logo-svg-wrap').forEach(el => {
     el.innerHTML = scaleSvg(LOGOS[type], h);
   });
-  tabEl.querySelectorAll('.footer-logo-svg').forEach(el => {
-    el.innerHTML = scaleSvg(LOGOS[type], 18);
-  });
   LOGO_STATE[tab] = type;
 }
 
@@ -1454,11 +1445,19 @@ function toggleTitleFromPanel(btn) {
 /* ══ LOGO POSITION ══ */
 function setLogoPos(pos, btn) {
   const page = selectedPage;
-  if (!page || !page.querySelector('.p-clinic-block')) {
-    toast('로고가 있는 페이지를 선택하세요');
-    return;
-  }
+  if (!page) { toast('페이지를 먼저 선택하세요'); return; }
   saveSnapshot();
+  let clinicBlock = page.querySelector('.p-clinic-block');
+  if (!clinicBlock) {
+    // 로고 블록이 없는 페이지에 자동 생성
+    const t = getCurrentTab();
+    const type = LOGO_STATE[t] || 'basic';
+    const h = type === 'seoul' ? 39 : 26;
+    clinicBlock = document.createElement('div');
+    clinicBlock.className = 'p-clinic-block';
+    clinicBlock.innerHTML = `<div class="logo-svg-wrap">${scaleSvg(LOGOS[type], h)}</div>`;
+    page.insertBefore(clinicBlock, page.firstChild);
+  }
   page.dataset.logoPos = pos;
   document.querySelectorAll('.rp-pos-btn').forEach(b => b.classList.toggle('active', b.dataset.pos === pos));
 }
@@ -1485,8 +1484,7 @@ function addPageFromPanel() {
   page.className = 'page';
   page.innerHTML = `
     <div class="p-title" style="font-family:'Pretendard',sans-serif;font-size:48px;font-weight:700;line-height:1.2;margin-bottom:40px;" contenteditable="true">타이틀을 입력하세요</div>
-    <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>
-    <div class="page-footer"><div class="footer-logo-svg">${scaleSvg(LOGOS[type], 18)}</div></div>`;
+    <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>`;
 
   // 선택된 페이지 다음에 삽입, 없으면 맨 끝
   if (selectedPage && tabEl.contains(selectedPage)) {
@@ -1565,8 +1563,7 @@ function confirmFmt() {
       const newPage = document.createElement('div');
       newPage.className = 'page';
       newPage.innerHTML = `
-        <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>
-        <div class="page-footer"><div class="footer-logo-svg">${scaleSvg(LOGOS[type], 18)}</div></div>`;
+        <button class="ghost-add" onclick="openFmtModal('${t}', this.closest('.page'))">＋ 섹션 추가</button>`;
       targetPage.insertAdjacentElement('afterend', newPage);
       const newAddBtn = newPage.querySelector('.ghost-add');
       newAddBtn.parentNode.insertBefore(block, newAddBtn);
@@ -2297,7 +2294,7 @@ function saveAll() {
     const el = document.getElementById('tab-' + t);
     if (!el) return;
     const clone = el.cloneNode(true);
-    clone.querySelectorAll('.logo-svg-wrap, .footer-logo-svg').forEach(e => e.innerHTML = '');
+    clone.querySelectorAll('.logo-svg-wrap').forEach(e => e.innerHTML = '');
     tabData[t] = clone.innerHTML;
   });
   tabData.__logoState  = LOGO_STATE;
@@ -2408,6 +2405,62 @@ function printTab() {
   window.print();
   document.querySelectorAll('.tab-panel').forEach(p=>{ p.style.display=''; });
   document.getElementById('tab-'+t).classList.add('active');
+}
+
+function savePdf(mode) {
+  if (typeof html2pdf === 'undefined') { toast('PDF 라이브러리 로딩 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  toast('PDF 생성 중...');
+
+  const t = getCurrentTab();
+  // 렌더링할 페이지들 수집
+  let pages = [];
+  if (mode === 'tab') {
+    const tabEl = document.getElementById('tab-' + t);
+    pages = [...tabEl.querySelectorAll('.page')];
+  } else {
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      pages.push(...panel.querySelectorAll('.page'));
+    });
+  }
+  if (!pages.length) { toast('페이지가 없습니다'); return; }
+
+  // 임시 컨테이너 생성 (화면 밖)
+  const container = document.createElement('div');
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:210mm;background:#fff;';
+  pages.forEach((pg, i) => {
+    const clone = pg.cloneNode(true);
+    // 편집UI 숨기기
+    clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
+    clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    clone.style.cssText = `
+      width:210mm; min-height:297mm; box-sizing:border-box;
+      padding:72px; position:relative; background:#fff;
+      page-break-after:always; margin:0; box-shadow:none; border-radius:0;
+    `;
+    // page-selected outline 제거
+    clone.classList.remove('page-selected');
+    container.appendChild(clone);
+  });
+  document.body.appendChild(container);
+
+  const fileName = (mode === 'tab')
+    ? `오블리브_수가표_${t}_${new Date().toISOString().slice(0,10)}.pdf`
+    : `오블리브_수가표_전체_${new Date().toISOString().slice(0,10)}.pdf`;
+
+  html2pdf().set({
+    margin: 0,
+    filename: fileName,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'legacy'] }
+  }).from(container).save().then(() => {
+    document.body.removeChild(container);
+    toast('PDF로 저장됐습니다 ✓');
+  }).catch(err => {
+    document.body.removeChild(container);
+    toast('PDF 저장 실패: ' + err.message);
+  });
 }
 function toast(msg) {
   const t=document.getElementById('toast');
