@@ -2432,12 +2432,10 @@ function savePdf(mode) {
     // 편집UI 숨기기
     clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-    const isLast = i === pages.length - 1;
     clone.style.cssText = `
       width:210mm; height:297mm; overflow:hidden; box-sizing:border-box;
       padding:72px; position:relative; background:#fff;
-      ${isLast ? '' : 'page-break-after:always;'}
-      margin:0; box-shadow:none; border-radius:0;
+      margin:0; box-shadow:none; border-radius:0; display:block;
     `;
     // page-selected outline 제거
     clone.classList.remove('page-selected');
@@ -2454,8 +2452,7 @@ function savePdf(mode) {
     filename: fileName,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['css', 'legacy'] }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).from(container).save().then(() => {
     document.body.removeChild(container);
     toast('PDF로 저장됐습니다 ✓');
