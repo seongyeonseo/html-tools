@@ -297,10 +297,17 @@ td.tbl-sel, th.tbl-sel {
   transition: all .1s; line-height: 1;
 }
 .row-ctrl-btn:hover { background: var(--ui-surface); color: var(--ui-hi); border-color: var(--ui-md); }
-/* pkg-table 전용 플로팅 컨트롤 */
+/* pkg-table 전용 플로팅 컨트롤 — 행 */
 #row-float-ctrl {
   position: fixed; z-index: 280; display: none;
   flex-direction: column; gap: 2px; padding: 4px;
+  background: #fff; border: 1px solid var(--ui-border);
+  border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
+/* pkg-table 전용 플로팅 컨트롤 — 열 */
+#col-float-ctrl {
+  position: fixed; z-index: 280; display: none;
+  flex-direction: row; gap: 2px; padding: 4px;
   background: #fff; border: 1px solid var(--ui-border);
   border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.1);
 }
@@ -597,6 +604,7 @@ td.tbl-sel, th.tbl-sel {
 @media print {
   body { background: #fff; }
   .topbar, .right-panel, #tbl-toolbar, #fmt-modal, #saves-modal,
+  #row-float-ctrl, #col-float-ctrl,
   .ghost-add, .row-del, .sec-del,
   .iv-price-add, .iv-price-del, .note-del { display: none !important; }
   .tab-panel { margin-right: 0 !important; }
@@ -2041,8 +2049,8 @@ function initTableCells() {
     cell.removeEventListener('mousedown',onCellMD);
     cell.addEventListener('mousedown',onCellMD);
   });
-  /* pkg-table 행 이동 플로팅 컨트롤 */
   initPkgRowReorder();
+  initPkgColReorder();
 }
 document.addEventListener('mousedown',e=>{
   if(!e.target.closest('.pkg-table')&&!e.target.closest('#tbl-toolbar'))clearSel();
@@ -2120,6 +2128,69 @@ function movePkgRow(dir){
     }
   }
   _floatCtrl.style.display='none';
+  initTableCells();
+}
+
+/* ── pkg-table 열 이동 플로팅 ── */
+let _colFloatCtrl=null, _colFloatTarget=null, _colFloatHideTimer=null;
+function initPkgColReorder() {
+  if(!_colFloatCtrl){
+    _colFloatCtrl=document.createElement('div');
+    _colFloatCtrl.id='col-float-ctrl';
+    _colFloatCtrl.innerHTML=
+      '<button class="row-ctrl-btn" onclick="movePkgCol(\'left\')" title="왼쪽으로">◀</button>'+
+      '<button class="row-ctrl-btn" onclick="movePkgCol(\'right\')" title="오른쪽으로">▶</button>';
+    document.body.appendChild(_colFloatCtrl);
+    _colFloatCtrl.addEventListener('mouseenter',()=>{ clearTimeout(_colFloatHideTimer); });
+    _colFloatCtrl.addEventListener('mouseleave',()=>{ _colFloatCtrl.style.display='none'; });
+  }
+  document.querySelectorAll('.pkg-table th').forEach(th=>{
+    th.removeEventListener('mouseenter',_onThEnter);
+    th.removeEventListener('mouseleave',_onThLeave);
+    th.addEventListener('mouseenter',_onThEnter);
+    th.addEventListener('mouseleave',_onThLeave);
+  });
+}
+function _onThEnter(e){
+  clearTimeout(_colFloatHideTimer);
+  const th=e.currentTarget;
+  const rect=th.getBoundingClientRect();
+  _colFloatCtrl.style.display='flex';
+  _colFloatCtrl.style.left=(rect.left+rect.width/2-24)+'px';
+  _colFloatCtrl.style.top=(rect.top-42)+'px';
+  _colFloatTarget=th;
+}
+function _onThLeave(e){
+  _colFloatHideTimer=setTimeout(()=>{ _colFloatCtrl.style.display='none'; },200);
+}
+function movePkgCol(dir){
+  if(!_colFloatTarget)return;
+  saveSnapshot();
+  const table=_colFloatTarget.closest('table');
+  if(!table)return;
+  const grid=buildGrid(table);
+  const cols=gridCols(grid);
+  const pos=gridPos(grid,_colFloatTarget);
+  if(!pos)return;
+  const ci=pos.c;
+  const si=dir==='left'?ci-1:ci+1;
+  if(si<0||si>=cols){_colFloatCtrl.style.display='none';return;}
+  // 각 행에서 ci열과 si열의 origin 셀 내용을 교환
+  for(let r=0;r<grid.length;r++){
+    const g1=grid[r]?.[ci];
+    const g2=grid[r]?.[si];
+    if(g1?.origin&&g1.ci===ci&&g2?.origin&&g2.ci===si){
+      const c1=g1.cell,c2=g2.cell;
+      const tmp={html:c1.innerHTML,style:c1.getAttribute('style')||'',cls:c1.className};
+      c1.innerHTML=c2.innerHTML;
+      c2.getAttribute('style')?c1.setAttribute('style',c2.getAttribute('style')):c1.removeAttribute('style');
+      c1.className=c2.className;
+      c2.innerHTML=tmp.html;
+      tmp.style?c2.setAttribute('style',tmp.style):c2.removeAttribute('style');
+      c2.className=tmp.cls;
+    }
+  }
+  _colFloatCtrl.style.display='none';
   initTableCells();
 }
 
