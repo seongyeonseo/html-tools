@@ -2419,9 +2419,33 @@ async function savePdf(mode) {
   if (mode === 'tab') {
     pages = [...document.getElementById('tab-' + t).querySelectorAll('.page')];
   } else {
-    document.querySelectorAll('.tab-panel').forEach(p => pages.push(...p.querySelectorAll('.page')));
+    // 전체 모드: 모든 탭 패널을 순서대로
+    ['beauty','longlasting','toenail','rehab'].forEach(tab => {
+      const el = document.getElementById('tab-' + tab);
+      if (el) pages.push(...el.querySelectorAll('.page'));
+    });
   }
   if (!pages.length) { toast('페이지가 없습니다'); return; }
+
+  // ── UI 임시 숨김 ──────────────────────────────────
+  const UI_SEL = '.topbar,.right-panel,#tbl-toolbar,#row-float-ctrl,#col-float-ctrl,' +
+    '.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn';
+  const hiddenEls = [];
+  document.querySelectorAll(UI_SEL).forEach(el => {
+    hiddenEls.push([el, el.style.display]);
+    el.style.display = 'none';
+  });
+  // page-selected 아웃라인 임시 제거
+  const wasSelected = document.querySelector('.page-selected');
+  wasSelected?.classList.remove('page-selected');
+  // 전체 모드면 모든 탭 보이게
+  const hiddenPanels = [];
+  if (mode === 'all') {
+    document.querySelectorAll('.tab-panel:not(.active)').forEach(p => {
+      hiddenPanels.push([p, p.style.display]);
+      p.style.display = 'block';
+    });
+  }
 
   try {
     const { jsPDF } = jspdf;
@@ -2429,28 +2453,36 @@ async function savePdf(mode) {
     const PX_W = 794, PX_H = 1123;
 
     for (let i = 0; i < pages.length; i++) {
-      // 페이지 하나씩 별도 클론으로 렌더링 → 분할 로직 없음
-      const clone = pages[i].cloneNode(true);
-      clone.querySelectorAll('.ghost-add,.row-del,.sec-del,.iv-price-add,.iv-price-del,.note-del,.row-controls,.tb-ctrl-btn').forEach(el => el.remove());
-      clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
-      clone.classList.remove('page-selected');
-      clone.style.cssText = `
-        position:fixed; left:-9999px; top:0;
-        width:${PX_W}px; height:${PX_H}px; overflow:hidden;
-        box-sizing:border-box; padding:72px;
-        background:#fff; margin:0; box-shadow:none; border-radius:0;
-      `;
-      document.body.appendChild(clone);
+      const page = pages[i];
+      // page 스타일을 캡처용으로 임시 정규화
+      const origStyle = page.getAttribute('style') || '';
+      page.style.cssText = origStyle +
+        ';box-shadow:none!important;border-radius:0!important;outline:none!important;';
 
-      const canvas = await html2canvas(clone, {
-        scale: 2, useCORS: true, letterRendering: true,
-        width: PX_W, height: PX_H,
-        windowWidth: PX_W, windowHeight: PX_H
+      // 해당 페이지로 스크롤 후 레이아웃 안정 대기
+      page.scrollIntoView({ behavior: 'instant', block: 'start' });
+      await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+      const rect = page.getBoundingClientRect();
+      // html2canvas: 페이지 요소를 직접 타겟, x/y로 뷰포트 내 위치 전달
+      const canvas = await html2canvas(page, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        x: 0, y: 0,
+        scrollX: -rect.left,
+        scrollY: -rect.top,
+        width: PX_W,
+        height: PX_H,
+        windowWidth: document.documentElement.scrollWidth,
+        windowHeight: document.documentElement.scrollHeight
       });
-      document.body.removeChild(clone);
+
+      // 원래 스타일 복원
+      page.setAttribute('style', origStyle);
 
       if (i > 0) pdf.addPage();
-      pdf.addImage(canvas.toDataURL('image/jpeg', 0.98), 'JPEG', 0, 0, 210, 297);
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, 210, 297);
     }
 
     const fileName = (mode === 'tab')
@@ -2461,6 +2493,12 @@ async function savePdf(mode) {
     toast('PDF로 저장됐습니다 ✓');
   } catch(err) {
     toast('PDF 저장 실패: ' + err.message);
+  } finally {
+    // ── UI 복원 ──────────────────────────────────────
+    hiddenEls.forEach(([el, d]) => el.style.display = d);
+    wasSelected?.classList.add('page-selected');
+    hiddenPanels.forEach(([p, d]) => p.style.display = d);
+    window.scrollTo(0, 0);
   }
 }
 function toast(msg) {
