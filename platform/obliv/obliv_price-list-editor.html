@@ -1635,8 +1635,7 @@ function addPkgRow(table) {
     if (i === 0) td.className = 'col-rnd';
     td.contentEditable = 'true';
     td.addEventListener('mousedown', onCellMD);
-    td.addEventListener('mouseover', onCellMO);
-    tr.appendChild(td);
+        tr.appendChild(td);
   }
   table.querySelector('tbody').appendChild(tr);
   tr.cells[0].focus();
@@ -1816,7 +1815,6 @@ function addTableColDirect(table) {
     const nc = document.createElement(ri === 0 ? 'th' : 'td');
     nc.contentEditable = 'true';
     nc.addEventListener('mousedown', onCellMD);
-    nc.addEventListener('mouseover', onCellMO);
     tr.appendChild(nc);
   });
 }
@@ -1961,7 +1959,7 @@ function splitCell() {
     if(r===pos.r&&c===pos.c)continue;
     const td=document.createElement(cell.tagName.toLowerCase());
     td.contentEditable='true';
-    td.addEventListener('mousedown',onCellMD); td.addEventListener('mouseover',onCellMO);
+    td.addEventListener('mousedown',onCellMD);
     if(!allRows[r]){const tr=document.createElement('tr');(selTable.querySelector('tbody')||selTable).appendChild(tr);allRows[r]=tr;}
     const g2=buildGrid(selTable); let ins=null;
     for(let ci=c+1;ci<gridCols(g2);ci++){const e=g2[r]&&g2[r][ci];if(e&&e.origin&&e.ri===r){ins=e.cell;break;}}
@@ -1977,7 +1975,7 @@ function addTableRow(dir) {
   const refRow=allRows[dir==='above'?pos.r:pos.r+(selCells[0].rowSpan||1)-1];
   const cols=gridCols(grid);
   const tr=document.createElement('tr');
-  for(let c=0;c<cols;c++){const td=document.createElement('td');td.contentEditable='true';td.addEventListener('mousedown',onCellMD);td.addEventListener('mouseover',onCellMO);tr.appendChild(td);}
+  for(let c=0;c<cols;c++){const td=document.createElement('td');td.contentEditable='true';td.addEventListener('mousedown',onCellMD);tr.appendChild(td);}
   dir==='above'?refRow.parentNode.insertBefore(tr,refRow):refRow.insertAdjacentElement('afterend',tr);
 }
 function delTableRow() {
@@ -1994,8 +1992,7 @@ function addTableCol(dir) {
   grid.forEach((row,ri)=>{
     const allRows=[...selTable.querySelectorAll('tr')]; const tr=allRows[ri]; if(!tr)return;
     const nc=document.createElement(ri===0&&selTable.querySelector('thead')?'th':'td');
-    nc.contentEditable='true'; nc.addEventListener('mousedown',onCellMD); nc.addEventListener('mouseover',onCellMO);
-    const e=row[targetC];
+    nc.contentEditable='true'; nc.addEventListener('mousedown',onCellMD);    const e=row[targetC];
     e&&e.origin?tr.insertBefore(nc,e.cell):tr.appendChild(nc);
   });
 }
