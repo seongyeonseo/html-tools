@@ -2084,59 +2084,40 @@ function _onTrLeave(e){
   // 200ms 딜레이 — 그 사이에 마우스가 float panel로 가면 타이머 취소됨
   _floatHideTimer = setTimeout(()=>{ _floatCtrl.style.display='none'; }, 200);
 }
-/* ── rowspan 해소: tbody 내 rowspan>1 셀을 모두 개별 셀로 분리 ── */
-function flattenRowspans(tbody) {
-  const rows = [...tbody.querySelectorAll('tr')];
-  rows.forEach((tr, ri) => {
-    [...tr.cells].forEach(cell => {
-      const rs = parseInt(cell.getAttribute('rowspan')) || 1;
-      if (rs <= 1) return;
-      cell.removeAttribute('rowspan');
-      for (let dr = 1; dr < rs; dr++) {
-        const targetRow = rows[ri + dr];
-        if (!targetRow) return;
-        const nc = document.createElement(cell.tagName.toLowerCase());
-        nc.contentEditable = 'true';
-        nc.addEventListener('mousedown', onCellMD);
-        // 올바른 열 위치 파악: 현재 그리드에서 해당 행의 마지막에 임시 삽입 후
-        // 실제 위치는 grid 재계산으로 맞춤
-        targetRow.appendChild(nc);
-      }
-    });
-  });
-  // 열 순서 복원: 각 행을 컬럼 인덱스 순으로 재정렬
-  const table = tbody.closest('table');
-  const grid = buildGrid(table);
-  rows.forEach((tr, ri) => {
-    const orderedCells = [];
-    const rowGrid = grid[ri] || [];
-    const seen = new Set();
-    rowGrid.forEach(g => {
-      if (g && g.origin && g.ri === ri && !seen.has(g.cell)) {
-        seen.add(g.cell);
-        orderedCells.push(g.cell);
-      }
-    });
-    orderedCells.forEach(cell => tr.appendChild(cell));
-  });
-}
-
 function movePkgRow(dir){
   if(!_floatTarget)return;
   saveSnapshot();
   const tbody=_floatTarget.closest('tbody');
   if(!tbody)return; // thead는 이동 불가
 
-  // rowspan이 있으면 먼저 해소하여 열 사라짐 방지
-  const hasRowspan = [...tbody.querySelectorAll('td,th')].some(c=>(parseInt(c.getAttribute('rowspan'))||1)>1);
-  if(hasRowspan) flattenRowspans(tbody);
+  const rows=[...tbody.querySelectorAll('tr')];
+  const ri=rows.indexOf(_floatTarget);
+  if(ri<0)return;
+  const si=dir==='up'?ri-1:ri+1;
+  if(si<0||si>=rows.length){_floatCtrl.style.display='none';return;}
 
-  if(dir==='up'){
-    const prev=_floatTarget.previousElementSibling;
-    if(prev) tbody.insertBefore(_floatTarget,prev);
-  } else {
-    const next=_floatTarget.nextElementSibling;
-    if(next) tbody.insertBefore(next,_floatTarget);
+  const table=tbody.closest('table');
+  const theadCount=table.querySelectorAll('thead tr').length;
+  const grid=buildGrid(table);
+  const cols=gridCols(grid);
+  const absRi=ri+theadCount, absSi=si+theadCount;
+
+  // DOM <tr> 이동 대신 셀 내용(innerHTML·style·class)만 교환
+  // → rowspan/colspan 구조를 건드리지 않아 테이블이 절대 깨지지 않음
+  for(let c=0;c<cols;c++){
+    const g1=grid[absRi]?.[c];
+    const g2=grid[absSi]?.[c];
+    // 두 행 모두 해당 열의 origin 셀일 때만 교환
+    if(g1?.origin&&g1.ri===absRi&&g2?.origin&&g2.ri===absSi){
+      const c1=g1.cell,c2=g2.cell;
+      const tmp={html:c1.innerHTML,style:c1.getAttribute('style')||'',cls:c1.className};
+      c1.innerHTML=c2.innerHTML;
+      c2.getAttribute('style')?c1.setAttribute('style',c2.getAttribute('style')):c1.removeAttribute('style');
+      c1.className=c2.className;
+      c2.innerHTML=tmp.html;
+      tmp.style?c2.setAttribute('style',tmp.style):c2.removeAttribute('style');
+      c2.className=tmp.cls;
+    }
   }
   _floatCtrl.style.display='none';
   initTableCells();
