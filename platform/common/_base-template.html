@@ -274,7 +274,7 @@ body {
 .modal-card-desc { font-size: 12px; color: var(--ui-md); line-height: 1.5; }
 
 /* ════════════════════════════════════════════════
-   FLOATING TOOLBAR — 선택 시 뜨는 툴바
+   FLOATING TOOLBAR — 공통 기반 (모든 툴바 공유)
    ════════════════════════════════════════════════ */
 .float-toolbar {
   position: fixed;
@@ -286,23 +286,111 @@ body {
   z-index: 250;
   box-shadow: 0 4px 20px rgba(0,0,0,.1);
   white-space: nowrap;
+  pointer-events: auto;
 }
 .float-toolbar.visible { display: flex; }
+
+/* 공통 버튼 */
 .ft-btn {
   height: 30px; padding: 0 9px; border-radius: 6px; border: none;
   background: transparent; color: var(--ui-md);
   font-size: 12px; font-weight: 500; cursor: pointer;
   font-family: 'Pretendard', sans-serif;
   display: inline-flex; align-items: center; gap: 3px;
-  transition: background .1s, color .1s;
+  transition: background .1s, color .1s; flex-shrink: 0;
 }
-.ft-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
-.ft-btn.act  { color: var(--primary); }
+.ft-btn:hover:not(:disabled) { background: var(--ui-surface); color: var(--ui-hi); }
+.ft-btn:disabled { opacity: .3; cursor: not-allowed; }
+.ft-btn.act       { color: var(--primary); }
 .ft-btn.act:hover { background: var(--pri-alpha); }
-.ft-btn.del  { color: #ef4444; }
+.ft-btn.del       { color: #ef4444; }
 .ft-btn.del:hover { background: #fef2f2; }
 .ft-sep { width: 1px; height: 18px; background: var(--ui-border); margin: 0 4px; flex-shrink: 0; }
 .ft-lbl { font-size: 10px; color: var(--ui-lo); padding: 0 4px; letter-spacing: .06em; font-weight: 600; }
+
+/* ── 표 툴바 전용 ── */
+/* 셀 선택 하이라이트 */
+td.tbl-sel, th.tbl-sel {
+  background: rgba(59,130,246,.08) !important;
+  outline: 2px solid rgba(16,16,255,.35); outline-offset: -2px;
+}
+/* 컬러 스와치 (셀 배경색) */
+.tbl-swatch-wrap { display: flex; align-items: center; gap: 3px; padding: 0 2px; }
+.tbl-swatch {
+  width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+  border: 1.5px solid transparent; cursor: pointer;
+  transition: transform .1s, border-color .1s;
+}
+.tbl-swatch:hover { transform: scale(1.2); }
+.tbl-swatch.on { border-color: var(--ui-hi) !important; }
+.tbl-swatch[data-color="reset"] {
+  background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 0 0 / 8px 8px;
+}
+
+/* ── 텍스트 포맷 툴바 전용 ── */
+/* 텍스트 서식 버튼 (B / I / U 등 28×28) */
+.txt-btn {
+  width: 28px; height: 28px; border-radius: 5px;
+  border: none; background: none; cursor: pointer;
+  font-size: 13px; font-weight: 700; color: var(--ui-md);
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; font-family: 'Pretendard', sans-serif; flex-shrink: 0;
+}
+.txt-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.txt-btn.on    { background: var(--pri-alpha); color: var(--primary); }
+.txt-sep { width: 1px; height: 16px; background: var(--ui-border); margin: 0 3px; flex-shrink: 0; }
+/* 폰트 사이즈 조절 */
+.txt-size-wrap { display: flex; align-items: center; gap: 1px; }
+.txt-size-btn {
+  width: 20px; height: 24px; border: 1px solid var(--ui-border);
+  background: var(--ui-surface); border-radius: 4px; cursor: pointer;
+  font-size: 11px; color: var(--ui-md);
+  display: flex; align-items: center; justify-content: center; transition: all .1s;
+}
+.txt-size-btn:hover { background: var(--ui-bg); color: var(--ui-hi); }
+.txt-size-val {
+  width: 30px; text-align: center; font-size: 12px; font-weight: 600;
+  color: var(--ui-hi); font-family: 'Pretendard', sans-serif;
+}
+/* 텍스트 컬러 스와치 */
+.txt-swatch-wrap { display: flex; align-items: center; gap: 3px; padding: 0 2px; }
+.txt-swatch {
+  width: 16px; height: 16px; border-radius: 3px;
+  border: 1.5px solid transparent; cursor: pointer; flex-shrink: 0;
+  transition: transform .1s;
+}
+.txt-swatch:hover { transform: scale(1.2); }
+
+/* ── 행/열 드래그 컨트롤 ── */
+.row-controls {
+  display: flex; flex-direction: column; gap: 2px;
+  opacity: 0; transition: opacity .15s;
+  position: absolute; right: -46px; top: 50%; transform: translateY(-50%);
+}
+/* 호버 시 컨트롤 표시 — 필요한 부모 클래스에 추가 */
+.has-row-ctrl:hover .row-controls { opacity: 1; }
+.row-ctrl-btn {
+  width: 20px; height: 15px; border-radius: 3px;
+  border: 1px solid var(--ui-border); background: #fff;
+  color: var(--ui-lo); cursor: pointer; font-size: 9px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .1s; line-height: 1;
+}
+.row-ctrl-btn:hover { background: var(--ui-surface); color: var(--ui-hi); border-color: var(--ui-md); }
+/* 행 플로팅 컨트롤 */
+.float-row-ctrl {
+  position: fixed; z-index: 280; display: none;
+  flex-direction: column; gap: 2px; padding: 4px;
+  background: #fff; border: 1px solid var(--ui-border);
+  border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
+/* 열 플로팅 컨트롤 */
+.float-col-ctrl {
+  position: fixed; z-index: 280; display: none;
+  flex-direction: row; gap: 2px; padding: 4px;
+  background: #fff; border: 1px solid var(--ui-border);
+  border-radius: 6px; box-shadow: 0 2px 10px rgba(0,0,0,.1);
+}
 
 /* ════════════════════════════════════════════════
    TOAST — 알림 메시지
