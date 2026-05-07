@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><!-- 툴 이름 --></title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<!-- 필요한 라이브러리만 선택해서 추가 -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script> -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script> -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script> -->
+<style>
+
+/* ════════════════════════════════════════════════
+   DESIGN TOKENS — 전체 컬러·사이즈 변수
+   ════════════════════════════════════════════════ */
+:root {
+  /* 브랜드 */
+  --primary:    #1010FF;
+  --pri-hov:    #0a0acc;
+  --pri-alpha:  rgba(16,16,255,.07);
+  --pri-border: rgba(16,16,255,.16);
+
+  /* 그레이 스케일 */
+  --ui-bg:      #F2F4F6;   /* 전체 배경 */
+  --ui-panel:   #ffffff;   /* 패널·카드 */
+  --ui-border:  #E5E8EB;   /* 테두리 */
+  --ui-hi:      #191F28;   /* 강조 텍스트 */
+  --ui-md:      #6B7684;   /* 보조 텍스트 */
+  --ui-lo:      #8B95A1;   /* 약한 텍스트 / 레이블 */
+  --ui-surface: #F7F8FA;   /* 인풋·hover 배경 */
+
+  /* 레이아웃 */
+  --topbar-h:   56px;
+  --panel-w:    260px;
+
+  /* 보더 반경 */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+}
+
+/* ════════════════════════════════════════════════
+   RESET & BASE
+   ════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body {
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-hi);
+  -webkit-font-smoothing: antialiased;
+  padding-top: var(--topbar-h);
+}
+
+/* ════════════════════════════════════════════════
+   TOPBAR — 상단 고정 바
+   ════════════════════════════════════════════════ */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 12px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+}
+.tb-brand {
+  font-size: 15px; font-weight: 700;
+  color: var(--ui-hi); letter-spacing: -.3px;
+}
+.tb-space { flex: 1; }
+
+/* ────── Split Button (기본 / 강조) ────── */
+.split { display: flex; border-radius: var(--radius-sm); overflow: hidden; }
+
+/* Secondary (보더형) */
+.split.secondary { border: 1px solid var(--ui-border); }
+.split.secondary .s-main {
+  height: 34px; padding: 0 14px;
+  background: var(--ui-panel); color: var(--ui-hi);
+  border: none; border-right: 1px solid var(--ui-border);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.split.secondary .s-main:hover { background: var(--ui-surface); }
+.split.secondary .s-arr {
+  height: 34px; width: 32px; background: var(--ui-panel);
+  border: none; color: var(--ui-lo); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.secondary .s-arr:hover { background: var(--ui-surface); color: var(--ui-md); }
+
+/* Primary (파란색 채움) */
+.split.primary { border: 1px solid var(--primary); margin-left: 8px; }
+.split.primary .s-main {
+  height: 34px; padding: 0 14px;
+  background: var(--primary); color: #fff;
+  border: none; border-right: 1px solid rgba(255,255,255,.15);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.split.primary .s-main:hover { background: var(--pri-hov); }
+.split.primary .s-arr {
+  height: 34px; width: 32px; background: var(--primary);
+  border: none; color: rgba(255,255,255,.6); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.primary .s-arr:hover { background: var(--pri-hov); color: #fff; }
+
+/* ────── Topbar Dropdown ────── */
+.tb-dropdown {
+  position: fixed; top: calc(var(--topbar-h) + 6px);
+  background: var(--ui-panel); border: 1px solid var(--ui-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  z-index: 300; overflow: hidden; display: none; min-width: 160px;
+}
+.tb-dropdown.open { display: block; }
+.dd-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 16px; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: background .1s;
+  border-bottom: 1px solid var(--ui-border);
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--ui-surface); }
+.dd-item .dd-icon { font-size: 15px; }
+
+/* ════════════════════════════════════════════════
+   RIGHT PANEL — 우측 컨트롤 패널
+   ════════════════════════════════════════════════ */
+.right-panel {
+  position: fixed;
+  top: var(--topbar-h); right: 0;
+  width: var(--panel-w);
+  height: calc(100vh - var(--topbar-h));
+  background: var(--ui-panel);
+  border-left: 1px solid var(--ui-border);
+  overflow-y: auto; z-index: 100;
+  padding: 20px 16px 32px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+/* 섹션 그룹 */
+.rp-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; }
+
+/* 섹션 레이블 (UPPERCASE 소제목) */
+.rp-label {
+  font-size: 12px; font-weight: 600; color: var(--ui-lo);
+  letter-spacing: .05em; text-transform: uppercase;
+  padding: 0 2px; margin-bottom: 2px;
+}
+
+/* 구분선 */
+.rp-divider { height: 1px; background: var(--ui-border); margin: 12px 0; }
+
+/* 정보 텍스트 */
+.rp-info {
+  font-size: 12px; color: var(--ui-lo); padding: 0 2px;
+  font-family: 'Pretendard', sans-serif;
+}
+.rp-info.on { color: var(--primary); font-weight: 600; }
+
+/* 탭 목록 */
+.rp-tab-list { display: flex; flex-direction: column; gap: 2px; }
+.rp-tab {
+  width: 100%; padding: 9px 12px; text-align: left;
+  border: none; border-radius: var(--radius-sm);
+  background: none; font-size: 13px; font-weight: 500;
+  color: var(--ui-md); cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: all .12s;
+}
+.rp-tab:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.rp-tab.active { background: var(--pri-alpha); color: var(--primary); font-weight: 700; }
+
+/* 선택형 버튼 (로고 스타일 등 선택 옵션) */
+.rp-option-row { display: flex; gap: 6px; }
+.rp-option-btn {
+  flex: 1; padding: 8px 4px; border-radius: var(--radius-sm);
+  border: 1.5px solid var(--ui-border); background: var(--ui-surface);
+  font-size: 12px; font-weight: 500; color: var(--ui-md);
+  cursor: pointer; font-family: 'Pretendard', sans-serif;
+  transition: all .12s; text-align: center;
+}
+.rp-option-btn:hover { border-color: var(--primary); color: var(--primary); }
+.rp-option-btn.active {
+  border-color: var(--primary); background: var(--pri-alpha);
+  color: var(--primary); font-weight: 700;
+}
+
+/* 액션 버튼 (점선 테두리) */
+.rp-btn {
+  width: 100%; padding: 9px 12px; border-radius: var(--radius-sm);
+  border: 1px dashed var(--ui-border); background: none;
+  font-size: 13px; font-weight: 500; color: var(--ui-md);
+  cursor: pointer; font-family: 'Pretendard', sans-serif;
+  transition: all .12s; text-align: left;
+}
+.rp-btn:hover { border-color: var(--primary); color: var(--primary); background: var(--ui-surface); }
+
+/* 강조 액션 버튼 (파란색 배경) */
+.rp-btn-primary {
+  border-color: var(--pri-border); color: var(--primary); background: var(--pri-alpha);
+}
+.rp-btn-primary:hover { border-color: var(--primary); background: rgba(16,16,255,.13); }
+
+/* 저장 정보 (하단 고정) */
+.rp-save-info {
+  margin-top: auto; padding-top: 16px;
+  border-top: 1px solid var(--ui-border);
+}
+.rp-save-clinic { font-size: 11px; font-weight: 600; color: var(--ui-md); margin-bottom: 3px; }
+.rp-save-time   { font-size: 10px; color: var(--ui-lo); }
+
+/* ════════════════════════════════════════════════
+   CONTENT AREA — 미리보기 영역
+   ════════════════════════════════════════════════ */
+.tab-panel { display: none; margin-right: var(--panel-w); }
+.tab-panel.active { display: block; }
+.content-wrap { padding: 56px 24px 56px; }
+
+/* ════════════════════════════════════════════════
+   MODAL — 다이얼로그
+   ════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 400;
+  display: none; align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.4); backdrop-filter: blur(4px);
+}
+.modal-dialog {
+  position: relative; z-index: 1;
+  background: var(--ui-panel); border-radius: var(--radius-lg);
+  padding: 28px 28px 24px;
+  width: 520px; max-width: 95vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,.18);
+}
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.modal-sub   { font-size: 13px; color: var(--ui-md); margin-bottom: 20px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.modal-btn {
+  height: 38px; padding: 0 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: background .12s;
+}
+.modal-btn.cancel {
+  background: var(--ui-surface); border: 1px solid var(--ui-border); color: var(--ui-md);
+}
+.modal-btn.cancel:hover { background: var(--ui-border); }
+.modal-btn.confirm {
+  background: var(--ui-hi); border: 1px solid var(--ui-hi); color: #fff;
+}
+.modal-btn.confirm:hover { background: var(--primary); }
+.modal-btn.danger {
+  background: #ef4444; border: 1px solid #ef4444; color: #fff;
+}
+.modal-btn.danger:hover { background: #dc2626; }
+
+/* 모달 카드 그리드 (선택형) */
+.modal-card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.modal-card {
+  border: 1.5px solid var(--ui-border); border-radius: var(--radius-md);
+  padding: 14px 16px; cursor: pointer; transition: all .15s;
+}
+.modal-card:hover { border-color: var(--ui-hi); background: var(--ui-surface); }
+.modal-card.selected { border-color: var(--primary); background: var(--pri-alpha); }
+.modal-card-icon { font-size: 20px; margin-bottom: 8px; }
+.modal-card-name { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.modal-card-desc { font-size: 12px; color: var(--ui-md); line-height: 1.5; }
+
+/* ════════════════════════════════════════════════
+   FLOATING TOOLBAR — 선택 시 뜨는 툴바
+   ════════════════════════════════════════════════ */
+.float-toolbar {
+  position: fixed;
+  background: #fff;
+  border: 1px solid var(--ui-border);
+  border-radius: var(--radius-md);
+  padding: 4px 6px;
+  display: none; align-items: center; gap: 1px;
+  z-index: 250;
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
+  white-space: nowrap;
+}
+.float-toolbar.visible { display: flex; }
+.ft-btn {
+  height: 30px; padding: 0 9px; border-radius: 6px; border: none;
+  background: transparent; color: var(--ui-md);
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: 'Pretendard', sans-serif;
+  display: inline-flex; align-items: center; gap: 3px;
+  transition: background .1s, color .1s;
+}
+.ft-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.ft-btn.act  { color: var(--primary); }
+.ft-btn.act:hover { background: var(--pri-alpha); }
+.ft-btn.del  { color: #ef4444; }
+.ft-btn.del:hover { background: #fef2f2; }
+.ft-sep { width: 1px; height: 18px; background: var(--ui-border); margin: 0 4px; flex-shrink: 0; }
+.ft-lbl { font-size: 10px; color: var(--ui-lo); padding: 0 4px; letter-spacing: .06em; font-weight: 600; }
+
+/* ════════════════════════════════════════════════
+   TOAST — 알림 메시지
+   ════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 24px; right: calc(var(--panel-w) + 24px);
+  background: var(--ui-hi); color: #fff;
+  padding: 12px 18px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+  opacity: 0; transform: translateY(6px);
+  transition: opacity .2s, transform .2s;
+  pointer-events: none; z-index: 500;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+</style>
+</head>
+<body>
+
+<!-- ════ TOPBAR ════ -->
+<div class="topbar">
+  <span class="tb-brand">툴 이름</span>
+  <div class="tb-space"></div>
+
+  <!-- Secondary 버튼 (저장 등) -->
+  <div class="split secondary" id="split-save">
+    <button class="s-main" onclick="saveData()">저장</button>
+    <button class="s-arr" onclick="toggleDD('dd-save')">▾</button>
+  </div>
+  <div class="tb-dropdown" id="dd-save" style="right:100px;">
+    <div class="dd-item" onclick="saveData(); closeAllDD()">저장</div>
+    <div class="dd-item" onclick="loadData(); closeAllDD()">불러오기</div>
+  </div>
+
+  <!-- Primary 버튼 (내보내기 등) -->
+  <div class="split primary" id="split-export">
+    <button class="s-main" onclick="exportPdf('tab')">내보내기</button>
+    <button class="s-arr" onclick="toggleDD('dd-export')">▾</button>
+  </div>
+  <div class="tb-dropdown" id="dd-export" style="right:24px;">
+    <div class="dd-item" onclick="exportPdf('tab'); closeAllDD()">현재 탭 내보내기</div>
+    <div class="dd-item" onclick="exportPdf('all'); closeAllDD()">전체 내보내기</div>
+  </div>
+</div>
+
+<!-- ════ RIGHT PANEL ════ -->
+<div class="right-panel">
+
+  <!-- 카테고리 선택 -->
+  <div class="rp-group">
+    <div class="rp-label">카테고리</div>
+    <div class="rp-tab-list">
+      <button class="rp-tab active" onclick="switchTab('tab1')">탭 1</button>
+      <button class="rp-tab"       onclick="switchTab('tab2')">탭 2</button>
+    </div>
+  </div>
+
+  <div class="rp-divider"></div>
+
+  <!-- 선택 옵션 예시 -->
+  <div class="rp-group">
+    <div class="rp-label">스타일</div>
+    <div class="rp-option-row">
+      <button class="rp-option-btn active" data-opt="A" onclick="setOption('A', this)">A 타입</button>
+      <button class="rp-option-btn"        data-opt="B" onclick="setOption('B', this)">B 타입</button>
+    </div>
+  </div>
+
+  <div class="rp-divider"></div>
+
+  <!-- 액션 버튼 예시 -->
+  <div class="rp-group">
+    <div class="rp-label">구성</div>
+    <div class="rp-info" id="rp-status">항목을 선택해주세요</div>
+    <button class="rp-btn" onclick="addItem()">＋ 항목 추가</button>
+    <button class="rp-btn rp-btn-primary" onclick="importData()">↑ 데이터 가져오기</button>
+  </div>
+
+  <!-- 저장 정보 (하단) -->
+  <div class="rp-save-info" id="rp-save-info" style="display:none;">
+    <div class="rp-save-clinic" id="rp-save-name"></div>
+    <div class="rp-save-time"   id="rp-save-time"></div>
+  </div>
+
+</div>
+
+<!-- ════ CONTENT (탭 패널) ════ -->
+<div class="tab-panel active" id="tab-tab1">
+  <div class="content-wrap">
+    <!-- 여기에 미리보기 콘텐츠 -->
+    <p style="color:var(--ui-lo); text-align:center; padding:80px 0;">탭 1 콘텐츠 영역</p>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-tab2">
+  <div class="content-wrap">
+    <p style="color:var(--ui-lo); text-align:center; padding:80px 0;">탭 2 콘텐츠 영역</p>
+  </div>
+</div>
+
+<!-- ════ MODAL 예시 ════ -->
+<div class="modal-overlay" id="modal-example">
+  <div class="modal-backdrop" onclick="closeModal('modal-example')"></div>
+  <div class="modal-dialog">
+    <div class="modal-title">모달 제목</div>
+    <div class="modal-sub">설명 텍스트</div>
+    <!-- 선택 카드 예시 -->
+    <div class="modal-card-grid">
+      <div class="modal-card selected" onclick="selectCard(this)">
+        <div class="modal-card-icon">📄</div>
+        <div class="modal-card-name">옵션 A</div>
+        <div class="modal-card-desc">설명 텍스트가 들어갑니다</div>
+      </div>
+      <div class="modal-card" onclick="selectCard(this)">
+        <div class="modal-card-icon">📊</div>
+        <div class="modal-card-name">옵션 B</div>
+        <div class="modal-card-desc">설명 텍스트가 들어갑니다</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal('modal-example')">취소</button>
+      <button class="modal-btn confirm" onclick="confirmModal()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ FLOATING TOOLBAR 예시 ════ -->
+<div class="float-toolbar" id="ft-example">
+  <span class="ft-lbl">행</span>
+  <button class="ft-btn" onclick="">↑ 위로</button>
+  <button class="ft-btn" onclick="">↓ 아래로</button>
+  <div class="ft-sep"></div>
+  <button class="ft-btn del" onclick="">삭제</button>
+</div>
+
+<!-- ════ TOAST ════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ────────────────────────────────────────────
+   TOPBAR — 드롭다운 토글
+   ──────────────────────────────────────────── */
+function toggleDD(id) {
+  const el = document.getElementById(id);
+  const isOpen = el.classList.contains('open');
+  closeAllDD();
+  if (!isOpen) el.classList.add('open');
+}
+function closeAllDD() {
+  document.querySelectorAll('.tb-dropdown').forEach(d => d.classList.remove('open'));
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.split') && !e.target.closest('.tb-dropdown')) closeAllDD();
+});
+
+/* ────────────────────────────────────────────
+   TAB 전환
+   ──────────────────────────────────────────── */
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name)?.classList.add('active');
+  document.querySelectorAll('.rp-tab').forEach(b => {
+    b.classList.toggle('active', b.getAttribute('onclick')?.includes(name));
+  });
+}
+
+/* ────────────────────────────────────────────
+   MODAL
+   ──────────────────────────────────────────── */
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function selectCard(el) {
+  el.closest('.modal-card-grid')?.querySelectorAll('.modal-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function confirmModal() {
+  // TODO: 모달 확인 처리
+  closeModal('modal-example');
+}
+
+/* ────────────────────────────────────────────
+   TOAST
+   ──────────────────────────────────────────── */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ────────────────────────────────────────────
+   OPTION 선택
+   ──────────────────────────────────────────── */
+function setOption(val, btn) {
+  btn.closest('.rp-option-row')?.querySelectorAll('.rp-option-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  // TODO: 옵션 적용 로직
+}
+
+/* ────────────────────────────────────────────
+   PDF 내보내기 (html2canvas + jsPDF)
+   ──────────────────────────────────────────── */
+async function exportPdf(mode) {
+  if (typeof html2canvas === 'undefined' || typeof jspdf === 'undefined') {
+    toast('PDF 라이브러리 로딩 중... 잠시 후 다시 시도해주세요'); return;
+  }
+  const { jsPDF } = jspdf;
+
+  // TODO: 캡처할 엘리먼트 목록 정의
+  const targets = [...document.querySelectorAll(mode === 'tab'
+    ? '.tab-panel.active .capture-target'
+    : '.capture-target'
+  )];
+  if (!targets.length) { toast('내보낼 콘텐츠가 없습니다'); return; }
+
+  // UI 임시 숨기기 (편집 버튼 등)
+  const hideStyle = document.createElement('style');
+  hideStyle.id = 'export-hide-ui';
+  hideStyle.textContent = `.ui-only { display: none !important; }`;
+  document.head.appendChild(hideStyle);
+
+  try {
+    toast('PDF 생성 중...');
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    for (let i = 0; i < targets.length; i++) {
+      targets[i].scrollIntoView({ behavior: 'instant', block: 'start' });
+      await new Promise(r => setTimeout(r, 200));
+
+      const canvas = await html2canvas(targets[i], {
+        useCORS: true, allowTaint: false,
+        scale: 2, logging: false, backgroundColor: '#ffffff',
+      });
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+      toast(`PDF 생성 중... ${i + 1} / ${targets.length}`);
+    }
+
+    const d = new Date();
+    const ds = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    pdf.save(`내보내기_${ds}.pdf`);
+    toast('✅ PDF 저장 완료!');
+
+  } catch (err) {
+    toast('PDF 생성 실패: ' + err.message);
+    console.error('[exportPdf]', err);
+  } finally {
+    document.getElementById('export-hide-ui')?.remove();
+  }
+}
+
+/* ────────────────────────────────────────────
+   저장 / 불러오기 (localStorage 기본 구조)
+   ──────────────────────────────────────────── */
+const STORAGE_KEY = 'tool-data-v1'; // 툴마다 고유 키로 변경
+
+function saveData() {
+  const data = collectData(); // TODO: 데이터 수집 함수 구현
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ data, savedAt: new Date().toISOString() }));
+  toast('저장됐습니다');
+  updateSaveInfo();
+}
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) { toast('저장된 데이터가 없습니다'); return; }
+  const { data } = JSON.parse(raw);
+  applyData(data); // TODO: 데이터 적용 함수 구현
+  toast('불러왔습니다');
+}
+
+function collectData() { return {}; } // TODO: 구현
+function applyData(data) {}           // TODO: 구현
+
+function updateSaveInfo() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return;
+  const { savedAt } = JSON.parse(raw);
+  const el = document.getElementById('rp-save-info');
+  if (el) {
+    el.style.display = 'block';
+    document.getElementById('rp-save-time').textContent =
+      '저장: ' + new Date(savedAt).toLocaleString('ko-KR');
+  }
+}
+
+// ── 초기화 ──
+updateSaveInfo();
+</script>
+</body>
+</html>
