@@ -791,14 +791,12 @@ td.tbl-sel, th.tbl-sel {
     <div class="dd-item" onclick="clearSave(); closeAllDD()">저장 초기화</div>
   </div>
   <div class="split primary" id="split-print">
-    <button class="s-main" onclick="window.print()">인쇄 / PDF</button>
+    <button class="s-main" onclick="savePdf('tab')">내보내기</button>
     <button class="s-arr" onclick="toggleDD('dd-print')">▾</button>
   </div>
   <div class="tb-dropdown" id="dd-print" style="right:24px;">
-    <div class="dd-item" onclick="printTab(); closeAllDD()">현재 탭만 인쇄</div>
-    <div class="dd-item" onclick="window.print(); closeAllDD()">전체 인쇄</div>
-    <div class="dd-item" style="border-top:1px solid #eee;margin-top:4px;padding-top:8px;" onclick="savePdf('tab'); closeAllDD()">📄 현재 탭 PDF 저장</div>
-    <div class="dd-item" onclick="savePdf('all'); closeAllDD()">📄 전체 PDF 저장</div>
+    <div class="dd-item" onclick="savePdf('tab'); closeAllDD()">현재 탭 내보내기</div>
+    <div class="dd-item" onclick="savePdf('all'); closeAllDD()">전체 센터 내보내기</div>
   </div>
 </div>
 
