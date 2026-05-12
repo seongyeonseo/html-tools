@@ -302,6 +302,9 @@ td.tbl-sel, th.tbl-sel {
   transition: background .12s, color .12s;
 }
 .row-ctrl-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.rc-sep { height: 1px; background: var(--ui-border); margin: 1px 0; }
+.rc-del { color: #d0d0d0 !important; }
+.rc-del:hover { background: #fef2f2 !important; color: #ef4444 !important; }
 /* pkg-table 전용 플로팅 컨트롤 — 행 */
 #row-float-ctrl {
   position: fixed; z-index: 280; display: none;
@@ -479,6 +482,12 @@ td.tbl-sel, th.tbl-sel {
   font-family: 'Pretendard', sans-serif;
 }
 .rp-page-info.on { color: var(--primary); font-weight: 600; }
+.rp-page-move { display: none; gap: 4px; }
+.rp-page-move.on { display: flex; }
+
+/* ══ FORMAT E — 텍스트 블록 ══ */
+.text-content { font-size: 13px; color: var(--ui-md); line-height: 1.9; padding: 6px 0 10px; min-height: 28px; outline: none; white-space: pre-wrap; }
+.text-content:empty::before { content: attr(data-ph); color: var(--ui-border); pointer-events: none; }
 @media print {
   .page::before { display: none !important; }
   .page.page-selected { outline: none !important; }
@@ -677,6 +686,7 @@ td.tbl-sel, th.tbl-sel {
   #row-float-ctrl, #col-float-ctrl,
   .ghost-add, .row-del, .sec-del, .sec-move-wrap, .page-del,
   .iv-price-add, .iv-price-del, .note-del { display: none !important; }
+  .text-block .sec-header { display: none !important; }
   .tab-panel { margin-right: 0 !important; }
   .tab-panel.active { display: block !important; }
   .page-wrap { padding: 0; }
@@ -882,7 +892,12 @@ td.tbl-sel, th.tbl-sel {
   <div class="rp-group">
     <div class="rp-label">구성</div>
     <div class="rp-page-info" id="rp-page-info">페이지를 클릭해서 선택</div>
+    <div class="rp-page-move" id="rp-page-move">
+      <button class="rp-btn" style="flex:1;justify-content:center;" onclick="movePage('up')">↑ 위로</button>
+      <button class="rp-btn" style="flex:1;justify-content:center;" onclick="movePage('down')">↓ 아래로</button>
+    </div>
     <button class="rp-btn" onclick="openFmtModalFromPanel()">＋ 섹션 추가</button>
+    <button class="rp-btn" onclick="addTextBlockFromPanel()">＋ 텍스트 추가</button>
     <button class="rp-btn" onclick="addPageFromPanel()">＋ 페이지 추가</button>
     <button class="rp-btn" id="btn-title-toggle" onclick="toggleTitleFromPanel(this)">— 타이틀 숨기기</button>
   </div>
@@ -1315,10 +1330,12 @@ function selectPage(pageEl) {
 
 function updatePageInfo() {
   const info = document.getElementById('rp-page-info');
+  const moveWrap = document.getElementById('rp-page-move');
   if (!info) return;
   if (!selectedPage) {
     info.textContent = '페이지를 클릭해서 선택';
     info.classList.remove('on');
+    if (moveWrap) moveWrap.classList.remove('on');
     return;
   }
   const t = getCurrentTab();
@@ -1327,6 +1344,7 @@ function updatePageInfo() {
   const idx = pages.indexOf(selectedPage);
   info.textContent = idx >= 0 ? `${idx + 1}페이지 선택됨` : '페이지 선택됨';
   info.classList.add('on');
+  if (moveWrap) moveWrap.classList.add('on');
 }
 
 function onPageClick() { selectPage(this); }
@@ -1397,6 +1415,31 @@ function initRowIcons() {
   });
   document.querySelectorAll('.note-del').forEach(btn => {
     if (btn.textContent.trim() === '×') btn.innerHTML = IC.close;
+  });
+  // Add row-controls to iv-items that don't have them yet
+  document.querySelectorAll('.iv-item').forEach(item => {
+    if (item.querySelector('.row-controls')) return;
+    const ctrl = document.createElement('div');
+    ctrl.className = 'row-controls';
+    ctrl.style.cssText = 'position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;';
+    ctrl.innerHTML = `<button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button>`;
+    item.appendChild(ctrl);
+  });
+  // Merge standalone row-del into the row-controls pill for fixed-row/combo-row
+  document.querySelectorAll('.fixed-row .row-controls, .combo-row .row-controls').forEach(ctrl => {
+    if (ctrl.querySelector('.rc-del')) return;
+    const row = ctrl.closest('.fixed-row, .combo-row');
+    if (!row) return;
+    const del = row.querySelector(':scope > .row-del');
+    if (!del) return;
+    const sep = document.createElement('div'); sep.className = 'rc-sep'; ctrl.appendChild(sep);
+    const btn = document.createElement('button');
+    btn.className = 'row-ctrl-btn rc-del';
+    btn.innerHTML = IC.close;
+    btn.title = '삭제';
+    btn.onclick = () => { saveSnapshot(); row.remove(); };
+    ctrl.appendChild(btn);
+    del.style.display = 'none';
   });
 }
 
@@ -1575,6 +1618,17 @@ function openFmtModalFromPanel() {
   openFmtModal(getCurrentTab(), selectedPage);
 }
 
+function addTextBlockFromPanel() {
+  if (!selectedPage) { toast('페이지를 먼저 선택해주세요'); return; }
+  saveSnapshot();
+  const block = buildSection('E');
+  const ghostBtn = selectedPage.querySelector(':scope > .ghost-add');
+  ghostBtn ? selectedPage.insertBefore(block, ghostBtn) : selectedPage.appendChild(block);
+  initSecMove();
+  block.querySelector('.text-content').focus();
+  toast('텍스트 블록이 추가됐습니다');
+}
+
 function addPageFromPanel() {
   const t = getCurrentTab();
   const tabEl = document.getElementById('tab-' + t);
@@ -1689,8 +1743,7 @@ function buildSection(fmt) {
   div.className = 'section-block';
   const id = 'notes-new-' + Date.now();
 
-  const RC = `<div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>`;
-  const RD = (sel) => `<button class="row-del" onclick="this.closest('${sel}').remove()">${IC.close}</button>`;
+  const RC = (sel) => `<div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('${sel}').remove()">${IC.close}</button></div>`;
 
   if (fmt === 'A') {
     div.innerHTML = `
@@ -1708,7 +1761,7 @@ function buildSection(fmt) {
           </div>
           <div class="fixed-count" contenteditable="true">1회</div>
           <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
-          ${RC}${RD('.fixed-row')}
+          ${RC('.fixed-row')}
         </div>
       </div>
       <button class="ghost-add" onclick="addFixedRow(this)">＋ 항목 추가</button>
@@ -1760,7 +1813,8 @@ function buildSection(fmt) {
             <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
           </div>
           <div class="iv-vat" contenteditable="true">*VAT별도</div>
-          ${RD('.iv-item')}
+          <div class="row-controls" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>
+          <button class="row-del" onclick="this.closest('.iv-item').remove()">${IC.close}</button>
         </div>
       </div>
       <button class="ghost-add" onclick="addIvItem(this.previousElementSibling)">＋ 항목 추가</button>
@@ -1777,13 +1831,20 @@ function buildSection(fmt) {
         <div class="combo-row" style="position:relative;">
           <div class="combo-desc" contenteditable="true">설명을 입력하세요</div>
           <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">000</span><span class="combo-unit" contenteditable="true">만원</span></div>
-          ${RC}${RD('.combo-row')}
+          ${RC('.combo-row')}
         </div>
       </div>
       <div class="combo-vat" contenteditable="true">*VAT별도</div>
       <button class="ghost-add" onclick="addComboRow(this.previousElementSibling.previousElementSibling)">＋ 행 추가</button>
       <div class="notes-block" id="${id}"></div>
       <button class="ghost-add" onclick="addNote(this.previousElementSibling)">＋ 주석 추가</button>`;
+  } else if (fmt === 'E') {
+    div.classList.add('text-block');
+    div.innerHTML = `
+      <div class="sec-header" style="border-top-style:dashed;border-top-color:var(--ui-border);">
+        <button class="sec-del" onclick="this.closest('.section-block').remove()">${IC.trash}</button>
+      </div>
+      <div class="text-content" contenteditable="true" data-ph="텍스트를 입력하세요"></div>`;
   }
   return div;
 }
@@ -1802,8 +1863,7 @@ function addFixedRow(btn) {
     </div>
     <div class="fixed-count" contenteditable="true">1회</div>
     <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
-    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>
-    <button class="row-del" onclick="this.closest('.fixed-row').remove()">${IC.close}</button>`;
+    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.fixed-row').remove()">${IC.close}</button></div>`;
   table.appendChild(row);
   row.querySelector('.fixed-name').focus();
 }
@@ -1871,8 +1931,7 @@ function addComboRow(list) {
   div.innerHTML = `
     <div class="combo-desc" contenteditable="true">설명</div>
     <div class="combo-price-wrap"><span class="combo-lbl">총</span><span class="combo-num" contenteditable="true">000</span><span class="combo-unit" contenteditable="true">만원</span></div>
-    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>
-    <button class="row-del" onclick="this.closest('.combo-row').remove()">${IC.close}</button>`;
+    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.combo-row').remove()">${IC.close}</button></div>`;
   list.appendChild(div);
   div.querySelector('.combo-desc').focus();
 }
@@ -2029,6 +2088,22 @@ function moveSection(btn, dir) {
   } else {
     if (idx < siblings.length - 1) parent.insertBefore(siblings[idx + 1], sec);
   }
+}
+
+/* ── 페이지 순서 이동 ── */
+function movePage(dir) {
+  if (!selectedPage) return;
+  const pageWrap = selectedPage.closest('.page-wrap');
+  if (!pageWrap) return;
+  const pages = [...pageWrap.querySelectorAll(':scope > .page')];
+  const idx = pages.indexOf(selectedPage);
+  saveSnapshot();
+  if (dir === 'up') {
+    if (idx > 0) pageWrap.insertBefore(selectedPage, pages[idx - 1]);
+  } else {
+    if (idx < pages.length - 1) pageWrap.insertBefore(pages[idx + 1], selectedPage);
+  }
+  updatePageInfo();
 }
 
 /* ── 페이지 삭제 ── */
