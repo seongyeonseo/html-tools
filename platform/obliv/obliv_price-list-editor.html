@@ -1416,19 +1416,18 @@ function initRowIcons() {
   document.querySelectorAll('.note-del').forEach(btn => {
     if (btn.textContent.trim() === '×') btn.innerHTML = IC.close;
   });
-  // Add row-controls to iv-items that don't have them yet
+  // Add row-controls to iv-items that don't have them yet, merged with del
   document.querySelectorAll('.iv-item').forEach(item => {
     if (item.querySelector('.row-controls')) return;
     const ctrl = document.createElement('div');
     ctrl.className = 'row-controls';
-    ctrl.style.cssText = 'position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;';
-    ctrl.innerHTML = `<button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button>`;
+    ctrl.innerHTML = `<button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.iv-item').remove()">${IC.close}</button>`;
     item.appendChild(ctrl);
   });
-  // Merge standalone row-del into the row-controls pill for fixed-row/combo-row
-  document.querySelectorAll('.fixed-row .row-controls, .combo-row .row-controls').forEach(ctrl => {
+  // Merge standalone row-del into the row-controls pill for fixed-row/combo-row/iv-item
+  document.querySelectorAll('.fixed-row .row-controls, .combo-row .row-controls, .iv-item .row-controls').forEach(ctrl => {
     if (ctrl.querySelector('.rc-del')) return;
-    const row = ctrl.closest('.fixed-row, .combo-row');
+    const row = ctrl.closest('.fixed-row, .combo-row, .iv-item');
     if (!row) return;
     const del = row.querySelector(':scope > .row-del');
     if (!del) return;
@@ -1813,8 +1812,7 @@ function buildSection(fmt) {
             <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
           </div>
           <div class="iv-vat" contenteditable="true">*VAT별도</div>
-          <div class="row-controls" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>
-          <button class="row-del" onclick="this.closest('.iv-item').remove()">${IC.close}</button>
+          <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.iv-item').remove()">${IC.close}</button></div>
         </div>
       </div>
       <button class="ghost-add" onclick="addIvItem(this.previousElementSibling)">＋ 항목 추가</button>
@@ -1898,8 +1896,7 @@ function addIvItem(list) {
       <button class="iv-price-add" onclick="addPricePair(this.closest('.iv-prices'))" title="횟수+가격 추가">＋</button>
     </div>
     <div class="iv-vat" contenteditable="true">*VAT별도</div>
-    <div class="row-controls" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);margin:0;"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button></div>
-    <button class="row-del" onclick="this.closest('.iv-item').remove()">${IC.close}</button>`;
+    <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.iv-item').remove()">${IC.close}</button></div>`;
   list.appendChild(div);
   div.querySelector('.iv-cat').focus();
 }
