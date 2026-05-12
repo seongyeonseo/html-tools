@@ -486,7 +486,9 @@ td.tbl-sel, th.tbl-sel {
 .rp-page-move.on { display: flex; }
 
 /* ══ FORMAT E — 텍스트 블록 ══ */
-.text-content { font-size: 13px; color: var(--ui-md); line-height: 1.9; padding: 6px 0 10px; min-height: 28px; outline: none; white-space: pre-wrap; }
+.text-block { margin-bottom: 16px !important; }
+.text-block .sec-header { padding: 6px 0 4px !important; }
+.text-content { font-size: 13px; color: var(--ui-md); line-height: 1.9; padding: 4px 0 6px; min-height: 28px; outline: none; white-space: pre-wrap; }
 .text-content:empty::before { content: attr(data-ph); color: var(--ui-border); pointer-events: none; }
 @media print {
   .page::before { display: none !important; }
