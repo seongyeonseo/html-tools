@@ -668,7 +668,7 @@ td.tbl-sel, th.tbl-sel {
 /* ══ NOTES ══ */
 .notes-block { margin-top: 14px; }
 .note-line {
-  display: flex; align-items: flex-start; gap: 4px;
+  display: flex; align-items: center; gap: 4px;
   font-size: 12px; color: #666; line-height: 1.6; margin-bottom: 3px;
 }
 .note-sym { flex-shrink: 0; }
@@ -1413,6 +1413,8 @@ function initRowIcons() {
     ctrl.className = 'row-controls';
     ctrl.innerHTML = `<button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.iv-item').remove()">${IC.close}</button>`;
     item.appendChild(ctrl);
+    const oldDel = item.querySelector(':scope > .row-del');
+    if (oldDel) oldDel.style.display = 'none';
   });
   // Merge standalone row-del into the row-controls pill for fixed-row/combo-row/iv-item
   document.querySelectorAll('.fixed-row .row-controls, .combo-row .row-controls, .iv-item .row-controls').forEach(ctrl => {
@@ -2111,7 +2113,6 @@ function changeFontSize(delta) {
   const sel = window.getSelection();
   if (!sel || sel.isCollapsed || !sel.rangeCount) return;
 
-  const range = sel.getRangeAt(0).cloneRange();
   const anchorNode = sel.anchorNode;
   const anchorEl = anchorNode?.nodeType === 3 ? anchorNode.parentElement : anchorNode;
   const editableEl = anchorEl?.closest('[contenteditable]');
@@ -2122,40 +2123,64 @@ function changeFontSize(delta) {
   if (idx === -1) idx = 4;
   idx = Math.max(0, Math.min(_txtSizeMap.length - 1, idx + delta));
   const px = _txtSizeMap[idx];
+  if (px === Math.round(curSizePx)) return; // 이미 해당 크기
 
-  // DOM 변경 전에 컨테이너 기본 폰트 크기 캡처
   const basePx = Math.round(parseFloat(window.getComputedStyle(editableEl).fontSize));
 
   saveSnapshot();
   _suppressTxtHide = true;
 
-  const span = document.createElement('span');
-  span.style.fontSize = px + 'px';
+  // range를 editableEl 내부로 강제 클램핑 (inline CE span에서 범위가 밖으로 벗어나는 경우 대응)
+  const origRange = sel.getRangeAt(0);
+  const range = document.createRange();
   try {
-    range.surroundContents(span);
-  } catch(err) {
-    const frag = range.extractContents();
-    span.appendChild(frag);
-    range.insertNode(span);
+    const sc = editableEl.contains(origRange.startContainer) ? origRange.startContainer : editableEl;
+    const so = editableEl.contains(origRange.startContainer) ? origRange.startOffset : 0;
+    const ec = editableEl.contains(origRange.endContainer) ? origRange.endContainer : editableEl;
+    const eo = editableEl.contains(origRange.endContainer) ? origRange.endOffset : editableEl.childNodes.length;
+    range.setStart(sc, so);
+    range.setEnd(ec, eo);
+  } catch(e) {
+    _suppressTxtHide = false;
+    return;
   }
 
-  // 내부에 기존 font-size 스타일이 남아있으면 새 크기가 무시됨 → 전부 제거
+  const span = document.createElement('span');
+  span.style.fontSize = px + 'px';
+
+  let inserted = false;
+  try { range.surroundContents(span); inserted = true; } catch(e) {}
+  if (!inserted) {
+    try {
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+      inserted = true;
+    } catch(e) {}
+  }
+  if (!inserted || !span.parentNode) {
+    _suppressTxtHide = false;
+    return;
+  }
+
+  // 중첩된 font-size 제거 (기존 큰 span이 안에 남아있으면 무시됨)
   span.querySelectorAll('*').forEach(el => {
     if (el.style?.fontSize) el.style.fontSize = '';
   });
 
   if (px === basePx) {
-    // 기본 크기로 돌아온 경우: span을 완전히 제거해야 컨테이너 높이가 원래대로 복구됨
     const frag = document.createDocumentFragment();
     while (span.firstChild) frag.appendChild(span.firstChild);
     span.replaceWith(frag);
     editableEl.normalize();
   } else {
     span.normalize();
-    const newRange = document.createRange();
-    newRange.selectNodeContents(span);
-    sel.removeAllRanges();
-    sel.addRange(newRange);
+    try {
+      const newRange = document.createRange();
+      newRange.selectNodeContents(span);
+      sel.removeAllRanges();
+      sel.addRange(newRange);
+    } catch(e) {}
   }
 
   document.getElementById('txt-size-val').textContent = px;
