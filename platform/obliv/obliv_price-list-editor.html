@@ -2123,17 +2123,17 @@ function changeFontSize(delta) {
   idx = Math.max(0, Math.min(_txtSizeMap.length - 1, idx + delta));
   const px = _txtSizeMap[idx];
 
-  // execCommand undo 스택을 건드리지 않도록 직접 DOM 조작
+  // DOM 변경 전에 컨테이너 기본 폰트 크기 캡처
+  const basePx = Math.round(parseFloat(window.getComputedStyle(editableEl).fontSize));
+
   saveSnapshot();
   _suppressTxtHide = true;
 
   const span = document.createElement('span');
   span.style.fontSize = px + 'px';
   try {
-    // 선택 범위가 단일 노드 안에 있을 때
     range.surroundContents(span);
   } catch(err) {
-    // 선택이 여러 노드에 걸칠 때: extract → wrap → insert
     const frag = range.extractContents();
     span.appendChild(frag);
     range.insertNode(span);
@@ -2143,17 +2143,22 @@ function changeFontSize(delta) {
   span.querySelectorAll('*').forEach(el => {
     if (el.style?.fontSize) el.style.fontSize = '';
   });
-  span.normalize();
 
-  // 새 span 내용을 다시 선택 (툴바 유지)
-  const newRange = document.createRange();
-  newRange.selectNodeContents(span);
-  sel.removeAllRanges();
-  sel.addRange(newRange);
+  if (px === basePx) {
+    // 기본 크기로 돌아온 경우: span을 완전히 제거해야 컨테이너 높이가 원래대로 복구됨
+    const frag = document.createDocumentFragment();
+    while (span.firstChild) frag.appendChild(span.firstChild);
+    span.replaceWith(frag);
+    editableEl.normalize();
+  } else {
+    span.normalize();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
 
   document.getElementById('txt-size-val').textContent = px;
-
-  // 짧은 딜레이 후 suppress 해제 (selectionchange 안정화)
   setTimeout(() => { _suppressTxtHide = false; }, 150);
 }
 
