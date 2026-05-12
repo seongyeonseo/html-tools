@@ -2139,17 +2139,17 @@ function changeFontSize(delta) {
     range.insertNode(span);
   }
 
+  // 내부에 기존 font-size 스타일이 남아있으면 새 크기가 무시됨 → 전부 제거
+  span.querySelectorAll('*').forEach(el => {
+    if (el.style?.fontSize) el.style.fontSize = '';
+  });
+  span.normalize();
+
   // 새 span 내용을 다시 선택 (툴바 유지)
   const newRange = document.createRange();
   newRange.selectNodeContents(span);
   sel.removeAllRanges();
   sel.addRange(newRange);
-
-  // 컨테이너가 글자 크기 감소 시 줄어들지 않는 브라우저 버그 수정
-  const reflowEl = editableEl.closest('.note-line') || editableEl;
-  reflowEl.style.display = 'none';
-  void reflowEl.offsetHeight;
-  reflowEl.style.display = '';
 
   document.getElementById('txt-size-val').textContent = px;
 
