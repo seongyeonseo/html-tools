@@ -294,6 +294,9 @@ td.tbl-sel, th.tbl-sel {
 .fixed-row:hover .row-controls,
 .combo-row:hover .row-controls,
 .iv-item:hover .row-controls { opacity: 1; }
+.fixed-row:hover,
+.combo-row:hover,
+.iv-item:hover { z-index: 10; }
 .row-ctrl-btn {
   width: 24px; height: 20px; border-radius: 5px;
   border: none; background: transparent;
@@ -974,7 +977,7 @@ td.tbl-sel, th.tbl-sel {
               <div class="fixed-desc" contenteditable="true">(큰 발톱 5만원 / 작은 발톱 3만원)</div>
             </div>
             <div class="fixed-count" contenteditable="true">1회</div>
-            <div class="fixed-price"><span class="fpr-num" contenteditable="true">350,000</span><span class="fpr-unit">원</span></div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">350,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
             <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
             <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
           </div>
@@ -985,7 +988,7 @@ td.tbl-sel, th.tbl-sel {
               <div class="fixed-desc" contenteditable="true"></div>
             </div>
             <div class="fixed-count" contenteditable="true">1회</div>
-            <div class="fixed-price"><span class="fpr-num" contenteditable="true">260,000</span><span class="fpr-unit">원</span></div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">260,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
             <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
             <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
           </div>
@@ -996,7 +999,7 @@ td.tbl-sel, th.tbl-sel {
               <div class="fixed-desc" contenteditable="true"></div>
             </div>
             <div class="fixed-count" contenteditable="true">1회</div>
-            <div class="fixed-price"><span class="fpr-num" contenteditable="true">280,000</span><span class="fpr-unit">원</span></div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">280,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
             <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
             <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
           </div>
@@ -1007,7 +1010,7 @@ td.tbl-sel, th.tbl-sel {
               <div class="fixed-desc" contenteditable="true"></div>
             </div>
             <div class="fixed-count" contenteditable="true">1회</div>
-            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit">원</span></div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
             <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
             <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
           </div>
@@ -1018,7 +1021,7 @@ td.tbl-sel, th.tbl-sel {
               <div class="fixed-desc" contenteditable="true">(개당)</div>
             </div>
             <div class="fixed-count" contenteditable="true">1회</div>
-            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit">원</span></div>
+            <div class="fixed-price"><span class="fpr-num" contenteditable="true">300,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
             <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
             <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
           </div>
@@ -1737,7 +1740,7 @@ function buildSection(fmt) {
             <div class="fixed-desc" contenteditable="true" data-ph="설명"></div>
           </div>
           <div class="fixed-count" contenteditable="true">1회</div>
-          <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
+          <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
           ${RC('.fixed-row')}
         </div>
       </div>
@@ -1834,7 +1837,7 @@ function addFixedRow(btn) {
       <div class="fixed-desc" contenteditable="true" data-ph="설명"></div>
     </div>
     <div class="fixed-count" contenteditable="true">1회</div>
-    <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit">원</span></div>
+    <div class="fixed-price"><span class="fpr-num" contenteditable="true" data-ph="가격">000,000</span><span class="fpr-unit" contenteditable="true">원</span></div>
     <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">${IC.chevUp}</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">${IC.chevDown}</button><div class="rc-sep"></div><button class="row-ctrl-btn rc-del" title="삭제" onclick="saveSnapshot();this.closest('.fixed-row').remove()">${IC.close}</button></div>`;
   table.appendChild(row);
   row.querySelector('.fixed-name').focus();
@@ -2947,7 +2950,7 @@ function buildTypeA(sec) {
         <div class="fixed-desc"  contenteditable="true">${escHtml(r.desc)}</div>
       </div>
       <div class="fixed-count" contenteditable="true">${escHtml(r.count)}</div>
-      <div class="fixed-price"><span class="fpr-num" contenteditable="true">${escHtml(r.price)}</span><span class="fpr-unit">원</span></div>
+      <div class="fixed-price"><span class="fpr-num" contenteditable="true">${escHtml(r.price)}</span><span class="fpr-unit" contenteditable="true">원</span></div>
       <div class="row-controls"><button class="row-ctrl-btn" onclick="moveRow(this,'up')">▲</button><button class="row-ctrl-btn" onclick="moveRow(this,'down')">▼</button></div>
       <button class="row-del" onclick="this.closest('.fixed-row').remove()">×</button>
     </div>`).join('');
