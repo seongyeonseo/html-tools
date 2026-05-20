@@ -170,6 +170,9 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
 .pos-name { flex: 1; }
 .pos-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 0; line-height: 1; flex-shrink: 0; }
 .pos-del:hover { color: #e00; }
+.pos-vis-label { display: flex; align-items: center; cursor: pointer; flex-shrink: 0; }
+.pos-vis-label input[type="checkbox"] { width: 13px; height: 13px; accent-color: #1010FF; cursor: pointer; }
+.recruit-row.row-hidden { display: none; }
 .btn-add {
   width: 100%; background: none; border: 1.5px dashed #1010FF;
   color: #1010FF; border-radius: 6px; padding: 8px 0;
@@ -461,7 +464,7 @@ body { font-family: "Pretendard", sans-serif; background: #efefef; min-height: 1
 const SAVE_KEY='hq-songdo-v3-draft', HISTORY_KEY='hq-songdo-v3-history', MAX_HISTORY=20;
 
 function getEditables(){return document.querySelectorAll('#poster-canvas [contenteditable]');}
-function getRowsData(){var r=[];document.querySelectorAll('.recruit-row').forEach(function(row){r.push({id:row.id,html:row.innerHTML});});return r;}
+function getRowsData(){var r=[];document.querySelectorAll('.recruit-row').forEach(function(row){r.push({id:row.id,html:row.innerHTML,hidden:row.classList.contains('row-hidden')});});return r;}
 function getBStates(){var s={};document.querySelectorAll('[data-b]').forEach(function(cb){s[cb.dataset.b]=cb.checked;});return s;}
 
 function saveState(){
@@ -475,6 +478,7 @@ function restoreRows(rowsData){
   rowsData.forEach(function(item){
     var row=document.createElement('div');
     row.className='recruit-row'; row.id=item.id; row.innerHTML=item.html;
+    if(item.hidden) row.classList.add('row-hidden');
     wrap.appendChild(row);
   });
   rebuildPosList(); initDragSort();
@@ -540,7 +544,19 @@ function rebuildPosList(){
 function addPosItem(rowId,name,ul){
   if(!ul) ul=document.getElementById('pos-list');
   var li=document.createElement('li'); li.className='pos-item'; li.dataset.rowId=rowId; li.draggable=true;
-  li.innerHTML='<span class="drag-handle">⠿</span><span class="pos-name">'+name+'</span><button class="pos-del">✕</button>';
+  var row=document.getElementById(rowId);
+  var isVisible=!(row&&row.classList.contains('row-hidden'));
+  li.innerHTML='<span class="drag-handle">⠿</span><span class="pos-name">'+name+'</span>'+
+    '<label class="pos-vis-label" title="표시/숨기기"><input type="checkbox" class="pos-vis-cb"'+(isVisible?' checked':'')+'></label>'+
+    '<button type="button" class="pos-del">✕</button>';
+  var cb=li.querySelector('.pos-vis-cb');
+  cb.addEventListener('mousedown',function(e){e.stopPropagation();});
+  cb.addEventListener('change',function(){
+    var r=document.getElementById(rowId); if(!r)return;
+    r.classList.toggle('row-hidden',!this.checked);
+    saveState();
+  });
+  li.querySelector('.pos-del').addEventListener('mousedown',function(e){e.stopPropagation();});
   li.querySelector('.pos-del').addEventListener('click',function(){
     if(!confirm('이 포지션을 삭제할까요?'))return;
     var r=document.getElementById(rowId); if(r)r.remove(); li.remove(); saveState();
