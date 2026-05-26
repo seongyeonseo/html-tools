@@ -901,7 +901,7 @@ function renderBanner() {
     /* 본문 */
     document.getElementById('out-main-' + s).innerHTML = renderBold(mainTxt);
     var subEl = document.getElementById('out-sub-' + s);
-    subEl.innerHTML = renderBold(subTxt);
+    subEl.innerHTML = subTxt.trim() ? renderBold(subTxt) : '&nbsp;';
     subEl.style.visibility = subTxt.trim() ? 'visible' : 'hidden';
 
     /* 날짜 뱃지 */
