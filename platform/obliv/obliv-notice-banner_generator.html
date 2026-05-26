@@ -902,7 +902,7 @@ function renderBanner() {
     document.getElementById('out-main-' + s).innerHTML = renderBold(mainTxt);
     var subEl = document.getElementById('out-sub-' + s);
     subEl.innerHTML = renderBold(subTxt);
-    subEl.style.display = subTxt.trim() ? '' : 'none';
+    subEl.style.visibility = subTxt.trim() ? 'visible' : 'hidden';
 
     /* 날짜 뱃지 */
     var badgesEl = document.getElementById('out-badges-' + s);
