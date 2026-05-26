@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오블리브 공지 배너 생성기</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/* ── 디자인 토큰 */
+:root {
+  --primary:     #1010FF;
+  --primary-hov: #0a0acc;
+  --pri-alpha:   rgba(16,16,255,.07);
+  --pri-border:  rgba(16,16,255,.16);
+  --ui-bg:       #F2F4F6;
+  --ui-panel:    #ffffff;
+  --ui-border:   #E5E8EB;
+  --ui-hi:       #191F28;
+  --ui-md:       #6B7684;
+  --ui-lo:       #8B95A1;
+  --ui-surface:  #F7F8FA;
+  --topbar-h:    56px;
+  --sidebar-w:   300px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: "Pretendard", -apple-system, sans-serif;
+  background: var(--ui-bg);
+  color: var(--ui-hi);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── 탑바 */
+.topbar {
+  height: var(--topbar-h);
+  background: var(--ui-panel);
+  border-bottom: 1px solid var(--ui-border);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 10px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 100;
+}
+.tb-brand { font-size: 15px; font-weight: 700; color: var(--ui-hi); }
+.tb-badge {
+  font-size: 11px; font-weight: 600; color: var(--primary);
+  background: var(--pri-alpha); border: 1px solid var(--pri-border);
+  padding: 3px 11px; border-radius: 20px;
+}
+.tb-space { flex: 1; }
+
+/* ── 스플릿 버튼 */
+.split { display: flex; border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+
+.split.save { border: 1px solid var(--ui-border); }
+.split.save .s-main {
+  height: 36px; padding: 0 14px;
+  background: var(--ui-surface); color: var(--ui-hi);
+  border: none; border-right: 1px solid var(--ui-border);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .12s;
+}
+.split.save .s-main:hover { background: var(--ui-border); }
+.split.save .s-arr {
+  height: 36px; width: 34px; background: var(--ui-surface);
+  border: none; color: var(--ui-lo);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.save .s-arr:hover { background: var(--ui-border); }
+.split.save.open .s-arr { background: var(--ui-border); }
+
+.split.export { border: 1px solid var(--primary); margin-left: 8px; }
+.split.export .s-main {
+  height: 36px; padding: 0 14px;
+  background: var(--primary); color: #fff;
+  border: none; border-right: 1px solid rgba(255,255,255,.2);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .12s;
+}
+.split.export .s-main:hover { background: var(--primary-hov); }
+.split.export .s-arr {
+  height: 36px; width: 34px; background: var(--primary);
+  border: none; color: rgba(255,255,255,.7);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.export .s-arr:hover { background: var(--primary-hov); }
+.split.export.open .s-arr { background: #0808cc; }
+
+/* ── 드롭다운 */
+.dropdown {
+  position: absolute; top: calc(var(--topbar-h) + 4px);
+  background: var(--ui-panel); border: 1px solid var(--ui-border);
+  border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  z-index: 200; overflow: hidden; display: none;
+}
+.dropdown.open { display: block; }
+.dd-head {
+  padding: 11px 17px; border-bottom: 1px solid var(--ui-border);
+  font-size: 11px; font-weight: 700; color: var(--ui-md);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.dd-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 17px; border-bottom: 1px solid var(--ui-border);
+  cursor: pointer; transition: background .1s;
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--ui-surface); }
+.dd-item-label { font-size: 13px; font-weight: 600; color: var(--ui-hi); }
+.dd-item-sub { font-size: 11px; color: var(--ui-lo); margin-top: 1px; }
+.dd-item-tag {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 8px;
+  background: #E8FAF4; color: #048848; flex-shrink: 0;
+}
+.hist-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 17px; border-bottom: 1px solid var(--ui-border);
+  cursor: pointer; transition: background .1s;
+}
+.hist-item:last-child { border-bottom: none; }
+.hist-item:hover { background: var(--ui-surface); }
+.hist-thumb { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
+.hist-info { flex: 1; min-width: 0; }
+.hist-name { font-size: 13px; font-weight: 600; color: var(--ui-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-time { font-size: 11px; color: var(--ui-lo); margin-top: 2px; }
+.hist-restore {
+  flex-shrink: 0; font-size: 11px; font-weight: 600;
+  color: var(--primary); background: var(--pri-alpha); border: 1px solid var(--pri-border);
+  padding: 4px 10px; border-radius: 8px; cursor: pointer;
+}
+.hist-restore:hover { background: rgba(16,16,255,.14); }
+.hist-empty { padding: 20px 17px; font-size: 13px; color: var(--ui-lo); text-align: center; }
+.dd-footer { padding: 10px 17px; border-top: 1px solid var(--ui-border); }
+.dd-footer-btn {
+  width: 100%; height: 34px; border: 1px solid var(--ui-border); border-radius: 8px;
+  background: none; font-size: 12px; font-weight: 600; color: var(--ui-md);
+  cursor: pointer; font-family: inherit; transition: background .12s;
+}
+.dd-footer-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+
+/* ── 메인 레이아웃 */
+.main-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+/* ── 캔버스 영역 */
+.canvas-area {
+  flex: 1; min-width: 0; min-height: 0;
+  overflow: auto;
+  background: var(--ui-bg);
+  padding: 40px;
+}
+.canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
+.canvas-area::-webkit-scrollbar-thumb { background: #C8CDD6; border-radius: 3px; }
+
+/* 두 카드 나란히 */
+.canvas-wrapper {
+  display: flex; align-items: flex-start; gap: 32px;
+  width: max-content;
+}
+.card-section { display: flex; flex-direction: column; gap: 10px; }
+.card-label {
+  font-size: 11px; font-weight: 700; color: var(--ui-md);
+  letter-spacing: .4px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 6px;
+}
+.card-size-tag {
+  font-size: 10px; font-weight: 600; color: var(--ui-lo);
+  background: var(--ui-border); padding: 2px 8px; border-radius: 6px;
+}
+
+/* ── 리사이즈 핸들 */
+.resize-handle {
+  width: 4px; flex-shrink: 0; background: transparent;
+  border-left: 1px solid var(--ui-border); cursor: col-resize;
+  position: relative; transition: background .12s; user-select: none;
+}
+.resize-handle:hover, .resize-handle.dragging { background: var(--pri-alpha); border-left-color: var(--primary); }
+.resize-handle::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%); width: 2px; height: 28px;
+  border-radius: 2px; background: var(--ui-border);
+}
+.resize-handle:hover::after, .resize-handle.dragging::after { background: var(--primary); }
+
+/* ── 사이드바 */
+.sidebar {
+  width: var(--sidebar-w); min-width: 200px; max-width: 520px;
+  background: var(--ui-panel); display: flex; flex-direction: column;
+  overflow: hidden; flex-shrink: 0;
+}
+
+/* 사이드바 헤더 (탭 없이 제목만) */
+.sidebar-header {
+  height: 44px; display: flex; align-items: center;
+  padding: 0 17px; border-bottom: 1px solid var(--ui-border);
+  font-size: 13px; font-weight: 700; color: var(--ui-hi);
+  flex-shrink: 0;
+}
+
+/* 탭 컨텐츠 */
+.sidebar-body { flex: 1; overflow-y: auto; }
+.sidebar-body::-webkit-scrollbar { width: 3px; }
+.sidebar-body::-webkit-scrollbar-thumb { background: #D8DADF; border-radius: 2px; }
+
+/* 아코디언 */
+.acc { border-bottom: 1px solid var(--ui-border); }
+.acc:last-child { border-bottom: none; }
+.acc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 17px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--ui-hi);
+  transition: background .1s; user-select: none;
+}
+.acc-head:hover { background: var(--ui-surface); }
+.acc-head.open { color: var(--primary); }
+.acc-arr { flex-shrink: 0; color: var(--ui-lo); transition: transform .15s; }
+.acc-arr.r { transform: rotate(180deg); color: var(--primary); }
+.acc-body { padding: 2px 17px 14px; }
+.acc-body.closed { display: none; }
+
+/* 폼 필드 */
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--ui-md); margin-bottom: 5px;
+}
+.field input[type="text"],
+.field input[type="url"],
+.field textarea {
+  width: 100%; border: 1px solid var(--ui-border); border-radius: 8px;
+  padding: 9px 11px; font-size: 13px; font-family: "Pretendard", sans-serif;
+  color: var(--ui-hi); background: var(--ui-surface);
+  resize: vertical; line-height: 1.6; outline: none;
+  transition: border-color .12s; letter-spacing: -.04em;
+}
+.field input:focus, .field textarea:focus { border-color: var(--primary); background: #fff; }
+.field textarea { min-height: 72px; }
+.field-hint { font-size: 11px; color: var(--ui-lo); margin-bottom: 8px; }
+
+/* 슬라이더 */
+.field input[type="range"] {
+  width: 100%; height: 4px; border-radius: 2px;
+  accent-color: var(--primary); cursor: pointer;
+  background: none; border: none; padding: 0;
+}
+.slider-row { display: flex; align-items: center; gap: 10px; }
+.slider-val { font-size: 12px; font-weight: 600; color: var(--ui-md); min-width: 32px; text-align: right; }
+
+/* 지점 선택 버튼 */
+.branch-group {
+  display: flex; gap: 6px; margin-top: 2px;
+}
+.branch-btn {
+  flex: 1; height: 34px; border: 1.5px solid var(--ui-border); border-radius: 9px;
+  background: var(--ui-surface); color: var(--ui-md);
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.branch-btn.on {
+  border-color: var(--primary); background: var(--pri-alpha); color: var(--primary);
+}
+
+/* 컬러 피커 */
+.color-row { display: flex; align-items: center; gap: 8px; }
+.color-row input[type="color"] {
+  width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--ui-border);
+  padding: 2px; cursor: pointer; background: var(--ui-surface);
+}
+.color-row-val {
+  flex: 1; border: 1px solid var(--ui-border); border-radius: 8px;
+  padding: 8px 11px; font-size: 13px; font-family: monospace;
+  color: var(--ui-hi); background: var(--ui-surface); outline: none;
+  letter-spacing: .04em; transition: border-color .12s;
+}
+.color-row-val:focus { border-color: var(--primary); background: #fff; }
+
+/* 날짜 뱃지 편집 목록 */
+.badge-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.badge-row {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--ui-surface); border: 1px solid var(--ui-border);
+  border-radius: 9px; padding: 8px 10px;
+}
+.badge-row-num {
+  width: 44px; flex-shrink: 0; border: 1px solid var(--ui-border); border-radius: 7px;
+  padding: 6px 8px; font-size: 14px; font-weight: 700; text-align: center;
+  background: #fff; outline: none; font-family: "Pretendard", sans-serif; color: var(--ui-hi);
+  transition: border-color .12s;
+}
+.badge-row-num:focus { border-color: var(--primary); }
+.badge-row-label {
+  flex: 1; border: 1px solid var(--ui-border); border-radius: 7px;
+  padding: 6px 9px; font-size: 12px; background: #fff; outline: none;
+  font-family: "Pretendard", sans-serif; color: var(--ui-hi);
+  transition: border-color .12s; letter-spacing: -.03em;
+}
+.badge-row-label:focus { border-color: var(--primary); }
+.badge-row-del {
+  width: 28px; height: 28px; border-radius: 7px; flex-shrink: 0;
+  background: none; border: 1px solid var(--ui-border); color: var(--ui-lo);
+  cursor: pointer; font-size: 15px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s, border-color .1s;
+}
+.badge-row-del:hover { background: #FFF0F0; color: #D63B3B; border-color: #F5C4C4; }
+.btn-add-badge {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; height: 34px; margin-top: 6px;
+  border: 1.5px dashed var(--ui-border); border-radius: 9px;
+  background: none; color: var(--ui-md);
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: border-color .12s, color .12s, background .12s;
+}
+.btn-add-badge:hover { border-color: var(--primary); color: var(--primary); background: var(--pri-alpha); }
+
+/* ── 플로팅 포맷 툴바 */
+.fmt-toolbar {
+  position: fixed; display: none; align-items: center; gap: 1px;
+  background: var(--ui-panel); border: 1px solid var(--ui-border);
+  border-radius: 10px; padding: 4px 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06);
+  z-index: 9999;
+}
+.fmt-toolbar.visible { display: flex; }
+.fmt-btn {
+  height: 30px; min-width: 32px; padding: 0 8px; background: none; border: none;
+  color: var(--ui-md); font-size: 13px; font-weight: 700; font-family: "Pretendard", sans-serif;
+  border-radius: 7px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .1s, color .1s;
+}
+.fmt-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.fmt-btn.active { background: var(--pri-alpha); color: var(--primary); }
+
+/* ══════════════════════════════════════
+   배너 카드 공통 스타일
+══════════════════════════════════════ */
+.banner-canvas {
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 40px rgba(0,0,0,.14);
+  flex-shrink: 0;
+}
+
+/* PC: 600×450 (원본 2400×1800, scale=4) */
+.banner-canvas.size-pc { width: 600px; height: 450px; }
+/* MO: 540×540 (원본 3247×3247, scale≈6) */
+.banner-canvas.size-mo { width: 540px; height: 540px; }
+
+/* 헤더 */
+.banner-header {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.size-pc .banner-header { height: 195px; }
+.size-mo .banner-header { height: 234px; }
+
+.banner-header-bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  filter: grayscale(100%);
+}
+.banner-header-overlay { position: absolute; inset: 0; }
+.banner-header-content {
+  position: relative; z-index: 1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 40px;
+}
+.size-pc .banner-header-content { gap: 13px; }
+.size-mo .banner-header-content { gap: 15px; }
+
+/* Notice 배지: 진짜 타원형 (border-radius: 50%) */
+.banner-notice-badge {
+  width: 146px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: "Cormorant Garamond", serif;
+  font-style: italic;
+  font-weight: 300;
+  color: rgba(255,255,255,.88);
+  letter-spacing: .06em;
+}
+.size-pc .banner-notice-badge { font-size: 14px; }
+.size-mo .banner-notice-badge { font-size: 16px; }
+
+/* 제목 */
+.banner-title {
+  font-family: "Noto Serif KR", serif;
+  font-weight: 600;
+  color: #ffffff;
+  text-align: center;
+  line-height: 1.25;
+  letter-spacing: -.02em;
+  word-break: keep-all;
+}
+.size-pc .banner-title { font-size: 30px; }
+.size-mo .banner-title { font-size: 38px; }
+
+/* 바디 */
+.banner-body {
+  background: #ffffff;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  overflow: hidden;
+}
+.size-pc .banner-body { padding: 24px 60px 20px; }
+.size-mo .banner-body { padding: 28px 70px 20px; }
+
+.banner-main-text {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400;
+  color: #222222;
+  line-height: 1.75;
+  letter-spacing: -.04em;
+  word-break: keep-all;
+}
+.size-pc .banner-main-text { font-size: 12px; }
+.size-mo .banner-main-text { font-size: 14px; }
+.banner-main-text strong { font-weight: 700; }
+
+.banner-sub-text {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400;
+  color: #555555;
+  line-height: 1.7;
+  letter-spacing: -.04em;
+  word-break: keep-all;
+}
+.size-pc .banner-sub-text { font-size: 11px; margin-top: 4px; }
+.size-mo .banner-sub-text { font-size: 13px; margin-top: 5px; }
+
+/* 날짜 뱃지 */
+.banner-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.size-pc .banner-badges { gap: 22px; margin-top: 18px; }
+.size-mo .banner-badges { gap: 26px; margin-top: 22px; }
+
+.banner-badge-item {
+  display: flex; flex-direction: column; align-items: center;
+}
+.size-pc .banner-badge-item { gap: 9px; }
+.size-mo .banner-badge-item { gap: 11px; }
+
+.banner-badge-circle {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+.banner-badge-num {
+  font-family: "Noto Serif KR", serif;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1;
+  letter-spacing: -.02em;
+}
+.size-pc .banner-badge-num { font-size: 20px; }
+.size-mo .banner-badge-num { font-size: 21px; }
+
+.banner-badge-label {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 500;
+  color: #222222;
+  letter-spacing: -.03em;
+}
+.size-pc .banner-badge-label { font-size: 10px; }
+.size-mo .banner-badge-label { font-size: 11px; }
+
+/* 하단 */
+.banner-footer-note {
+  font-family: "Pretendard", sans-serif;
+  font-weight: 400;
+  color: #999999;
+  letter-spacing: -.03em;
+}
+.size-pc .banner-footer-note { font-size: 8.5px; margin-top: 14px; }
+.size-mo .banner-footer-note { font-size: 10px; margin-top: 18px; }
+
+/* 로고 영역 */
+.banner-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.size-pc .banner-logo-wrap { margin-top: 10px; }
+.size-mo .banner-logo-wrap { margin-top: 12px; }
+
+.banner-brand {
+  font-family: "Cormorant Garamond", serif;
+  font-weight: 300;
+  color: #222222;
+  letter-spacing: .12em;
+}
+.size-pc .banner-brand { font-size: 12px; }
+.size-mo .banner-brand { font-size: 14px; }
+
+.banner-logo-img {
+  max-height: 14px;
+  max-width: 90px;
+  object-fit: contain;
+}
+.size-mo .banner-logo-img { max-height: 16px; max-width: 105px; }
+</style>
+</head>
+<body>
+
+<!-- ── 탑바 -->
+<div class="topbar">
+  <div class="tb-brand">오블리브</div>
+  <div class="tb-badge">공지 배너 생성기</div>
+  <div class="tb-space"></div>
+
+  <div class="split save" id="split-save">
+    <button class="s-main" onclick="saveSnapshot()">저장</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-history','split-save')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <div class="split export" id="split-export">
+    <button class="s-main" onclick="exportPC()">PC 내보내기</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-export','split-export')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="rgba(255,255,255,.8)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <!-- 히스토리 드롭다운 -->
+  <div class="dropdown" id="dd-history" style="right:160px; width:244px;">
+    <div class="dd-head">저장 히스토리</div>
+    <div id="dd-history-list"><div class="hist-empty">저장된 기록이 없습니다</div></div>
+    <div class="dd-footer"><button class="dd-footer-btn" onclick="clearHistory()">기록 전체 삭제</button></div>
+  </div>
+
+  <!-- 내보내기 드롭다운 -->
+  <div class="dropdown" id="dd-export" style="right:16px; width:220px;">
+    <div class="dd-head">내보내기 형식</div>
+    <div class="dd-item" onclick="exportPC(); closeDropdowns();">
+      <div>
+        <div class="dd-item-label">PC 가로형</div>
+        <div class="dd-item-sub">2400 × 1800 px</div>
+      </div>
+      <span class="dd-item-tag">기본</span>
+    </div>
+    <div class="dd-item" onclick="exportMO(); closeDropdowns();">
+      <div>
+        <div class="dd-item-label">MO 정방형</div>
+        <div class="dd-item-sub">3247 × 3247 px</div>
+      </div>
+    </div>
+    <div class="dd-item" onclick="exportBoth(); closeDropdowns();">
+      <div>
+        <div class="dd-item-label">전체 내보내기</div>
+        <div class="dd-item-sub">PC + MO 모두 저장</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 메인 레이아웃 -->
+<div class="main-layout">
+
+  <!-- 캔버스 영역 -->
+  <div class="canvas-area">
+    <div class="canvas-wrapper">
+
+      <!-- PC 카드 -->
+      <div class="card-section">
+        <div class="card-label">
+          PC 가로형
+          <span class="card-size-tag">2400 × 1800</span>
+        </div>
+        <div class="banner-canvas size-pc" id="banner-canvas-pc">
+          <div class="banner-header" id="out-header-pc">
+            <div class="banner-header-bg" id="out-bg-pc"></div>
+            <div class="banner-header-overlay" id="out-overlay-pc"></div>
+            <div class="banner-header-content">
+              <div class="banner-notice-badge" id="out-badge-pc">Notice</div>
+              <div class="banner-title" id="out-title-pc">6월 정상진료 안내</div>
+            </div>
+          </div>
+          <div class="banner-body">
+            <div class="banner-main-text" id="out-main-pc"></div>
+            <div class="banner-sub-text" id="out-sub-pc"></div>
+            <div class="banner-badges" id="out-badges-pc"></div>
+            <div class="banner-footer-note" id="out-footer-pc"></div>
+            <div class="banner-logo-wrap" id="out-logo-pc"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MO 카드 -->
+      <div class="card-section">
+        <div class="card-label">
+          MO 정방형
+          <span class="card-size-tag">3247 × 3247</span>
+        </div>
+        <div class="banner-canvas size-mo" id="banner-canvas-mo">
+          <div class="banner-header" id="out-header-mo">
+            <div class="banner-header-bg" id="out-bg-mo"></div>
+            <div class="banner-header-overlay" id="out-overlay-mo"></div>
+            <div class="banner-header-content">
+              <div class="banner-notice-badge" id="out-badge-mo">Notice</div>
+              <div class="banner-title" id="out-title-mo">6월 정상진료 안내</div>
+            </div>
+          </div>
+          <div class="banner-body">
+            <div class="banner-main-text" id="out-main-mo"></div>
+            <div class="banner-sub-text" id="out-sub-mo"></div>
+            <div class="banner-badges" id="out-badges-mo"></div>
+            <div class="banner-footer-note" id="out-footer-mo"></div>
+            <div class="banner-logo-wrap" id="out-logo-mo"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 리사이즈 핸들 -->
+  <div class="resize-handle" id="resize-handle"></div>
+
+  <!-- 사이드바 -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">디자인 설정</div>
+    <div class="sidebar-body">
+
+      <!-- 헤더 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          <span>헤더</span>
+          <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="field">
+            <label>배지 텍스트</label>
+            <input type="text" id="in-badge" value="Notice">
+          </div>
+          <div class="field">
+            <label>제목</label>
+            <input type="text" id="in-title" value="6월 정상진료 안내">
+          </div>
+        </div>
+      </div>
+
+      <!-- 배경 이미지 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          <span>배경 이미지</span>
+          <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="field">
+            <label>이미지 URL</label>
+            <input type="url" id="in-bg-url" placeholder="https://... 비워두면 어두운 배경 사용">
+          </div>
+          <div class="field">
+            <label>어둡기 조절</label>
+            <div class="slider-row">
+              <input type="range" id="in-overlay" min="0" max="85" value="52" step="1">
+              <span class="slider-val" id="out-overlay-val">52%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 본문 텍스트 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          <span>본문 텍스트</span>
+          <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="field-hint">**텍스트** 로 굵게 표시</div>
+          <div class="field">
+            <label>메인 문구</label>
+            <textarea id="in-main-text" rows="3">오블리브의원 송도 본점은 **6월 3일과 6일**은 '정상 영업'합니다.</textarea>
+          </div>
+          <div class="field">
+            <label>서브 문구 (비워두면 숨김)</label>
+            <textarea id="in-sub-text" rows="2">예약 및 내원 일정에 참고 부탁드립니다.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 날짜 뱃지 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          <span>날짜 뱃지</span>
+          <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="field">
+            <label>뱃지 색상</label>
+            <div class="color-row">
+              <input type="color" id="in-badge-color" value="#7B1E1E">
+              <input type="text" class="color-row-val" id="in-badge-color-text" value="#7B1E1E">
+            </div>
+          </div>
+          <div id="badge-list" class="badge-list"></div>
+          <button class="btn-add-badge" onclick="addBadge()">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+            날짜 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- 하단 정보 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          <span>하단 정보</span>
+          <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="acc-body">
+          <div class="field">
+            <label>주의사항 (비워두면 숨김)</label>
+            <input type="text" id="in-footer-note" value="*매주 일요일은 휴진입니다.">
+          </div>
+          <div class="field">
+            <label>지점 로고</label>
+            <div class="branch-group">
+              <button class="branch-btn on" id="branch-btn-songdo" onclick="selectBranch('songdo')">본점</button>
+              <button class="branch-btn" id="branch-btn-seoul" onclick="selectBranch('seoul')">서울오리진점</button>
+            </div>
+          </div>
+          <div class="field" style="margin-top:8px;">
+            <label>로고 이미지 URL (선택)</label>
+            <input type="url" id="in-logo-url" placeholder="비워두면 텍스트 로고 사용">
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /sidebar-body -->
+  </div><!-- /sidebar -->
+
+</div><!-- /main-layout -->
+
+<!-- 플로팅 포맷 툴바 -->
+<div class="fmt-toolbar" id="fmt-toolbar">
+  <button class="fmt-btn" data-action="bold" title="굵게 (Ctrl+B)">
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2h4a2.5 2.5 0 0 1 0 5H3V2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 7h4.5a2.5 2.5 0 0 1 0 5H3V7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+  </button>
+</div>
+
+<script>
+/* ── 뱃지 데이터 */
+var badges = [
+  { num: "3", label: "지방선거일" },
+  { num: "6", label: "현충일" }
+];
+
+/* ── 지점 브랜드 */
+var BRANCHES = {
+  songdo: { text: "Obliv Clinic" },
+  seoul:  { text: "Obliv Seoul Origin" }
+};
+var currentBranch = 'songdo';
+
+function selectBranch(key) {
+  currentBranch = key;
+  document.querySelectorAll('.branch-btn').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('branch-btn-' + key).classList.add('on');
+  renderBanner();
+}
+
+/* ── 사이드바 리사이즈 */
+(function() {
+  var handle = document.getElementById('resize-handle');
+  var sidebar = document.getElementById('sidebar');
+  var KEY = 'obliv_notice_sidebar_w', MIN_W = 160, MAX_W = 480;
+  var saved = parseInt(localStorage.getItem(KEY));
+  if (saved && saved >= MIN_W && saved <= MAX_W) sidebar.style.width = saved + 'px';
+  var dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', function(e) {
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cursor = 'col-resize'; document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    var newW = Math.min(MAX_W, Math.max(MIN_W, startW + (startX - e.clientX)));
+    sidebar.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false; handle.classList.remove('dragging');
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    localStorage.setItem(KEY, sidebar.offsetWidth);
+  });
+})();
+
+/* ── 아코디언 */
+function toggleAcc(head) {
+  var body = head.nextElementSibling;
+  var arr  = head.querySelector('.acc-arr');
+  var open = !body.classList.contains('closed');
+  if (open) { body.classList.add('closed'); head.classList.remove('open'); arr.classList.remove('r'); }
+  else       { body.classList.remove('closed'); head.classList.add('open'); arr.classList.add('r'); }
+}
+
+/* ── 드롭다운 */
+function toggleDropdown(ddId, splitId) {
+  var dd = document.getElementById(ddId), sp = document.getElementById(splitId);
+  var isOpen = dd.classList.contains('open');
+  closeDropdowns();
+  if (!isOpen) { dd.classList.add('open'); sp.classList.add('open'); }
+}
+function closeDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(function(d){ d.classList.remove('open'); });
+  document.querySelectorAll('.split').forEach(function(s){ s.classList.remove('open'); });
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.split') && !e.target.closest('.dropdown')) closeDropdowns();
+});
+
+/* ── 마크업 렌더 */
+function renderBold(text) {
+  return text.split(/\*\*(.*?)\*\*/g).map(function(p, i) {
+    return i % 2 === 1 ? '<strong>' + p + '</strong>' : p.replace(/\n/g, '<br>');
+  }).join('');
+}
+
+/* ── 로고 HTML */
+function buildLogoHtml(suffix) {
+  var logoUrl = document.getElementById('in-logo-url').value.trim();
+  if (logoUrl) {
+    return '<img class="banner-logo-img" src="' + logoUrl + '" crossorigin="anonymous" alt="logo">';
+  }
+  var branch = BRANCHES[currentBranch] || BRANCHES.songdo;
+  return '<div class="banner-brand">' + branch.text + '</div>';
+}
+
+/* ── 배너 렌더 */
+function renderBanner() {
+  var bgUrl   = document.getElementById('in-bg-url').value.trim();
+  var overlay = document.getElementById('in-overlay').value;
+  var badge   = document.getElementById('in-badge').value;
+  var title   = document.getElementById('in-title').value;
+  var mainTxt = document.getElementById('in-main-text').value;
+  var subTxt  = document.getElementById('in-sub-text').value;
+  var footer  = document.getElementById('in-footer-note').value;
+  var bColor  = document.getElementById('in-badge-color').value;
+
+  ['pc','mo'].forEach(function(s) {
+    /* 배경 */
+    var bgEl = document.getElementById('out-bg-' + s);
+    if (bgUrl) { bgEl.style.backgroundImage = 'url(' + bgUrl + ')'; bgEl.style.opacity = '1'; }
+    else        { bgEl.style.backgroundImage = 'none'; bgEl.style.opacity = '0'; }
+    document.getElementById('out-overlay-' + s).style.background = 'rgba(0,0,0,' + (overlay/100) + ')';
+    document.getElementById('out-header-' + s).style.background = bgUrl ? '' : '#1a1a1a';
+
+    /* 헤더 텍스트 */
+    document.getElementById('out-badge-' + s).textContent = badge;
+    document.getElementById('out-title-' + s).textContent = title;
+
+    /* 본문 */
+    document.getElementById('out-main-' + s).innerHTML = renderBold(mainTxt);
+    var subEl = document.getElementById('out-sub-' + s);
+    subEl.innerHTML = renderBold(subTxt);
+    subEl.style.display = subTxt.trim() ? '' : 'none';
+
+    /* 날짜 뱃지 */
+    var badgesEl = document.getElementById('out-badges-' + s);
+    badgesEl.style.display = badges.length ? '' : 'none';
+    badgesEl.innerHTML = badges.map(function(b) {
+      return '<div class="banner-badge-item">'
+        + '<div class="banner-badge-circle" style="background:' + bColor + '">'
+        + '<span class="banner-badge-num">' + (b.num || '') + '</span>'
+        + '</div>'
+        + '<span class="banner-badge-label">' + (b.label || '') + '</span>'
+        + '</div>';
+    }).join('');
+
+    /* 하단 */
+    var footEl = document.getElementById('out-footer-' + s);
+    footEl.textContent = footer;
+    footEl.style.display = footer.trim() ? '' : 'none';
+
+    /* 로고 */
+    document.getElementById('out-logo-' + s).innerHTML = buildLogoHtml(s);
+  });
+}
+
+/* ── 뱃지 목록 UI */
+function renderBadgeList() {
+  var list = document.getElementById('badge-list');
+  list.innerHTML = badges.map(function(b, i) {
+    return '<div class="badge-row">'
+      + '<input class="badge-row-num" type="text" value="' + b.num + '" placeholder="일" maxlength="4"'
+      +   ' oninput="badges[' + i + '].num=this.value; renderBanner();">'
+      + '<input class="badge-row-label" type="text" value="' + b.label + '" placeholder="이름 (예: 현충일)"'
+      +   ' oninput="badges[' + i + '].label=this.value; renderBanner();">'
+      + '<button class="badge-row-del" onclick="removeBadge(' + i + ')">×</button>'
+      + '</div>';
+  }).join('');
+  renderBanner();
+}
+function addBadge() { badges.push({ num: '', label: '' }); renderBadgeList(); }
+function removeBadge(i) { badges.splice(i, 1); renderBadgeList(); }
+
+/* ── 컬러 동기화 */
+document.getElementById('in-badge-color').addEventListener('input', function() {
+  document.getElementById('in-badge-color-text').value = this.value; renderBanner();
+});
+document.getElementById('in-badge-color-text').addEventListener('input', function() {
+  var v = this.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) { document.getElementById('in-badge-color').value = v; renderBanner(); }
+});
+
+/* ── 슬라이더 */
+document.getElementById('in-overlay').addEventListener('input', function() {
+  document.getElementById('out-overlay-val').textContent = this.value + '%'; renderBanner();
+});
+
+/* ── 간단 바인딩 */
+['in-badge','in-title','in-main-text','in-sub-text','in-footer-note','in-bg-url','in-logo-url'].forEach(function(id) {
+  document.getElementById(id).addEventListener('input', renderBanner);
+});
+
+/* ── 플로팅 포맷 툴바 */
+(function() {
+  var tb = document.getElementById('fmt-toolbar');
+  var activeEl = null, savedS = 0, savedE = 0, hideTimer = null;
+
+  function hideToolbar() { tb.classList.remove('visible'); activeEl = null; }
+  function showFor(el, x, y) {
+    var s = el.selectionStart, en = el.selectionEnd;
+    if (s === en) { hideToolbar(); return; }
+    activeEl = el; savedS = s; savedE = en;
+    tb.classList.add('visible');
+    var tw = tb.offsetWidth, th = tb.offsetHeight, vw = window.innerWidth;
+    var left = Math.min(Math.max(x - tw / 2, 8), vw - tw - 8);
+    var top  = y - th - 10; if (top < 8) top = y + 24;
+    tb.style.left = left + 'px'; tb.style.top = top + 'px';
+    tb.querySelector('[data-action="bold"]').classList.toggle(
+      'active', /^\*\*[\s\S]*\*\*$/.test(el.value.substring(s, en)));
+  }
+  document.querySelectorAll('.sidebar-body textarea').forEach(function(ta) {
+    ta.addEventListener('mouseup', function(e) {
+      if (tb.contains(e.target)) return;
+      clearTimeout(hideTimer);
+      var el = this, cx = e.clientX, cy = e.clientY;
+      setTimeout(function() { showFor(el, cx, cy); }, 10);
+    });
+  });
+  document.addEventListener('mousedown', function(e) {
+    if (tb.contains(e.target)) return;
+    hideTimer = setTimeout(hideToolbar, 150);
+  });
+  tb.addEventListener('mousedown', function(e) { e.preventDefault(); clearTimeout(hideTimer); });
+  tb.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action]');
+    if (!btn || !activeEl) return;
+    var el = activeEl, s = savedS, en = savedE;
+    var sel = el.value.substring(s, en);
+    if (!sel) { hideToolbar(); return; }
+    el.focus();
+    var rep = (sel.startsWith('**') && sel.endsWith('**')) ? sel.slice(2, -2) : '**' + sel + '**';
+    el.setSelectionRange(s, en);
+    document.execCommand('insertText', false, rep);
+    hideToolbar();
+  });
+})();
+
+/* ── localStorage 자동저장 */
+(function() {
+  var KEY = 'obliv_notice2';
+  var fields = ['in-badge','in-title','in-bg-url','in-overlay','in-main-text','in-sub-text','in-footer-note','in-logo-url','in-badge-color'];
+  fields.forEach(function(id) {
+    var el = document.getElementById(id), k = KEY + '_' + id;
+    var saved = localStorage.getItem(k);
+    if (saved !== null) {
+      el.value = saved;
+      if (id === 'in-overlay') document.getElementById('out-overlay-val').textContent = saved + '%';
+      if (id === 'in-badge-color') document.getElementById('in-badge-color-text').value = saved;
+    }
+    el.addEventListener('input', function() { localStorage.setItem(k, this.value); });
+  });
+  var savedBranch = localStorage.getItem(KEY + '_branch');
+  if (savedBranch) selectBranch(savedBranch);
+  var savedBadges = localStorage.getItem(KEY + '_badges');
+  if (savedBadges) { try { badges = JSON.parse(savedBadges); } catch(e) {} }
+  renderBadgeList();
+})();
+
+/* branch 선택 시 localStorage 저장 */
+var _origSelect = selectBranch;
+selectBranch = function(key) {
+  _origSelect(key);
+  localStorage.setItem('obliv_notice2_branch', key);
+};
+
+/* ── 저장 히스토리 */
+var HIST_KEY = 'obliv_notice2_history';
+function getHistory() { try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; } catch(e) { return []; } }
+
+function saveSnapshot() {
+  var data = {};
+  ['in-badge','in-title','in-bg-url','in-overlay','in-main-text','in-sub-text','in-footer-note','in-logo-url','in-badge-color'].forEach(function(id) { data[id] = document.getElementById(id).value; });
+  data._badges = JSON.stringify(badges);
+  data._branch = currentBranch;
+
+  var hist = getHistory();
+  hist.unshift({ time: Date.now(), label: document.getElementById('in-title').value || '저장', data: data });
+  if (hist.length > 10) hist = hist.slice(0, 10);
+  localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+  renderHistoryList();
+
+  var btn = document.querySelector('#split-save .s-main'), orig = btn.textContent;
+  btn.textContent = '저장됨'; btn.style.color = '#048848';
+  setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 1200);
+}
+
+function restoreSnapshot(idx) {
+  var h = getHistory()[idx]; if (!h) return;
+  Object.keys(h.data).forEach(function(k) {
+    if (k.startsWith('_')) return;
+    var el = document.getElementById(k); if (el) el.value = h.data[k];
+  });
+  if (h.data._branch) selectBranch(h.data._branch);
+  if (h.data._badges) { try { badges = JSON.parse(h.data._badges); } catch(e) {} }
+  if (h.data['in-badge-color']) document.getElementById('in-badge-color-text').value = h.data['in-badge-color'];
+  document.getElementById('out-overlay-val').textContent = (document.getElementById('in-overlay').value||52) + '%';
+  renderBadgeList();
+  closeDropdowns();
+}
+function clearHistory() { localStorage.removeItem(HIST_KEY); renderHistoryList(); }
+
+function renderHistoryList() {
+  var hist = getHistory(), list = document.getElementById('dd-history-list');
+  if (!hist.length) { list.innerHTML = '<div class="hist-empty">저장된 기록이 없습니다</div>'; return; }
+  var COLORS = ["linear-gradient(135deg,#e8e8ff,#c0c0ff)","linear-gradient(135deg,#ffe8e8,#ffc0c0)","linear-gradient(135deg,#e8f5f0,#9ae8c0)"];
+  list.innerHTML = hist.map(function(h, i) {
+    var d = new Date(h.time);
+    var t = d.toLocaleDateString("ko-KR",{month:"2-digit",day:"2-digit"}) + " " + d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});
+    return '<div class="hist-item">'
+      + '<div class="hist-thumb" style="background:' + COLORS[i%3] + '"></div>'
+      + '<div class="hist-info"><div class="hist-name">' + h.label + '</div><div class="hist-time">' + t + '</div></div>'
+      + '<div class="hist-restore" onclick="restoreSnapshot(' + i + ')">불러오기</div>'
+      + '</div>';
+  }).join('');
+}
+renderHistoryList();
+
+/* ── 내보내기 */
+async function exportCard(elId, filename, scale) {
+  try {
+    var el = document.getElementById(elId);
+    var canvas = await html2canvas(el, { scale: scale, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    var a = document.createElement('a');
+    a.download = filename; a.href = canvas.toDataURL('image/jpeg', 0.95); a.click();
+  } catch(e) { alert('내보내기 중 오류가 발생했습니다.'); }
+}
+
+function exportPC() {
+  var title = (document.getElementById('in-title').value || 'banner').replace(/\s+/g,'_');
+  exportCard('banner-canvas-pc', 'obliv_notice_PC_' + title + '.jpg', 4);
+}
+function exportMO() {
+  var title = (document.getElementById('in-title').value || 'banner').replace(/\s+/g,'_');
+  exportCard('banner-canvas-mo', 'obliv_notice_MO_' + title + '.jpg', 6);
+}
+async function exportBoth() {
+  await exportPC();
+  await new Promise(function(r) { setTimeout(r, 500); });
+  await exportMO();
+}
+
+/* ── 초기 렌더 */
+renderBanner();
+</script>
+</body>
+</html>
