@@ -7,7 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Jost:wght@300;400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
+/* ── 캔버스 전용 폰트 */
 @font-face {
   font-family: 'GmarketSans';
   font-weight: 300;
@@ -43,342 +45,301 @@
   font-style: italic;
 }
 
+/* ── 디자인 토큰 */
 :root {
-  /* 미리보기 출력물 전용 (Le Shine 브랜드) */
-  --gold:        #AE8D4A;
-  --gold-lt:     #CCBB94;
-
-  /* 생성기 UI (메디빌더 스타일) */
   --primary:     #1010FF;
   --primary-hov: #0a0acc;
-  --ui-bg:       #f5f5f5;
+  --pri-alpha:   rgba(16,16,255,.07);
+  --pri-border:  rgba(16,16,255,.16);
+  --ui-bg:       #F2F4F6;
   --ui-panel:    #ffffff;
-  --ui-border:   #e4e4e4;
-  --ui-border-2: #f0f0f0;
-  --ui-hi:       #111111;
-  --ui-md:       #888888;
-  --ui-lo:       #bbbbbb;
-  --ui-surface:  #fafafa;
-
-  --sidebar-w:   260px;
-  --topbar-h:    50px;
-  --bar-h:       48px;
+  --ui-border:   #E5E8EB;
+  --ui-hi:       #191F28;
+  --ui-md:       #6B7684;
+  --ui-lo:       #8B95A1;
+  --ui-surface:  #F7F8FA;
+  --topbar-h:    56px;
+  --gold:        #AE8D4A;
+  --gold-lt:     #CCBB94;
 }
 
-html { height: 100%; }
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+html, body { height: 100%; overflow: hidden; }
 body {
-  font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
-  background: transparent;
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  background: var(--ui-bg);
   color: var(--ui-hi);
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
+  display: flex; flex-direction: column;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ─── TOP BAR ─────────────────────── */
-#topbar {
+/* ── 탑바 */
+.topbar {
   height: var(--topbar-h);
   background: var(--ui-panel);
   border-bottom: 1px solid var(--ui-border);
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  gap: 12px;
-  flex-shrink: 0;
-  min-width: 0;
-}
-.tb-brand {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ui-hi);
-  letter-spacing: .3px;
-  white-space: nowrap;
-}
-.tb-sep { color: #ddd; font-size: 12px; }
-.tb-title {
-  font-size: 12px;
-  color: var(--ui-md);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex; align-items: center;
+  padding: 0 16px; gap: 8px;
+  flex-shrink: 0; position: relative; z-index: 100;
 }
 .tb-space { flex: 1; }
-.tb-badge {
-  font-size: 11px;
-  color: var(--primary);
-  background: rgba(16,16,255,.06);
-  border: 1px solid rgba(16,16,255,.2);
-  padding: 3px 10px;
-  border-radius: 20px;
-  letter-spacing: .02em;
-  white-space: nowrap;
-}
 
-/* ─── LAYOUT ──────────────────────── */
-#layout {
-  display: flex;
-  flex: 1;
-  width: 100%;
-  overflow: hidden;
-  min-width: 0;
-  min-height: 0;
+/* 줌 컨트롤 */
+.tb-zoom {
+  display: flex; align-items: center; gap: 1px;
+  background: var(--ui-surface); border: 1px solid var(--ui-border);
+  border-radius: 9px; padding: 3px 5px;
 }
-
-/* ─── SIDEBAR (우측) ──────────────── */
-#sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: transparent;
-  border-left: 1px solid var(--ui-border);
-  display: flex;
-  flex-direction: column;
-  overflow-y: auto;
-  flex-shrink: 0;
-  order: 2;
+.tb-zoom button {
+  background: none; border: none; color: var(--ui-md);
+  font-size: 15px; cursor: pointer; padding: 2px 8px;
+  border-radius: 6px; line-height: 1; font-family: monospace;
+  transition: all .12s;
 }
-#sidebar::-webkit-scrollbar { width: 3px; }
-#sidebar::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 2px; }
-
-.sb-sec { padding: 20px 18px; border-bottom: 1px solid var(--ui-border-2); }
-.sb-sec:last-child { border-bottom: none; }
-.sb-lbl {
-  font-size: 12px;
-  font-weight: 700;
-  color: #444;
-  letter-spacing: .3px;
-  margin-bottom: 14px;
+.tb-zoom button:hover { background: var(--ui-border); color: var(--ui-hi); }
+#zoom-pct {
+  font-size: 12px; color: var(--ui-md); min-width: 42px;
+  text-align: center; cursor: pointer; padding: 2px 4px;
+  border-radius: 6px; font-family: 'Pretendard', sans-serif;
 }
+#zoom-pct:hover { color: var(--primary); }
+.tb-zoom-sep { width: 1px; height: 14px; background: var(--ui-border); margin: 0 2px; }
 
-.sz-btn {
-  width: 100%;
-  background: transparent;
-  border: none;
-  border-radius: 6px;
-  padding: 7px 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 1px;
+/* ── 스플릿 버튼 */
+.split { display: flex; border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+.split.outline { border: 1px solid var(--ui-border); margin-right: 4px; }
+.split.outline .s-main {
+  height: 36px; padding: 0 14px;
+  background: var(--ui-surface); color: var(--ui-hi);
+  border: none; border-right: 1px solid var(--ui-border);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
   transition: background .12s;
-  text-align: left;
 }
-.sz-btn:hover { background: #f0f0f0; }
-.sz-btn.active { background: #ebebeb; }
+.split.outline .s-main:hover { background: var(--ui-border); }
+.split.outline .s-arr {
+  height: 36px; width: 34px; background: var(--ui-surface);
+  border: none; color: var(--ui-lo);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.outline .s-arr:hover { background: var(--ui-border); color: var(--ui-hi); }
+.split.outline.open .s-arr { background: var(--ui-border); }
+
+.split.primary { border: 1px solid var(--primary); }
+.split.primary .s-main {
+  height: 36px; padding: 0 14px;
+  background: var(--primary); color: #fff;
+  border: none; border-right: 1px solid rgba(255,255,255,.2);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .12s;
+}
+.split.primary .s-main:hover { background: var(--primary-hov); }
+.split.primary .s-main:disabled { opacity: .5; cursor: not-allowed; }
+.split.primary .s-arr {
+  height: 36px; width: 34px; background: var(--primary);
+  border: none; color: rgba(255,255,255,.75);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .12s;
+}
+.split.primary .s-arr:hover { background: var(--primary-hov); }
+.split.primary.open .s-arr { background: #0808cc; }
+
+/* ── 드롭다운 */
+.dropdown {
+  position: absolute; top: calc(var(--topbar-h) + 4px);
+  background: var(--ui-panel); border: 1px solid var(--ui-border);
+  border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.12);
+  z-index: 200; overflow: hidden; display: none;
+}
+.dropdown.open { display: block; }
+.dd-head {
+  padding: 11px 17px; border-bottom: 1px solid var(--ui-border);
+  font-size: 11px; font-weight: 700; color: var(--ui-md);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+.dd-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 17px; border-bottom: 1px solid var(--ui-border);
+  cursor: pointer; transition: background .1s;
+}
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--ui-surface); }
+.dd-item-label { font-size: 13px; font-weight: 600; color: var(--ui-hi); }
+.dd-item-desc  { font-size: 11px; color: var(--ui-lo); margin-top: 1px; }
+.dd-default {
+  font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 8px;
+  background: #E8FAF4; color: #048848; flex-shrink: 0;
+}
+
+/* ── 메인 레이아웃 */
+.main-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+
+/* ── 캔버스 영역 */
+#preview-area {
+  flex: 1; min-width: 0; min-height: 0;
+  overflow-y: auto; overflow-x: auto;
+  background: var(--ui-bg);
+  display: flex; justify-content: center; align-items: flex-start;
+  padding: 40px 24px;
+}
+#preview-area::-webkit-scrollbar { width: 6px; height: 6px; }
+#preview-area::-webkit-scrollbar-thumb { background: #C8CDD6; border-radius: 3px; }
+
+#canvas-wrapper { display: inline-block; position: relative; flex-shrink: 0; }
+#canvas-el {
+  transform-origin: top left; display: block;
+  position: relative; line-height: normal; font-size: 0; letter-spacing: -0.05em;
+}
+
+/* ── 리사이즈 핸들 */
+.resize-handle {
+  width: 4px; flex-shrink: 0; background: transparent;
+  border-left: 1px solid var(--ui-border);
+  cursor: col-resize; position: relative; transition: background .12s; user-select: none;
+}
+.resize-handle:hover, .resize-handle.dragging { background: var(--pri-alpha); border-left-color: var(--primary); }
+.resize-handle::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  width: 2px; height: 28px; border-radius: 2px; background: var(--ui-border);
+}
+.resize-handle:hover::after, .resize-handle.dragging::after { background: var(--primary); }
+
+/* ── 사이드바 */
+#sidebar {
+  width: 300px; min-width: 200px; max-width: 500px;
+  background: var(--ui-panel);
+  display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+}
+
+/* 사이즈 섹션 */
+#size-section {
+  flex-shrink: 0; border-bottom: 1px solid var(--ui-border);
+  max-height: 255px; overflow-y: auto;
+}
+#size-section::-webkit-scrollbar { width: 3px; }
+#size-section::-webkit-scrollbar-thumb { background: #D8DADF; border-radius: 2px; }
+.size-sec-head {
+  padding: 10px 17px 9px; position: sticky; top: 0;
+  background: var(--ui-panel); border-bottom: 1px solid var(--ui-border);
+  font-size: 11px; font-weight: 700; color: var(--ui-md);
+  letter-spacing: .4px; text-transform: uppercase;
+}
+.sz-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 17px; border-bottom: 1px solid var(--ui-border);
+  cursor: pointer; transition: background .1s;
+  border-left: 2px solid transparent; width: 100%;
+  background: none; border-top: none; border-right: none; text-align: left;
+}
+.sz-item:last-child { border-bottom: none; }
+.sz-item:hover { background: var(--ui-surface); }
+.sz-item.active { background: var(--pri-alpha); border-left-color: var(--primary); }
 .sz-num {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #e0e0e0;
-  font-size: 10px;
-  color: #888;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--ui-border); font-size: 10px; color: var(--ui-md);
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-  font-family: 'Pretendard', sans-serif;
+  flex-shrink: 0; font-family: 'Pretendard', sans-serif; font-weight: 600;
 }
-.sz-btn.active .sz-num { background: #111; color: #fff; }
+.sz-item.active .sz-num { background: var(--primary); color: #fff; }
 .sz-info { flex: 1; min-width: 0; }
 .sz-name {
-  font-size: 12px;
-  color: #555;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-family: 'Pretendard', sans-serif;
+  font-size: 13px; font-weight: 600; color: var(--ui-hi);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.sz-btn.active .sz-name { color: #111; font-weight: 600; }
-.sz-dim { font-size: 10px; color: #bbb; margin-top: 1px; }
+.sz-item.active .sz-name { color: var(--primary); }
+.sz-dim { font-size: 11px; color: var(--ui-lo); margin-top: 1px; }
 .sz-tag {
-  font-size: 10px;
-  background: transparent;
-  color: var(--primary);
-  border: 1px solid rgba(16,16,255,.25);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-family: 'Pretendard', sans-serif;
+  font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px;
+  background: var(--pri-alpha); color: var(--primary); border: 1px solid var(--pri-border);
+  white-space: nowrap;
 }
 
-/* bg thumb */
+/* ── 편집 탭 영역 */
+.sidebar-edit { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.tab-bar { display: flex; border-bottom: 1px solid var(--ui-border); flex-shrink: 0; }
+.tab-btn {
+  flex: 1; height: 44px; border: none; background: none;
+  font-size: 13px; font-weight: 600; color: var(--ui-md);
+  cursor: pointer; border-bottom: 2px solid transparent;
+  margin-bottom: -1px; font-family: inherit; transition: color .12s;
+}
+.tab-btn:hover { color: var(--ui-hi); }
+.tab-btn.on { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-body { flex: 1; overflow-y: auto; min-height: 0; }
+.tab-body::-webkit-scrollbar { width: 3px; }
+.tab-body::-webkit-scrollbar-thumb { background: #D8DADF; border-radius: 2px; }
+.tab-panel { display: none; }
+.tab-panel.on { display: block; }
+
+/* ── 아코디언 */
+.acc { border-bottom: 1px solid var(--ui-border); }
+.acc:last-child { border-bottom: none; }
+.acc-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 17px; cursor: pointer;
+  font-size: 13px; font-weight: 600; color: var(--ui-hi);
+  transition: background .1s; user-select: none;
+}
+.acc-head:hover { background: var(--ui-surface); }
+.acc-head.open { color: var(--primary); }
+.acc-arr { flex-shrink: 0; color: var(--ui-lo); transition: transform .15s; }
+.acc-arr.r { transform: rotate(180deg); color: var(--primary); }
+.acc-body { padding: 4px 17px 16px; }
+.acc-body.closed { display: none; }
+
+/* ── 폼 필드 */
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label {
+  display: block; font-size: 11px; font-weight: 600;
+  color: var(--ui-md); margin-bottom: 5px; letter-spacing: .2px;
+}
+.field input[type="text"],
+.field textarea {
+  width: 100%; border: 1px solid var(--ui-border); border-radius: 8px;
+  padding: 9px 11px; font-size: 13px; font-family: 'Pretendard', sans-serif;
+  color: var(--ui-hi); background: var(--ui-surface);
+  resize: vertical; line-height: 1.6; outline: none;
+  transition: border-color .12s; letter-spacing: -.04em;
+}
+.field input:focus, .field textarea:focus { border-color: var(--primary); background: #fff; }
+.field-hint { font-size: 11px; color: var(--ui-lo); line-height: 1.6; margin-bottom: 10px; }
+
+/* 배경 썸네일 */
 #bg-thumb {
-  width: 100%; height: 68px;
-  border-radius: 6px;
-  background: var(--ui-surface);
-  border: 1px dashed #d0d0d0;
-  cursor: pointer;
-  overflow: hidden;
+  width: 100%; height: 72px; border-radius: 8px;
+  background: var(--ui-surface); border: 1px dashed var(--ui-border);
+  cursor: pointer; overflow: hidden;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  margin-bottom: 8px;
-  transition: border-color .15s;
+  margin-bottom: 10px; transition: border-color .15s;
 }
 #bg-thumb:hover { border-color: var(--primary); }
 #bg-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.bg-ph { font-size: 11px; color: #bbb; text-align: center; }
+.bg-ph { font-size: 11px; color: var(--ui-lo); text-align: center; line-height: 1.5; }
 .bg-ph svg { display: block; margin: 0 auto 4px; }
-#bg-file { display: none; }
 
-.sb-input {
-  width: 100%;
-  background: var(--ui-surface);
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  padding: 7px 10px;
-  font-size: 12px;
-  color: #111;
-  outline: none;
-  font-family: 'Pretendard', sans-serif;
-  margin-bottom: 6px;
-  transition: border-color .15s;
-}
-.sb-input:focus { border-color: var(--primary); }
-.sb-input::placeholder { color: #bbb; }
-
+/* 사이드바 버튼 */
 .sb-btn {
-  width: 100%;
-  padding: 9px 10px;
-  border-radius: 6px;
-  border: 1px solid;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: 'Pretendard', sans-serif;
-  transition: all .15s;
-  margin-bottom: 5px;
-  text-align: center;
+  width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'Pretendard', sans-serif; transition: all .15s;
+  margin-bottom: 6px; text-align: center; display: block;
 }
-.sb-btn.gold { background: #111; border-color: #111; color: #fff; }
-.sb-btn.gold:hover { background: #333; border-color: #333; }
-.sb-btn.outline { background: var(--ui-surface); border-color: #e0e0e0; color: #777; }
-.sb-btn.outline:hover { background: #f0f0f0; border-color: #bbb; }
+.sb-btn:last-child { margin-bottom: 0; }
+.sb-btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.sb-btn.primary:hover { background: var(--primary-hov); border-color: var(--primary-hov); }
+.sb-btn.outline { background: var(--ui-surface); border-color: var(--ui-border); color: var(--ui-md); }
+.sb-btn.outline:hover { background: var(--ui-border); color: var(--ui-hi); }
+#excel-status { font-size: 11px; text-align: center; min-height: 14px; margin-top: 6px; }
 
-/* ─── PREVIEW ─────────────────────── */
-#preview-area {
-  flex: 1;
-  min-width: 0;
-  overflow: auto;
-  padding: 32px 24px calc(var(--bar-h) + 32px);
-  background: #f5f5f5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  order: 1;
-}
-#preview-area::-webkit-scrollbar { width: 5px; height: 5px; }
-#preview-area::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-
-#preview-top {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 16px;
-  flex-shrink: 0;
-}
-.pt-lbl { font-size: 11px; color: #bbb; letter-spacing: .06em; }
-.pt-sz  { font-size: 11px; color: var(--primary); }
-
-#canvas-wrapper {
-  display: inline-block;
-  position: relative;
-  flex-shrink: 0;
-}
-#canvas-el {
-  transform-origin: top left;
-  display: block;
-  position: relative;
-  line-height: normal;
-  font-size: 0;
-  letter-spacing: -0.05em;
-}
-/* 인라인 편집 힌트 */
+/* ── 인라인 편집 힌트 */
 [data-edit] { cursor: text; border-radius: 2px; transition: background .15s; }
 [data-edit]:hover { background: rgba(174,141,74,.12) !important; outline: 1px dashed rgba(174,141,74,.4); outline-offset: 3px; }
 [data-edit]:focus { background: rgba(174,141,74,.08) !important; outline: 1px solid rgba(174,141,74,.65); outline-offset: 3px; }
 [data-edit]:empty::before { content: attr(data-placeholder); opacity: .4; }
 
-/* ─── EXPORT BAR ─────────────────── */
-#export-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: var(--sidebar-w);
-  height: var(--bar-h);
-  background: var(--ui-panel);
-  border-top: 1px solid var(--ui-border);
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 20px;
-  gap: 10px;
-  z-index: 20;
-}
-.eb-hint { font-size: 11px; color: #bbb; }
-#export-btn {
-  background: #111;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 22px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: 'Pretendard', sans-serif;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  transition: background .15s;
-}
-#export-btn:hover { background: #333; }
-#export-btn:disabled { opacity: .4; cursor: not-allowed; }
-
-
-/* ─── ZOOM BAR ───────────────────── */
-#zoom-bar {
-  position: fixed;
-  bottom: calc(var(--bar-h) + 12px);
-  right: calc(var(--sidebar-w) + 16px);
-  background: rgba(255,255,255,.96);
-  border: 1px solid #e0e0e0;
-  border-radius: 20px;
-  padding: 4px 6px;
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  z-index: 200;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 12px rgba(0,0,0,.1);
-  user-select: none;
-  pointer-events: all;
-}
-#zoom-bar button {
-  background: none;
-  border: none;
-  color: #888;
-  font-size: 15px;
-  cursor: pointer;
-  padding: 2px 9px;
-  border-radius: 12px;
-  line-height: 1;
-  font-family: monospace;
-  transition: all .12s;
-}
-#zoom-bar button:hover { background: #f0f0f0; color: #111; }
-#zoom-pct {
-  font-size: 11px;
-  color: #888;
-  min-width: 38px;
-  text-align: center;
-  font-family: 'Pretendard', sans-serif;
-  cursor: pointer;
-  padding: 2px 4px;
-  border-radius: 6px;
-}
-#zoom-pct:hover { color: var(--primary); }
-.zoom-sep { width: 1px; height: 14px; background: #e0e0e0; margin: 0 2px; }
-
-/* ─── ITEM CONTROLS (editor only, stripped on export) ── */
+/* ── 아이템 컨트롤 */
 .item-ctrl-bar { display:none; position:absolute; top:6px; right:0; align-items:center; gap:2px; background:rgba(255,255,255,.97); border:1px solid #E0E0E0; border-radius:20px; padding:3px 8px; box-shadow:0 2px 8px rgba(0,0,0,.1); z-index:10; }
 .item-wrap:hover .item-ctrl-bar { display:flex; }
 .type-dot { font-size:10px; color:#AAA; cursor:pointer; padding:2px 7px; border-radius:12px; font-family:'Pretendard',sans-serif; letter-spacing:-0.02em; user-select:none; }
@@ -393,81 +354,161 @@ body {
 .ctrl-del-sec { font-size:10px; color:#CCC; background:none; border:none; cursor:pointer; margin-left:8px; }
 .ctrl-del-sec:hover { color:#E55; }
 
-/* ─── LOADING ────────────────────── */
+/* ── 로딩 */
 #loading {
   display: none; position: fixed; inset: 0;
-  background: rgba(255,255,255,.8); z-index: 100; backdrop-filter: blur(4px);
+  background: rgba(255,255,255,.88); z-index: 9999; backdrop-filter: blur(4px);
   flex-direction: column; align-items: center; justify-content: center; gap: 14px;
 }
-#loading.show { display: flex; }
 .ld-spin {
   width: 32px; height: 32px;
-  border: 2px solid #e0e0e0; border-top-color: #111;
+  border: 2px solid var(--ui-border); border-top-color: var(--primary);
   border-radius: 50%; animation: spin .75s linear infinite;
 }
-.ld-msg { font-size: 12px; color: #888; font-family: 'Pretendard', sans-serif; }
+.ld-msg { font-size: 13px; color: var(--ui-md); }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
+<!-- ── 탑바 -->
+<div class="topbar">
+  <div class="tb-space"></div>
 
-<div id="layout">
-  <aside id="sidebar">
-
-    <div class="sb-sec">
-      <div class="sb-lbl">출력 사이즈</div>
-      <div id="size-list"></div>
-    </div>
-
-    <div class="sb-sec">
-      <div class="sb-lbl">컨셉</div>
-      <input class="sb-input" id="ci-sub"   placeholder="서브카피 (Wake up your…)">
-      <input class="sb-input" id="ci-brand" placeholder="브랜드명 (Le Shine)">
-      <input class="sb-input" id="ci-name"  placeholder="메인 타이틀 (Spring Glow)">
-      <input class="sb-input" id="ci-theme" placeholder="테마 라벨 (theme1 : Skincare)">
-    </div>
-
-    <div class="sb-sec">
-      <div class="sb-lbl">배경 이미지</div>
-      <div id="bg-thumb" onclick="document.getElementById('bg-file').click()">
-        <div class="bg-ph">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <polyline points="21 15 16 10 5 21"/>
-          </svg>
-          클릭하여 업로드
-        </div>
-      </div>
-      <input type="file" id="bg-file" accept="image/*">
-      <button class="sb-btn outline" id="bg-clear">배경 초기화</button>
-    </div>
-
-    <div class="sb-sec">
-      <div class="sb-lbl">내보내기</div>
-      <button class="sb-btn gold" id="export-sb">현재 사이즈 저장</button>
-      <button class="sb-btn gold" id="export-all" style="margin-top:6px;">전체 세트 저장</button>
-    </div>
-
-  </aside>
-
-  <main id="preview-area">
-    <div id="canvas-wrapper">
-      <div id="canvas-el"></div>
-    </div>
-  </main>
-
-  <div id="zoom-bar">
+  <!-- 줌 컨트롤 -->
+  <div class="tb-zoom">
     <button id="btn-zoom-out" title="축소">−</button>
     <span id="zoom-pct" title="클릭하면 맞춤">100%</span>
     <button id="btn-zoom-in" title="확대">+</button>
-    <div class="zoom-sep"></div>
-    <button id="btn-zoom-fit" style="font-size:12px;padding:2px 8px;">맞춤</button>
+    <div class="tb-zoom-sep"></div>
+    <button id="btn-zoom-fit">맞춤</button>
+  </div>
+
+  <!-- 엑셀 스플릿 -->
+  <div class="split outline" id="split-excel">
+    <button class="s-main" id="excel-dl-btn">양식 다운로드</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-excel','split-excel')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="dropdown" id="dd-excel" style="right:58px;width:220px;">
+    <div class="dd-head">엑셀 연동</div>
+    <div class="dd-item" onclick="excelDownloadTemplate();closeDropdowns();">
+      <div><div class="dd-item-label">양식 다운로드</div><div class="dd-item-desc">현재 데이터로 .xlsx 생성</div></div>
+      <span class="dd-default">기본</span>
+    </div>
+    <div class="dd-item" onclick="document.getElementById('excel-file').click();closeDropdowns();">
+      <div><div class="dd-item-label">엑셀 업로드</div><div class="dd-item-desc">.xlsx 파일로 데이터 불러오기</div></div>
+    </div>
+  </div>
+  <input type="file" id="excel-file" accept=".xlsx,.xls" style="display:none">
+
+  <!-- 내보내기 스플릿 -->
+  <div class="split primary" id="split-export">
+    <button class="s-main" id="export-sb">내보내기</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-export','split-export')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="rgba(255,255,255,.8)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="dropdown" id="dd-export" style="right:16px;width:216px;">
+    <div class="dd-head">저장 형식</div>
+    <div class="dd-item" onclick="doExport();closeDropdowns();">
+      <div><div class="dd-item-label">현재 사이즈</div><div class="dd-item-desc">선택된 출력물 PNG 저장</div></div>
+      <span class="dd-default">기본</span>
+    </div>
+    <div class="dd-item" onclick="doExportAll();closeDropdowns();">
+      <div><div class="dd-item-label">전체 세트</div><div class="dd-item-desc">모든 사이즈 일괄 저장</div></div>
+    </div>
   </div>
 </div>
 
+<!-- ── 메인 레이아웃 -->
+<div class="main-layout">
 
+  <!-- 캔버스 영역 -->
+  <div id="preview-area">
+    <div id="canvas-wrapper">
+      <div id="canvas-el"></div>
+    </div>
+  </div>
+
+  <!-- 리사이즈 핸들 -->
+  <div class="resize-handle" id="resize-handle"></div>
+
+  <!-- 사이드바 -->
+  <aside id="sidebar">
+
+    <!-- 사이즈 목록 (고정) -->
+    <div id="size-section">
+      <div class="size-sec-head">출력 사이즈</div>
+      <div id="size-list"></div>
+    </div>
+
+    <!-- 편집 탭 -->
+    <div class="sidebar-edit">
+      <div class="tab-bar">
+        <button class="tab-btn on" onclick="switchTab('tab-concept',this)">컨셉</button>
+        <button class="tab-btn"    onclick="switchTab('tab-bg',this)">배경</button>
+        <button class="tab-btn"    onclick="switchTab('tab-excel',this)">엑셀</button>
+      </div>
+      <div class="tab-body">
+
+        <!-- 컨셉 탭 -->
+        <div class="tab-panel on" id="tab-concept">
+          <div class="acc">
+            <div class="acc-head open" onclick="toggleAcc(this)">
+              <span>브랜드 정보</span>
+              <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="acc-body">
+              <div class="field"><label>서브카피</label><input type="text" id="ci-sub" placeholder="Wake up your deep energy…"></div>
+              <div class="field"><label>브랜드명</label><input type="text" id="ci-brand" placeholder="Le Shine"></div>
+              <div class="field"><label>메인 타이틀</label><input type="text" id="ci-name" placeholder="Spring Glow"></div>
+              <div class="field"><label>테마 라벨</label><input type="text" id="ci-theme" placeholder="theme1 : Skincare"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 배경 탭 -->
+        <div class="tab-panel" id="tab-bg">
+          <div class="acc">
+            <div class="acc-head open" onclick="toggleAcc(this)">
+              <span>배경 이미지</span>
+              <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="acc-body">
+              <div id="bg-thumb" onclick="document.getElementById('bg-file').click()">
+                <div class="bg-ph">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  클릭하여 업로드
+                </div>
+              </div>
+              <input type="file" id="bg-file" accept="image/*" style="display:none">
+              <button class="sb-btn outline" id="bg-clear">배경 초기화</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 엑셀 탭 -->
+        <div class="tab-panel" id="tab-excel">
+          <div class="acc">
+            <div class="acc-head open" onclick="toggleAcc(this)">
+              <span>엑셀 연동</span>
+              <svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="acc-body">
+              <p class="field-hint">시술목록과 원내TV 데이터를<br>엑셀 파일로 관리합니다.</p>
+              <button class="sb-btn outline" id="excel-dl-btn-sb">양식 다운로드 (.xlsx)</button>
+              <button class="sb-btn primary" id="excel-up-btn">엑셀 업로드</button>
+              <div id="excel-status"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </aside>
+</div>
 
 <div id="loading">
   <div class="ld-spin"></div>
@@ -597,15 +638,84 @@ function loadState() {
 }
 
 /* ═══════════════════════════════════════════
+   UI 헬퍼 (탭·아코디언·드롭다운·리사이즈)
+═══════════════════════════════════════════ */
+function switchTab(panelId, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById(panelId).classList.add('on');
+  btn.classList.add('on');
+}
+
+function toggleAcc(head) {
+  const body = head.nextElementSibling;
+  const arr  = head.querySelector('.acc-arr');
+  const isOpen = !body.classList.contains('closed');
+  if (isOpen) {
+    body.classList.add('closed'); head.classList.remove('open'); arr.classList.remove('r');
+  } else {
+    body.classList.remove('closed'); head.classList.add('open'); arr.classList.add('r');
+  }
+}
+
+function toggleDropdown(ddId, splitId) {
+  const dd = document.getElementById(ddId);
+  const sp = document.getElementById(splitId);
+  const wasOpen = dd.classList.contains('open');
+  closeDropdowns();
+  if (!wasOpen) { dd.classList.add('open'); sp.classList.add('open'); }
+}
+function closeDropdowns() {
+  document.querySelectorAll('.dropdown').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.split').forEach(s => s.classList.remove('open'));
+}
+
+function setupSidebarResize() {
+  const handle  = document.getElementById('resize-handle');
+  const sidebar = document.getElementById('sidebar');
+  const KEY = 'leshine_eg_sidebar_w';
+  const MIN = 200, MAX = 500;
+  const saved = parseInt(localStorage.getItem(KEY));
+  if (saved >= MIN && saved <= MAX) sidebar.style.width = saved + 'px';
+
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+    handle.classList.add('dragging');
+    document.body.style.cssText += 'cursor:col-resize;user-select:none;';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const newW = Math.min(MAX, Math.max(MIN, startW + (startX - e.clientX)));
+    sidebar.style.width = newW + 'px';
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false; handle.classList.remove('dragging');
+    document.body.style.cursor = ''; document.body.style.userSelect = '';
+    localStorage.setItem(KEY, sidebar.offsetWidth);
+    applyScale();
+  });
+}
+
+/* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 function init() {
-  loadState();                  // ← 저장된 상태 먼저 복원
+  loadState();
   buildList();
   setupConceptInputs();
   setupBg();
   setupExport();
-  if (S.bgUrl) showThumb(S.bgUrl);  // ← 배경 이미지 썸네일 복원
+  setupExcel();
+  setupSidebarResize();
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.split') && !e.target.closest('.dropdown')) closeDropdowns();
+  });
+
+  if (S.bgUrl) showThumb(S.bgUrl);
   window.addEventListener('resize', applyScale);
   document.getElementById('btn-zoom-in').addEventListener('click', zoomIn);
   document.getElementById('btn-zoom-out').addEventListener('click', zoomOut);
@@ -617,7 +727,7 @@ function init() {
       if (e.deltaY < 0) zoomIn(); else zoomOut();
     }
   }, { passive: false });
-  selectSize(S.idx);            // ← 마지막으로 보던 탭 복원
+  selectSize(S.idx);
 }
 
 /* ─── CONCEPT INPUTS ──────────── */
@@ -643,14 +753,14 @@ function buildList() {
   const el = document.getElementById('size-list');
   SIZES.forEach((s, i) => {
     const b = document.createElement('button');
-    b.className = 'sz-btn' + (i===0?' active':'');
+    b.className = 'sz-item' + (i === 0 ? ' active' : '');
     b.innerHTML = `
       <div class="sz-num">${i+1}</div>
       <div class="sz-info">
         <div class="sz-name">${s.name}</div>
         <div class="sz-dim">${s.w} × ${s.h}px</div>
       </div>
-      ${s.proc?'<span class="sz-tag">시술</span>':''}`;
+      ${s.proc ? '<span class="sz-tag">시술</span>' : ''}`;
     b.onclick = () => selectSize(i);
     el.appendChild(b);
   });
@@ -659,8 +769,8 @@ function buildList() {
 function selectSize(i) {
   S.idx = i;
   previewZoom = 1;
-  document.querySelectorAll('.sz-btn').forEach((b,j)=>b.classList.toggle('active',j===i));
-  render(); // render() 안에서 saveState() 호출됨
+  document.querySelectorAll('.sz-item').forEach((b, j) => b.classList.toggle('active', j === i));
+  render();
 }
 
 /* ─── RENDER ───────────────────── */
@@ -1555,8 +1665,8 @@ function showThumb(url) {
    EXPORT
 ═══════════════════════════════════════════ */
 function setupExport() {
-  document.getElementById('export-sb').onclick = doExport;
-  document.getElementById('export-all').onclick = doExportAll;
+  const btnSb = document.getElementById('export-sb');
+  if (btnSb) btnSb.onclick = doExport;
 }
 
 async function doExport() {
@@ -1793,6 +1903,178 @@ function setItemType(si, ii, type) {
 }
 function unmount(el) { document.body.removeChild(el); }
 function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+/* ═══════════════════════════════════════════
+   EXCEL 연동
+═══════════════════════════════════════════ */
+
+/* ─── 양식 다운로드 ── */
+function excelDownloadTemplate() {
+  if (typeof XLSX === 'undefined') { alert('SheetJS 라이브러리 로드 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  const wb = XLSX.utils.book_new();
+
+  /* ── 시술목록 시트 ── */
+  const itemHeaders = [
+    '섹션명', '섹션_해시태그',
+    '시술명', '해시태그',
+    '가격1_횟수', '가격1',
+    '가격2_횟수', '가격2',
+    '가격3_횟수', '가격3',
+    '가격4_횟수', '가격4',
+    '가격5_횟수', '가격5',
+    '가격6_횟수', '가격6',
+    '배지(콤마구분)', '옵션(콤마구분)', '타입(standard/simple)'
+  ];
+  const itemRows = [itemHeaders];
+  S.data.sections.forEach(sec => {
+    sec.items.forEach((item, ii) => {
+      const row = [
+        ii === 0 ? (sec.section_name || '') : '',
+        ii === 0 ? (sec.hashtags || []).join(' ') : '',
+        item.name,
+        (item.hashtags || []).join(' '),
+      ];
+      for (let pi = 0; pi < 6; pi++) {
+        const p = (item.prices || [])[pi];
+        row.push(p ? (p.label || '') : '');
+        row.push(p ? (p.value || '') : '');
+      }
+      row.push((item.badges  || []).join(', '));
+      row.push((item.options || []).join(', '));
+      row.push(item.type || 'standard');
+      itemRows.push(row);
+    });
+  });
+  const ws1 = XLSX.utils.aoa_to_sheet(itemRows);
+  ws1['!cols'] = [14,16,20,16,10,10,10,10,10,10,10,10,10,10,10,10,20,20,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws1, '시술목록');
+
+  /* ── 원내TV_데스크 시트 ── */
+  const deskHeaders = ['시술명', '횟수1', '가격1', '횟수2', '가격2', '횟수3', '가격3'];
+  const deskRows = [deskHeaders];
+  (S.data.concept.desk_rows || []).forEach(row => {
+    const r = [row.name || ''];
+    for (let pi = 0; pi < 3; pi++) {
+      const p = (row.prices || [])[pi];
+      r.push(p ? (p.count || '') : '');
+      r.push(p ? (p.value || '') : '');
+    }
+    deskRows.push(r);
+  });
+  const ws2 = XLSX.utils.aoa_to_sheet(deskRows);
+  ws2['!cols'] = [24,10,12,10,12,10,12].map(w=>({wch:w}));
+  XLSX.utils.book_append_sheet(wb, ws2, '원내TV_데스크');
+
+  XLSX.writeFile(wb, 'leshine_event_template.xlsx');
+  excelStatus('양식 다운로드 완료!', '#2a7a2a');
+}
+
+/* ─── 엑셀 업로드 파싱 ── */
+async function excelUpload(file) {
+  if (typeof XLSX === 'undefined') { alert('SheetJS 라이브러리 로드 중입니다. 잠시 후 다시 시도해주세요.'); return; }
+  try {
+    const buf  = await file.arrayBuffer();
+    const wb   = XLSX.read(new Uint8Array(buf), { type: 'array' });
+    const next = clone(S.data);
+    let changed = false;
+
+    /* ── 시술목록 시트 ── */
+    if (wb.SheetNames.includes('시술목록')) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets['시술목록'], { header: 1, defval: '' });
+      const sections = [];
+      let curSec = null;
+
+      rows.slice(1).forEach(row => {
+        const secName  = String(row[0] || '').trim();
+        const secTags  = String(row[1] || '').trim();
+        const itemName = String(row[2] || '').trim();
+        if (!itemName) return;
+
+        if (secName || !curSec) {
+          curSec = {
+            section_name: secName,
+            hashtags: secTags ? secTags.split(/\s+/).filter(t => t) : [],
+            items: []
+          };
+          sections.push(curSec);
+        }
+
+        const hashtags = String(row[3] || '').trim()
+          ? String(row[3]).trim().split(/\s+/).filter(t => t) : [];
+
+        const prices = [];
+        for (let pi = 0; pi < 6; pi++) {
+          const label = String(row[4 + pi*2] || '').trim();
+          const value = String(row[5 + pi*2] || '').trim();
+          if (value) prices.push({ label, value });
+        }
+        if (!prices.length) prices.push({ label: '', value: '0만원' });
+
+        const badges  = String(row[16] || '').trim()
+          ? String(row[16]).split(',').map(b => b.trim()).filter(Boolean) : [];
+        const options = String(row[17] || '').trim()
+          ? String(row[17]).split(',').map(o => o.trim()).filter(Boolean) : [];
+        const type    = String(row[18] || 'standard').trim() || 'standard';
+
+        curSec.items.push({ name: itemName, hashtags, prices, badges, options, type });
+      });
+
+      if (sections.length) { next.sections = sections; changed = true; }
+    }
+
+    /* ── 원내TV_데스크 시트 ── */
+    if (wb.SheetNames.includes('원내TV_데스크')) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets['원내TV_데스크'], { header: 1, defval: '' });
+      const deskRows = [];
+
+      rows.slice(1).forEach(row => {
+        const name = String(row[0] || '').trim();
+        if (!name) return;
+        const prices = [];
+        for (let pi = 0; pi < 3; pi++) {
+          const count = String(row[1 + pi*2] || '').trim();
+          const value = String(row[2 + pi*2] || '').trim();
+          if (value) prices.push({ count, value });
+        }
+        if (!prices.length) prices.push({ count: '', value: '0만원' });
+        deskRows.push({ name, prices });
+      });
+
+      if (deskRows.length) { next.concept.desk_rows = deskRows; changed = true; }
+    }
+
+    if (!changed) { excelStatus('읽을 데이터가 없습니다.', '#c0392b'); return; }
+
+    S.data = next;
+    render();
+    excelStatus('업로드 완료!', '#2a7a2a');
+  } catch(e) {
+    console.error(e);
+    excelStatus('오류: ' + e.message, '#c0392b');
+  }
+}
+
+function excelStatus(msg, color='#888') {
+  const el = document.getElementById('excel-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color  = color;
+  setTimeout(() => { el.textContent = ''; }, 4000);
+}
+
+function setupExcel() {
+  const dlBtns = [
+    document.getElementById('excel-dl-btn'),
+    document.getElementById('excel-dl-btn-sb'),
+  ];
+  dlBtns.forEach(b => { if (b) b.onclick = excelDownloadTemplate; });
+  const upBtn = document.getElementById('excel-up-btn');
+  if (upBtn) upBtn.onclick = () => document.getElementById('excel-file').click();
+  document.getElementById('excel-file').addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (f) { excelUpload(f); e.target.value = ''; }
+  });
+}
 
 /* ─── BOOT ──────────────────────── */
 init();
