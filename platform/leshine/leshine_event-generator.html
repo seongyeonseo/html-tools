@@ -259,6 +259,46 @@ body {
   white-space: nowrap;
 }
 
+/* ── 세트 탭바 */
+#set-bar {
+  display: flex; align-items: center;
+  border-bottom: 1px solid var(--ui-border);
+  padding: 7px 10px; gap: 6px;
+  flex-shrink: 0; background: var(--ui-panel);
+  overflow-x: auto;
+}
+#set-bar::-webkit-scrollbar { height: 0; }
+#set-tabs { display: flex; gap: 4px; flex: 1; min-width: 0; overflow-x: auto; }
+#set-tabs::-webkit-scrollbar { height: 0; }
+.set-tab {
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 4px 10px 4px 11px; border-radius: 7px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface); color: var(--ui-md);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all .12s; white-space: nowrap; flex-shrink: 0;
+  font-family: 'Pretendard', sans-serif;
+}
+.set-tab:hover { background: var(--ui-border); color: var(--ui-hi); }
+.set-tab.active { background: var(--pri-alpha); border-color: var(--primary); color: var(--primary); }
+.set-tab-del {
+  width: 15px; height: 15px; border-radius: 50%;
+  border: none; background: transparent; cursor: pointer; color: inherit;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; opacity: .45; padding: 0; line-height: 1; flex-shrink: 0;
+}
+.set-tab-del:hover { opacity: 1; color: #E55; }
+.set-tab.active .set-tab-del:hover { color: #E55; }
+#set-add-btn {
+  width: 26px; height: 26px; border-radius: 7px;
+  border: 1px solid var(--ui-border);
+  background: var(--ui-surface); color: var(--ui-md);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  font-size: 17px; line-height: 1; flex-shrink: 0;
+  transition: all .12s; font-family: 'Pretendard', sans-serif; font-weight: 400;
+}
+#set-add-btn:hover { background: var(--primary); border-color: var(--primary); color: #fff; }
+
 /* ── 편집 탭 영역 */
 .sidebar-edit { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
 .tab-bar { display: flex; border-bottom: 1px solid var(--ui-border); flex-shrink: 0; }
@@ -420,7 +460,10 @@ body {
       <span class="dd-default">기본</span>
     </div>
     <div class="dd-item" onclick="doExportAll();closeDropdowns();">
-      <div><div class="dd-item-label">전체 세트</div><div class="dd-item-desc">모든 사이즈 일괄 저장</div></div>
+      <div><div class="dd-item-label">현재 세트 전체 사이즈</div><div class="dd-item-desc">이 세트의 모든 사이즈 저장</div></div>
+    </div>
+    <div class="dd-item" onclick="doExportAllSets();closeDropdowns();">
+      <div><div class="dd-item-label">전체 세트 × 전체 사이즈</div><div class="dd-item-desc">모든 세트 × 모든 사이즈 저장</div></div>
     </div>
   </div>
 </div>
@@ -440,6 +483,12 @@ body {
 
   <!-- 사이드바 -->
   <aside id="sidebar">
+
+    <!-- 세트 탭바 -->
+    <div id="set-bar">
+      <div id="set-tabs"></div>
+      <button id="set-add-btn" onclick="addSet()" title="세트 추가">+</button>
+    </div>
 
     <!-- 사이즈 목록 (고정) -->
     <div id="size-section">
@@ -587,17 +636,40 @@ const DEFAULT = {
 };
 
 /* ═══════════════════════════════════════════
-   STATE
+   STATE  (멀티세트 — getter/setter로 기존 코드 호환)
 ═══════════════════════════════════════════ */
-const S = {
-  idx: 0,
-  data: clone(DEFAULT),
-  bgUrl: '',
-  bgTone: '8,12,10',
-  bgLightColor: '#FAFAFD',
-  bgAccentDark: '#143428',
-};
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function makeSet(name, n) {
+  return {
+    name:         name || `세트 ${n || 1}`,
+    data:         clone(DEFAULT),
+    bgUrl:        '',
+    bgTone:       '8,12,10',
+    bgLightColor: '#FAFAFD',
+    bgAccentDark: '#143428',
+    bgAccentLight:'#CCBB94',
+  };
+}
+
+const S = {
+  idx:       0,
+  activeSet: 0,
+  sets:      [ makeSet('세트 1', 1) ],
+
+  get data()          { return this.sets[this.activeSet].data; },
+  set data(v)         { this.sets[this.activeSet].data = v; },
+  get bgUrl()         { return this.sets[this.activeSet].bgUrl; },
+  set bgUrl(v)        { this.sets[this.activeSet].bgUrl = v; },
+  get bgTone()        { return this.sets[this.activeSet].bgTone; },
+  set bgTone(v)       { this.sets[this.activeSet].bgTone = v; },
+  get bgLightColor()  { return this.sets[this.activeSet].bgLightColor; },
+  set bgLightColor(v) { this.sets[this.activeSet].bgLightColor = v; },
+  get bgAccentDark()  { return this.sets[this.activeSet].bgAccentDark; },
+  set bgAccentDark(v) { this.sets[this.activeSet].bgAccentDark = v; },
+  get bgAccentLight() { return this.sets[this.activeSet].bgAccentLight; },
+  set bgAccentLight(v){ this.sets[this.activeSet].bgAccentLight = v; },
+};
 
 /* ═══════════════════════════════════════════
    LOCAL STORAGE — 뒤로가기 후에도 내용 유지
@@ -606,19 +678,28 @@ const LS_KEY = 'leshine_eg_v1';
 
 function saveState() {
   try {
+    // bgUrl은 용량이 커서 별도 키로 저장 — 여기선 제외
+    const setsToSave = S.sets.map(set => ({
+      name:         set.name,
+      data:         set.data,
+      bgTone:       set.bgTone,
+      bgLightColor: set.bgLightColor,
+      bgAccentDark: set.bgAccentDark,
+      bgAccentLight:set.bgAccentLight,
+    }));
     localStorage.setItem(LS_KEY, JSON.stringify({
-      data:         S.data,
-      idx:          S.idx,
-      bgTone:       S.bgTone,
-      bgLightColor: S.bgLightColor,
-      bgAccentDark: S.bgAccentDark,
-      bgAccentLight:S.bgAccentLight,
+      sets:      setsToSave,
+      activeSet: S.activeSet,
+      idx:       S.idx,
     }));
   } catch(e) {}
-  // 배경 이미지는 별도 키 (용량 큼 — 실패해도 무시)
+  // 세트별 배경 이미지 — 실패해도 무시
   try {
-    if (S.bgUrl) localStorage.setItem(LS_KEY + '_bg', S.bgUrl);
-    else         localStorage.removeItem(LS_KEY + '_bg');
+    S.sets.forEach((set, i) => {
+      if (set.bgUrl) localStorage.setItem(LS_KEY + '_bg_' + i, set.bgUrl);
+      else           localStorage.removeItem(LS_KEY + '_bg_' + i);
+    });
+    localStorage.removeItem(LS_KEY + '_bg'); // 구 단일세트 키 정리
   } catch(e) {}
 }
 
@@ -627,16 +708,47 @@ function loadState() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const p = JSON.parse(raw);
-    if (p.data)         S.data         = p.data;
-    if (p.idx != null)  S.idx          = p.idx;
-    if (p.bgTone)       S.bgTone       = p.bgTone;
-    if (p.bgLightColor) S.bgLightColor = p.bgLightColor;
-    if (p.bgAccentDark) S.bgAccentDark = p.bgAccentDark;
-    if (p.bgAccentLight)S.bgAccentLight= p.bgAccentLight;
+
+    if (p.sets && Array.isArray(p.sets) && p.sets.length > 0) {
+      // ── 신형 멀티세트 포맷
+      S.sets = p.sets.map((set, i) => ({
+        name:         set.name || `세트 ${i+1}`,
+        data:         set.data || clone(DEFAULT),
+        bgUrl:        '',
+        bgTone:       set.bgTone       || '8,12,10',
+        bgLightColor: set.bgLightColor || '#FAFAFD',
+        bgAccentDark: set.bgAccentDark || '#143428',
+        bgAccentLight:set.bgAccentLight|| '#CCBB94',
+      }));
+      S.activeSet = (p.activeSet != null && p.activeSet < S.sets.length) ? p.activeSet : 0;
+      if (p.idx != null) S.idx = p.idx;
+    } else if (p.data) {
+      // ── 구형 단일세트 포맷 — 마이그레이션
+      S.sets = [{
+        name:         '세트 1',
+        data:         p.data,
+        bgUrl:        '',
+        bgTone:       p.bgTone       || '8,12,10',
+        bgLightColor: p.bgLightColor || '#FAFAFD',
+        bgAccentDark: p.bgAccentDark || '#143428',
+        bgAccentLight:p.bgAccentLight|| '#CCBB94',
+      }];
+      S.activeSet = 0;
+      if (p.idx != null) S.idx = p.idx;
+    }
   } catch(e) {}
+
+  // 세트별 배경 이미지 복원
   try {
-    const bg = localStorage.getItem(LS_KEY + '_bg');
-    if (bg) S.bgUrl = bg;
+    S.sets.forEach((set, i) => {
+      const bg = localStorage.getItem(LS_KEY + '_bg_' + i);
+      if (bg) { set.bgUrl = bg; return; }
+      // 구형 단일세트 키 → 첫 세트에만 적용
+      if (i === 0) {
+        const oldBg = localStorage.getItem(LS_KEY + '_bg');
+        if (oldBg) set.bgUrl = oldBg;
+      }
+    });
   } catch(e) {}
 }
 
@@ -703,11 +815,80 @@ function setupSidebarResize() {
 }
 
 /* ═══════════════════════════════════════════
+   세트 관리
+═══════════════════════════════════════════ */
+function addSet() {
+  const n = S.sets.length + 1;
+  S.sets.push(makeSet(`세트 ${n}`, n));
+  switchSet(S.sets.length - 1);
+}
+
+function removeSet(i) {
+  if (S.sets.length <= 1) { alert('최소 1개 세트가 필요합니다.'); return; }
+  S.sets.splice(i, 1);
+  try { localStorage.removeItem(LS_KEY + '_bg_' + i); } catch(e) {}
+  const next = Math.min(S.activeSet, S.sets.length - 1);
+  S.activeSet = next; // skip switchSet to avoid double render
+  updateSetTabs();
+  refreshConceptInputs();
+  showThumb(S.bgUrl);
+  render();
+}
+
+function switchSet(i) {
+  S.activeSet = i;
+  updateSetTabs();
+  refreshConceptInputs();
+  showThumb(S.bgUrl);
+  render();
+}
+
+function updateSetTabs() {
+  const el = document.getElementById('set-tabs');
+  if (!el) return;
+  el.innerHTML = '';
+  S.sets.forEach((set, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'set-tab' + (i === S.activeSet ? ' active' : '');
+    const delHtml = S.sets.length > 1
+      ? `<span class="set-tab-del" data-idx="${i}" title="삭제">×</span>`
+      : '';
+    tab.innerHTML = `<span class="set-tab-name">${set.name}</span>${delHtml}`;
+    tab.addEventListener('click', e => {
+      if (e.target.classList.contains('set-tab-del')) {
+        removeSet(parseInt(e.target.dataset.idx));
+      } else {
+        switchSet(i);
+      }
+    });
+    el.appendChild(tab);
+  });
+}
+
+function refreshConceptInputs() {
+  const fields = [
+    { id: 'ci-sub',   key: 'sub_copy'    },
+    { id: 'ci-brand', key: 'brand_name'  },
+    { id: 'ci-name',  key: 'name'        },
+    { id: 'ci-theme', key: 'theme_label' },
+  ];
+  fields.forEach(({ id, key }) => {
+    const el = document.getElementById(id);
+    if (el) el.value = S.data.concept[key] || '';
+  });
+}
+
+function setupSetBar() {
+  updateSetTabs();
+}
+
+/* ═══════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════ */
 function init() {
   loadState();
   buildList();
+  setupSetBar();
   setupConceptInputs();
   setupBg();
   setupExport();
@@ -1764,6 +1945,57 @@ async function doExportAll() {
   }
 }
 
+async function doExportAllSets() {
+  const btn = document.getElementById('export-sb');
+  const ld  = document.getElementById('loading');
+  const msg = document.getElementById('ld-msg');
+  if (btn) btn.disabled = true;
+  if (ld) ld.style.display = 'flex';
+
+  const origSet = S.activeSet;
+  try {
+    if (typeof html2canvas === 'undefined') throw new Error('html2canvas 미로드. 인터넷 연결 확인');
+    for (let si = 0; si < S.sets.length; si++) {
+      S.activeSet = si;
+      const setName = (S.sets[si].name || `세트${si+1}`).replace(/\s+/g, '_');
+      for (const s of SIZES) {
+        if (s.id === 'a4-interior') {
+          const pages = tA4Int(S.data, S.bgUrl);
+          for (let i = 0; i < pages.length; i++) {
+            if (msg) msg.textContent = `[${setName}] ${s.name} p${i+1} (세트 ${si+1}/${S.sets.length})`;
+            const w = mount(pages[i], s.w, s.h);
+            await waitFonts();
+            const cv = await html2canvas(w.firstElementChild, { scale: s.sc||1, useCORS:true, allowTaint:false, width:s.w, height:s.h, logging:false });
+            unmount(w);
+            await dl(cv, `leshine_${setName}_a4_interior_p${i+1}.png`);
+          }
+        } else {
+          if (msg) msg.textContent = `[${setName}] ${s.name} (세트 ${si+1}/${S.sets.length})`;
+          const html = route(s.id, S.data, S.bgUrl);
+          const isLanding = s.id === 'landing';
+          const w = mount(html, s.w, isLanding ? 'auto' : s.h);
+          await waitFonts();
+          const actualH = isLanding ? w.firstElementChild.scrollHeight : s.h;
+          const cv = await html2canvas(w.firstElementChild, { scale: s.sc||1, useCORS:true, allowTaint:false, width:s.w, height:actualH, windowWidth:s.w, windowHeight:actualH, logging:false });
+          unmount(w);
+          await dl(cv, `leshine_${setName}_${s.id}.png`);
+        }
+      }
+    }
+  } catch(e) {
+    console.error(e);
+    alert('전체 세트 내보내기 오류: ' + e.message);
+  } finally {
+    S.activeSet = origSet;
+    if (ld) ld.style.display = 'none';
+    if (btn) btn.disabled = false;
+    updateSetTabs();
+    refreshConceptInputs();
+    showThumb(S.bgUrl);
+    render();
+  }
+}
+
 function dl(canvas, name) {
   return new Promise(resolve => {
     canvas.toBlob(blob => {
@@ -1916,8 +2148,26 @@ function excelDownloadTemplate() {
   if (typeof XLSX === 'undefined') { alert('SheetJS 라이브러리 로드 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   const wb = XLSX.utils.book_new();
 
-  /* ── 시술목록 시트 ── */
+  /* ── 컨셉 시트 (세트별 기본 정보) ── */
+  const conceptHeaders = ['세트명', '서브카피', '브랜드명', '메인타이틀', '테마라벨'];
+  const conceptRows = [conceptHeaders];
+  S.sets.forEach(set => {
+    const c = set.data.concept || {};
+    conceptRows.push([
+      set.name || '',
+      c.sub_copy     || '',
+      c.brand_name   || '',
+      c.name         || '',
+      c.theme_label  || '',
+    ]);
+  });
+  const ws0 = XLSX.utils.aoa_to_sheet(conceptRows);
+  ws0['!cols'] = [12, 34, 14, 18, 20].map(w => ({ wch: w }));
+  XLSX.utils.book_append_sheet(wb, ws0, '컨셉');
+
+  /* ── 시술목록 시트 (세트명 열 추가) ── */
   const itemHeaders = [
+    '세트명',
     '섹션명', '섹션_해시태그',
     '시술명', '해시태그',
     '가격1_횟수', '가격1',
@@ -1929,43 +2179,49 @@ function excelDownloadTemplate() {
     '배지(콤마구분)', '옵션(콤마구분)', '타입(standard/simple)'
   ];
   const itemRows = [itemHeaders];
-  S.data.sections.forEach(sec => {
-    sec.items.forEach((item, ii) => {
-      const row = [
-        ii === 0 ? (sec.section_name || '') : '',
-        ii === 0 ? (sec.hashtags || []).join(' ') : '',
-        item.name,
-        (item.hashtags || []).join(' '),
-      ];
-      for (let pi = 0; pi < 6; pi++) {
-        const p = (item.prices || [])[pi];
-        row.push(p ? (p.label || '') : '');
-        row.push(p ? (p.value || '') : '');
-      }
-      row.push((item.badges  || []).join(', '));
-      row.push((item.options || []).join(', '));
-      row.push(item.type || 'standard');
-      itemRows.push(row);
+  S.sets.forEach(set => {
+    (set.data.sections || []).forEach(sec => {
+      sec.items.forEach((item, ii) => {
+        const row = [
+          ii === 0 ? (set.name || '') : '',
+          ii === 0 ? (sec.section_name || '') : '',
+          ii === 0 ? (sec.hashtags || []).join(' ') : '',
+          item.name,
+          (item.hashtags || []).join(' '),
+        ];
+        for (let pi = 0; pi < 6; pi++) {
+          const p = (item.prices || [])[pi];
+          row.push(p ? (p.label || '') : '');
+          row.push(p ? (p.value || '') : '');
+        }
+        row.push((item.badges  || []).join(', '));
+        row.push((item.options || []).join(', '));
+        row.push(item.type || 'standard');
+        itemRows.push(row);
+      });
     });
   });
   const ws1 = XLSX.utils.aoa_to_sheet(itemRows);
-  ws1['!cols'] = [14,16,20,16,10,10,10,10,10,10,10,10,10,10,10,10,20,20,12].map(w=>({wch:w}));
+  ws1['!cols'] = [12,14,16,20,16,10,10,10,10,10,10,10,10,10,10,10,10,20,20,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, ws1, '시술목록');
 
-  /* ── 원내TV_데스크 시트 ── */
-  const deskHeaders = ['시술명', '횟수1', '가격1', '횟수2', '가격2', '횟수3', '가격3'];
+  /* ── 원내TV_데스크 시트 (세트명 열 추가) ── */
+  const deskHeaders = ['세트명', '시술명', '횟수1', '가격1', '횟수2', '가격2', '횟수3', '가격3'];
   const deskRows = [deskHeaders];
-  (S.data.concept.desk_rows || []).forEach(row => {
-    const r = [row.name || ''];
-    for (let pi = 0; pi < 3; pi++) {
-      const p = (row.prices || [])[pi];
-      r.push(p ? (p.count || '') : '');
-      r.push(p ? (p.value || '') : '');
-    }
-    deskRows.push(r);
+  S.sets.forEach(set => {
+    const rows = set.data.concept.desk_rows || [];
+    rows.forEach((row, ri) => {
+      const r = [ri === 0 ? (set.name || '') : '', row.name || ''];
+      for (let pi = 0; pi < 3; pi++) {
+        const p = (row.prices || [])[pi];
+        r.push(p ? (p.count || '') : '');
+        r.push(p ? (p.value || '') : '');
+      }
+      deskRows.push(r);
+    });
   });
   const ws2 = XLSX.utils.aoa_to_sheet(deskRows);
-  ws2['!cols'] = [24,10,12,10,12,10,12].map(w=>({wch:w}));
+  ws2['!cols'] = [12,24,10,12,10,12,10,12].map(w=>({wch:w}));
   XLSX.utils.book_append_sheet(wb, ws2, '원내TV_데스크');
 
   XLSX.writeFile(wb, 'leshine_event_template.xlsx');
@@ -1976,81 +2232,190 @@ function excelDownloadTemplate() {
 async function excelUpload(file) {
   if (typeof XLSX === 'undefined') { alert('SheetJS 라이브러리 로드 중입니다. 잠시 후 다시 시도해주세요.'); return; }
   try {
-    const buf  = await file.arrayBuffer();
-    const wb   = XLSX.read(new Uint8Array(buf), { type: 'array' });
-    const next = clone(S.data);
+    const buf = await file.arrayBuffer();
+    const wb  = XLSX.read(new Uint8Array(buf), { type: 'array' });
+
+    const isMultiSetFile = wb.SheetNames.includes('컨셉');
     let changed = false;
+
+    // 멀티세트 파일이면 기존 세트를 완전히 교체
+    if (isMultiSetFile) {
+      S.sets = [];
+      S.activeSet = 0;
+    }
+
+    /* 세트 이름 → 세트 인덱스 매핑 헬퍼 */
+    const setMap = {};
+    const getOrCreateSet = name => {
+      if (setMap[name] != null) return setMap[name];
+      const idx = S.sets.length;
+      S.sets.push(makeSet(name, idx + 1));
+      S.sets[idx].name = name;
+      setMap[name] = idx;
+      return idx;
+    };
+
+    /* ── 컨셉 시트 (세트 기본 정보) ── */
+    if (isMultiSetFile) {
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets['컨셉'], { header: 1, defval: '' });
+      rows.slice(1).forEach(row => {
+        const setName = String(row[0] || '').trim();
+        if (!setName) return;
+        const si = getOrCreateSet(setName);
+        const c  = S.sets[si].data.concept;
+        if (String(row[1] || '').trim()) c.sub_copy    = String(row[1]).trim();
+        if (String(row[2] || '').trim()) c.brand_name  = String(row[2]).trim();
+        if (String(row[3] || '').trim()) c.name        = String(row[3]).trim();
+        if (String(row[4] || '').trim()) c.theme_label = String(row[4]).trim();
+        changed = true;
+      });
+    }
 
     /* ── 시술목록 시트 ── */
     if (wb.SheetNames.includes('시술목록')) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets['시술목록'], { header: 1, defval: '' });
-      const sections = [];
-      let curSec = null;
+      if (rows.length > 1) {
+        const isNew = isMultiSetFile || String(rows[1][0] || '').trim() !== '';
 
-      rows.slice(1).forEach(row => {
-        const secName  = String(row[0] || '').trim();
-        const secTags  = String(row[1] || '').trim();
-        const itemName = String(row[2] || '').trim();
-        if (!itemName) return;
+        if (isNew) {
+          /* 신형 멀티세트 포맷 — col0=세트명, col1=섹션명, … */
+          let curSi  = -1;
+          let curSec = null;
+          rows.slice(1).forEach(row => {
+            const setName  = String(row[0] || '').trim();
+            const secName  = String(row[1] || '').trim();
+            const secTags  = String(row[2] || '').trim();
+            const itemName = String(row[3] || '').trim();
+            if (!itemName) return;
 
-        if (secName || !curSec) {
-          curSec = {
-            section_name: secName,
-            hashtags: secTags ? secTags.split(/\s+/).filter(t => t) : [],
-            items: []
-          };
-          sections.push(curSec);
+            if (setName) {
+              curSi  = getOrCreateSet(setName);
+              S.sets[curSi].data.sections = []; // 엑셀 데이터로 덮어쓰기
+              curSec = null;
+            }
+            if (curSi < 0) curSi = S.activeSet;
+
+            if (secName || !curSec) {
+              curSec = {
+                section_name: secName,
+                hashtags: secTags ? secTags.split(/\s+/).filter(t => t) : [],
+                items: []
+              };
+              S.sets[curSi].data.sections.push(curSec);
+            }
+
+            const hashtags = String(row[4] || '').trim()
+              ? String(row[4]).trim().split(/\s+/).filter(t => t) : [];
+            const prices = [];
+            for (let pi = 0; pi < 6; pi++) {
+              const label = String(row[5 + pi*2] || '').trim();
+              const value = String(row[6 + pi*2] || '').trim();
+              if (value) prices.push({ label, value });
+            }
+            if (!prices.length) prices.push({ label: '', value: '0만원' });
+            const badges  = String(row[17] || '').trim()
+              ? String(row[17]).split(',').map(b => b.trim()).filter(Boolean) : [];
+            const options = String(row[18] || '').trim()
+              ? String(row[18]).split(',').map(o => o.trim()).filter(Boolean) : [];
+            const type = String(row[19] || 'standard').trim() || 'standard';
+            curSec.items.push({ name: itemName, hashtags, prices, badges, options, type });
+            changed = true;
+          });
+        } else {
+          /* 구형 단일세트 포맷 — 현재 활성 세트에만 적용 */
+          const next = clone(S.data);
+          const sections = [];
+          let curSec = null;
+          rows.slice(1).forEach(row => {
+            const secName  = String(row[0] || '').trim();
+            const secTags  = String(row[1] || '').trim();
+            const itemName = String(row[2] || '').trim();
+            if (!itemName) return;
+            if (secName || !curSec) {
+              curSec = { section_name: secName, hashtags: secTags ? secTags.split(/\s+/).filter(t=>t) : [], items: [] };
+              sections.push(curSec);
+            }
+            const hashtags = String(row[3] || '').trim() ? String(row[3]).trim().split(/\s+/).filter(t=>t) : [];
+            const prices = [];
+            for (let pi = 0; pi < 6; pi++) {
+              const label = String(row[4 + pi*2] || '').trim();
+              const value = String(row[5 + pi*2] || '').trim();
+              if (value) prices.push({ label, value });
+            }
+            if (!prices.length) prices.push({ label: '', value: '0만원' });
+            const badges  = String(row[16] || '').trim() ? String(row[16]).split(',').map(b=>b.trim()).filter(Boolean) : [];
+            const options = String(row[17] || '').trim() ? String(row[17]).split(',').map(o=>o.trim()).filter(Boolean) : [];
+            const type = String(row[18] || 'standard').trim() || 'standard';
+            curSec.items.push({ name: itemName, hashtags, prices, badges, options, type });
+          });
+          if (sections.length) { next.sections = sections; S.data = next; changed = true; }
         }
-
-        const hashtags = String(row[3] || '').trim()
-          ? String(row[3]).trim().split(/\s+/).filter(t => t) : [];
-
-        const prices = [];
-        for (let pi = 0; pi < 6; pi++) {
-          const label = String(row[4 + pi*2] || '').trim();
-          const value = String(row[5 + pi*2] || '').trim();
-          if (value) prices.push({ label, value });
-        }
-        if (!prices.length) prices.push({ label: '', value: '0만원' });
-
-        const badges  = String(row[16] || '').trim()
-          ? String(row[16]).split(',').map(b => b.trim()).filter(Boolean) : [];
-        const options = String(row[17] || '').trim()
-          ? String(row[17]).split(',').map(o => o.trim()).filter(Boolean) : [];
-        const type    = String(row[18] || 'standard').trim() || 'standard';
-
-        curSec.items.push({ name: itemName, hashtags, prices, badges, options, type });
-      });
-
-      if (sections.length) { next.sections = sections; changed = true; }
+      }
     }
 
     /* ── 원내TV_데스크 시트 ── */
     if (wb.SheetNames.includes('원내TV_데스크')) {
       const rows = XLSX.utils.sheet_to_json(wb.Sheets['원내TV_데스크'], { header: 1, defval: '' });
-      const deskRows = [];
+      if (rows.length > 1) {
+        const isNew = isMultiSetFile || String(rows[1][0] || '').trim() !== '';
 
-      rows.slice(1).forEach(row => {
-        const name = String(row[0] || '').trim();
-        if (!name) return;
-        const prices = [];
-        for (let pi = 0; pi < 3; pi++) {
-          const count = String(row[1 + pi*2] || '').trim();
-          const value = String(row[2 + pi*2] || '').trim();
-          if (value) prices.push({ count, value });
+        if (isNew) {
+          /* 신형 멀티세트 포맷 — col0=세트명, col1=시술명 */
+          let curSi = -1;
+          rows.slice(1).forEach(row => {
+            const setName = String(row[0] || '').trim();
+            const name    = String(row[1] || '').trim();
+            if (!name) return;
+            if (setName) {
+              curSi = getOrCreateSet(setName);
+              S.sets[curSi].data.concept.desk_rows = [];
+            }
+            if (curSi < 0) curSi = S.activeSet;
+            const prices = [];
+            for (let pi = 0; pi < 3; pi++) {
+              const count = String(row[2 + pi*2] || '').trim();
+              const value = String(row[3 + pi*2] || '').trim();
+              if (value) prices.push({ count, value });
+            }
+            if (!prices.length) prices.push({ count: '', value: '0만원' });
+            S.sets[curSi].data.concept.desk_rows.push({ name, prices });
+            changed = true;
+          });
+        } else {
+          /* 구형 단일세트 포맷 */
+          const deskRows = [];
+          rows.slice(1).forEach(row => {
+            const name = String(row[0] || '').trim();
+            if (!name) return;
+            const prices = [];
+            for (let pi = 0; pi < 3; pi++) {
+              const count = String(row[1 + pi*2] || '').trim();
+              const value = String(row[2 + pi*2] || '').trim();
+              if (value) prices.push({ count, value });
+            }
+            if (!prices.length) prices.push({ count: '', value: '0만원' });
+            deskRows.push({ name, prices });
+          });
+          if (deskRows.length) {
+            const cur = S.sets[S.activeSet].data;
+            cur.concept.desk_rows = deskRows;
+            changed = true;
+          }
         }
-        if (!prices.length) prices.push({ count: '', value: '0만원' });
-        deskRows.push({ name, prices });
-      });
-
-      if (deskRows.length) { next.concept.desk_rows = deskRows; changed = true; }
+      }
     }
 
     if (!changed) { excelStatus('읽을 데이터가 없습니다.', '#c0392b'); return; }
 
-    S.data = next;
+    // 세트가 비어있으면 기본 세트 하나 보장
+    if (S.sets.length === 0) S.sets.push(makeSet('세트 1', 1));
+    S.activeSet = Math.min(S.activeSet, S.sets.length - 1);
+
+    updateSetTabs();
+    refreshConceptInputs();
+    showThumb(S.bgUrl);
     render();
-    excelStatus('업로드 완료!', '#2a7a2a');
+    excelStatus(`업로드 완료! (${S.sets.length}개 세트)`, '#2a7a2a');
   } catch(e) {
     console.error(e);
     excelStatus('오류: ' + e.message, '#c0392b');
