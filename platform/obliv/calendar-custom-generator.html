@@ -219,6 +219,19 @@ input[type=color].swatch::-webkit-color-swatch{border:none;border-radius:50%;}
             <div id="palette-rows"></div>
           </div>
         </div>
+        <div style="margin-top:8px;padding-top:8px;border-top:.5px solid rgba(0,0,0,.07)">
+          <div class="form-row">
+            <span class="form-label">그라데이션</span>
+            <input type="color" id="grad-color" class="swatch" value="#000000"/>
+            <input type="range" id="grad-opacity" min="0" max="100" value="15"/>
+            <span class="range-val" id="grad-opacity-val">15%</span>
+          </div>
+          <div class="form-row">
+            <span class="form-label">높이</span>
+            <input type="range" id="grad-height" min="10" max="90" value="52"/>
+            <span class="range-val" id="grad-height-val">52%</span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -348,6 +361,7 @@ let logoType='none', logoPos='bottom-center';
 let footerText='', footerColor='#999999', footerSize=11, footerOpacity=100;
 let highlights=[{id:1,label:'휴가',color:'#C0392B',daysByMonth:{}}];
 let activeHlId=1, nextHlId=2;
+let gradOpacity=15, gradHeight=52, gradColor='#000000';
 let logoCache={};
 
 // ─── DOM ────────────────────────────────────────────────────────────────────
@@ -470,6 +484,14 @@ async function renderCanvas(canvas,mode){
   }else{
     ctx.fillStyle=bgColor;ctx.fillRect(0,0,W,H);
   }
+
+  // 1-b. Bottom gradient overlay
+  {const gradTop=H*(1-gradHeight/100);
+  const grad=ctx.createLinearGradient(0,gradTop,0,H);
+  grad.addColorStop(0,'rgba(0,0,0,0)');
+  const {r:gr,g:gg,b:gb}=hexToRgb(gradColor);
+  grad.addColorStop(1,`rgba(${gr},${gg},${gb},${gradOpacity/100})`);
+  ctx.fillStyle=grad;ctx.fillRect(0,gradTop,W,H-gradTop);}
 
   const onDark=!!bgImg;
   const autoText=bgImg?'#ffffff':isColorLight(bgColor)?'#1c1c1c':'#ffffff';
@@ -808,6 +830,9 @@ document.getElementById('footer-color').addEventListener('input',e=>{
 renderFooterColorChips('#999999');
 document.getElementById('footer-size').addEventListener('input',e=>{footerSize=+e.target.value;document.getElementById('footer-size-val').textContent=e.target.value;redrawAll();});
 document.getElementById('footer-opacity').addEventListener('input',e=>{footerOpacity=+e.target.value;document.getElementById('footer-opacity-val').textContent=e.target.value+'%';redrawAll();});
+document.getElementById('grad-color').addEventListener('input',e=>{gradColor=e.target.value;redrawAll();});
+document.getElementById('grad-opacity').addEventListener('input',e=>{gradOpacity=+e.target.value;document.getElementById('grad-opacity-val').textContent=e.target.value+'%';redrawAll();});
+document.getElementById('grad-height').addEventListener('input',e=>{gradHeight=+e.target.value;document.getElementById('grad-height-val').textContent=e.target.value+'%';redrawAll();});
 
 // ─── Export ───────────────────────────────────────────────────────────────
 async function exportImg(mode){
