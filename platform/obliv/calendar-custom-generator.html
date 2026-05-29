@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>커스텀 캘린더 생성기</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"/>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -139,7 +138,6 @@ input[type=color].swatch::-webkit-color-swatch{border:none;border-radius:50%;}
 </style>
 </head>
 <body>
-<span style="position:absolute;visibility:hidden;font-family:'Cormorant Garamond';font-size:1px;font-weight:300">·</span>
 
 <div class="app">
 
@@ -405,19 +403,19 @@ async function renderCanvas(canvas,mode){
   const baseW=mode==='mo'?428:mode==='pc'?889:800;
   const sc=W/baseW; // all sizes scale with canvas width
 
-  const padX=Math.round(64*sc);
+  const padX=Math.round((mode==='mo'?36:64)*sc);
   // title: 슬라이더 50 기준 → A4=1.0, PC=0.9(→45), MO=0.7(→35)
-  const tSz=Math.round((mode==='a4'?titleSz:mode==='mo'?titleSz*0.70:titleSz*0.90)*sc);
+  const tSz=Math.round((mode==='a4'?titleSz*1.2:mode==='mo'?titleSz*0.70:titleSz*0.90)*sc);
   // DOW: A4 2x, mobile 9, pc 15
-  const dowSz=Math.round((mode==='a4'?20:mode==='mo'?9:15)*sc);
+  const dowSz=Math.round((mode==='a4'?22:mode==='mo'?11:17)*sc);
   // rowH: A4 96(원 간격 확보), mobile 50, pc 68
-  const rowH=Math.round((mode==='a4'?96:mode==='mo'?50:68)*sc);
+  const rowH=Math.round((mode==='a4'?128:mode==='mo'?50:68)*sc);
   const colW=(W-padX*2)/7;
   // circR & lblSz: A4 2x scaled
-  const circR=Math.round((mode==='a4'?40:mode==='mo'?15:20)*sc);
+  const circR=Math.round((mode==='a4'?44:mode==='mo'?19:26)*sc);
   // date numbers: A4 2x
-  const dateSz=Math.round((mode==='a4'?45:mode==='mo'?19.5:22.5)*sc);
-  const lblSz=Math.round((mode==='a4'?20:mode==='mo'?8.5:10)*sc);
+  const dateSz=Math.round((mode==='a4'?38:mode==='mo'?19.5:22.5)*sc);
+  const lblSz=Math.round((mode==='a4'?26:mode==='mo'?11:13)*sc);
   // footer size: A4 1.5x, mo 0.85x
   const fSz=Math.round((mode==='a4'?footerSize*1.5:mode==='mo'?Math.round(footerSize*.85):footerSize)*sc);
   // logo height: mobile slightly smaller / seoul-origin 1.5x
@@ -425,8 +423,8 @@ async function renderCanvas(canvas,mode){
   const lhLogo=logoType==='seoul'?Math.round(lhBase*1.5):lhBase;
 
   const titleFont=`'Pretendard','Noto Sans KR',sans-serif`;
-  const numFont=`'Cormorant Garamond','Pretendard',sans-serif`;
-  const uiFont=`-apple-system,'Pretendard','Noto Sans KR',sans-serif`;
+  const numFont=`'Pretendard','Noto Sans KR',sans-serif`;
+  const uiFont=`'Pretendard','Noto Sans KR',sans-serif`;
 
   const cells=buildCells(year,month);
   const totalRows=cells.length/7;
@@ -440,7 +438,7 @@ async function renderCanvas(canvas,mode){
   const footerLines=footerText?footerText.split('\n'):[];
   const lineH=Math.round(fSz*1.55);
   const totalFooterH=footerLines.length>0?footerLines.length*lineH:0;
-  const logoGap=Math.round(14*sc);
+  const logoGap=Math.round(26*sc);
 
   // ① 로고/푸터 위치 먼저 확정 (캔버스 하단 기준, grid 위치와 무관)
   const botMargin=Math.round((mode==='a4'?66:mode==='pc'?44:22)*sc);
@@ -449,17 +447,15 @@ async function renderCanvas(canvas,mode){
 
   // ② grid topPad — 푸터 영역 침범 안 하도록 상한 제한
   const contentH=tSz+gapTD+dowSz+gapDG+totalRows*rowH;
-  const minPad=Math.round(32*sc);
-  const safeGap=Math.round((mode==='pc'?6:16)*sc);  // grid 하단 ↔ 푸터 최소 간격
-  const labelExtend=mode==='a4'?Math.round(40*sc):0; // A4만 원형이 grid 아래로 삐져나옴
-  const maxTopPad=footerBotRef-totalFooterH-safeGap-labelExtend-contentH;
-  const idealTopPad=Math.floor((H-contentH)/2);
-  const topPad=Math.max(minPad,Math.min(idealTopPad,maxTopPad));
+  const minPad=Math.round((mode==='a4'?160:mode==='mo'?88:72)*sc);
+  const topPad=minPad; // 상단 고정 정렬 — 타이틀 아래부터 달력 시작
 
   const dowY=topPad+tSz+gapTD+dowSz/2;           // grid 위치: gapTD 기준 고정
   const gridTop=topPad+tSz+gapTD+dowSz+gapDG;
-  // 제목은 dow 위에서 시각적 간격(gapTDvis)만큼 위로 — 상단 이탈 방지 clamp
-  const titleY=Math.max(tSz/2+Math.round(8*sc), dowY-dowSz/2-gapTDvis-tSz/2);
+  // 제목 Y: A4는 상단 고정 마진, PC/Mobile은 dow 기준 역산
+  const titleY=mode==='a4'
+    ? Math.round(150*sc)
+    : Math.max(tSz/2+Math.round(8*sc), dowY-dowSz/2-gapTDvis-tSz/2);
 
   ctx.clearRect(0,0,W,H);
 
@@ -515,14 +511,19 @@ async function renderCanvas(canvas,mode){
           ctx.font=`600 ${lblSz}px ${uiFont}`;
           ctx.fillStyle=onDark?'rgba(255,255,255,.85)':hl.color;
           ctx.textAlign='center';ctx.textBaseline='top';
-          hl.label.split(' ').forEach((ln,li)=>ctx.fillText(ln,mx,ly+li*(lblSz+2)));
+          {const avail=(cx2-cx1+2*circR)*0.92;const parts=hl.label.split(' ');
+          if(parts.length<2||ctx.measureText(hl.label).width<=avail){ctx.fillText(hl.label,mx,ly);}
+          else{parts.forEach((ln,li)=>ctx.fillText(ln,mx,ly+li*(lblSz+2)));}}
         }else{
           ctx.beginPath();ctx.arc(cx1,cy,circR,0,Math.PI*2);ctx.fill();
           const ly=cy+circR+Math.round(5*sc);
           ctx.font=`600 ${lblSz}px ${uiFont}`;
           ctx.fillStyle=onDark?'rgba(255,255,255,.85)':hl.color;
           ctx.textAlign='center';ctx.textBaseline='top';
-          hl.label.split(' ').forEach((ln,li)=>ctx.fillText(ln,cx1,ly+li*(lblSz+2)));
+          {const avail=colW*1.8;const parts=hl.label.split(' ');
+          if(parts.length<2||ctx.measureText(hl.label).width<=avail){ctx.fillText(hl.label,cx1,ly);}
+          else{parts.forEach((ln,li)=>ctx.fillText(ln,cx1,ly+li*(lblSz+2)));}}
+
         }
         sc2=-1;ec=-1;
       };
@@ -556,9 +557,9 @@ async function renderCanvas(canvas,mode){
     ctx.globalAlpha=footerOpacity/100;
     ctx.textAlign='center';ctx.textBaseline='middle';
     ctx.letterSpacing=`${Math.round(fSz*-0.04)}px`;
+    const footerFirstY=footerBotRef-lineH+lineH/2; // 첫 줄 고정, 추가 줄은 아래로
     footerLines.forEach((line,i)=>{
-      const ly=footerBotRef-totalFooterH+lineH*i+lineH/2;
-      ctx.fillText(line,W/2,ly);
+      ctx.fillText(line,W/2,footerFirstY+lineH*i);
     });
     ctx.letterSpacing='0px';
     ctx.globalAlpha=1;
@@ -908,7 +909,7 @@ function renderHistList(){
 
 // ─── Init ─────────────────────────────────────────────────────────────────
 async function ensureFonts(){
-  try{await Promise.all([document.fonts.load('300 64px "Cormorant Garamond"'),document.fonts.load('400 64px "Cormorant Garamond"')]);}catch(e){}
+  try{await Promise.all([document.fonts.load('400 64px "Pretendard"'),document.fonts.load('600 64px "Pretendard"')]);}catch(e){}
 }
 
 new ResizeObserver(updatePreviewSizes).observe(previewStage);
