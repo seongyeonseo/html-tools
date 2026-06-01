@@ -201,11 +201,25 @@ body {
 }
 .acc-head:hover { background: var(--ui-surface); }
 .acc-head.open { color: var(--primary); }
-.acc-title { display: flex; align-items: center; gap: 9px; }
+.acc-head.hidden-card { opacity: 0.4; }
+.acc-title { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; }
 .acc-logo { width: 22px; height: 22px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .acc-logo svg { width: 22px; height: 22px; }
 .acc-arr { flex-shrink: 0; color: var(--ui-lo); transition: transform .15s; }
 .acc-arr.r { transform: rotate(180deg); color: var(--primary); }
+.acc-toggle {
+  flex-shrink: 0; width: 32px; height: 18px; border-radius: 9px;
+  background: var(--ui-border); border: none; cursor: pointer;
+  position: relative; transition: background .18s; padding: 0;
+}
+.acc-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; transition: left .18s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.2);
+}
+.acc-toggle.on { background: var(--primary); }
+.acc-toggle.on::after { left: 16px; }
 .acc-body { padding: 2px 17px 14px; }
 .acc-body.closed { display: none; }
 .field { margin-bottom: 10px; }
@@ -222,7 +236,7 @@ body {
   transition: border-color .12s; letter-spacing: -.04em;
 }
 .field input:focus, .field textarea:focus { border-color: var(--primary); background: #fff; }
-.field textarea { min-height: 60px; }
+.field textarea { min-height: 60px; resize: none; overflow: hidden; }
 .field-hint { font-size: 11px; color: var(--ui-lo); margin-bottom: 6px; }
 
 /* ── 포스터 */
@@ -275,13 +289,19 @@ body {
   overflow: hidden;
   min-height: 0;
 }
-.card-row {
+#card-rows-wrap {
   flex: 1;
   display: flex;
-  align-items: center;
-  padding: 0 4px 0 2px;
-  position: relative;
+  flex-direction: column;
+  justify-content: space-between;
   min-height: 0;
+  transform-origin: top left;
+}
+.card-row {
+  display: flex;
+  align-items: center;
+  padding: 6px 4px 6px 2px;
+  position: relative;
 }
 .card-row + .card-row::before {
   content: "";
@@ -447,7 +467,8 @@ var CARDS = [
   { id:'hyundai',  name:'현대카드',  number:'861008026',  conditions:'2-3개월 무이자 (~12.31까지)\n부분무이자 10개월 (4개월 고객부담)\n부분무이자 12개월 (5개월 고객부담)', note:'' },
   { id:'kookmin',  name:'국민카드',  number:'',           conditions:'2-3개월 무이자 (~07.31까지)\n부분무이자 10개월 (4개월 고객부담)\n부분무이자 12개월 (5개월 고객부담)', note:'' },
   { id:'lotte',    name:'롯데카드',  number:'',           conditions:'무이자 불가능', note:'' },
-  { id:'hana',     name:'하나카드',  number:'',           conditions:'2-3개월 무이자 (~07.31까지)\n부분무이자 10개월 (4개월 고객부담)\n부분무이자 12개월 (5개월 고객부담)', note:'' }
+  { id:'hana',     name:'하나카드',  number:'',           conditions:'2-3개월 무이자 (~07.31까지)\n부분무이자 10개월 (4개월 고객부담)\n부분무이자 12개월 (5개월 고객부담)', note:'' },
+  { id:'woori',    name:'우리카드',  number:'',           conditions:'2-3개월 무이자 (~12.31까지)\n부분무이자 10개월 (4개월 고객부담)\n부분무이자 12개월 (5개월 고객부담)', note:'' }
 ];
 
 /* ── 카드 로고 이미지 */
@@ -459,7 +480,8 @@ var LOGOS = {
   hyundai:  '<img src="asset/현대.png">',
   kookmin:  '<img src="asset/국민.png">',
   lotte:    '<img src="asset/롯데.png">',
-  hana:     '<img src="asset/하나.png">'
+  hana:     '<img src="asset/하나.png">',
+  woori:    '<img src="asset/우리.png">'
 };
 
 /* ── 아코디언 로고 (사이드바용 소형) */
@@ -471,7 +493,8 @@ var LOGOS_SM = {
   hyundai:  '<img src="asset/현대.png" style="width:22px;height:22px;object-fit:contain;">',
   kookmin:  '<img src="asset/국민.png" style="width:22px;height:22px;object-fit:contain;">',
   lotte:    '<img src="asset/롯데.png" style="width:22px;height:22px;object-fit:contain;">',
-  hana:     '<img src="asset/하나.png" style="width:22px;height:22px;object-fit:contain;">'
+  hana:     '<img src="asset/하나.png" style="width:22px;height:22px;object-fit:contain;">',
+  woori:    '<img src="asset/우리.png" style="width:22px;height:22px;object-fit:contain;">'
 };
 
 /* ── 헬퍼 */
@@ -483,7 +506,9 @@ function lsSet(k, v){ localStorage.setItem(LS_KEY+'_'+k, v); }
 /* ── 포스터 렌더 */
 function renderPoster() {
   var list = document.getElementById('poster-card-list');
-  list.innerHTML = CARDS.map(function(c) {
+  list.innerHTML = '<div id="card-rows-wrap">' + CARDS.filter(function(c) {
+    return lsGet(c.id+'_visible', '1') === '1';
+  }).map(function(c) {
     var name  = lsGet(c.id+'_name', c.name);
     var num   = lsGet(c.id+'_num',  c.number);
     var cond  = lsGet(c.id+'_cond', c.conditions);
@@ -504,7 +529,43 @@ function renderPoster() {
         + (note ? '<div class="card-note">'+esc(note)+'</div>' : '')
       + '</div>'
     + '</div>';
-  }).join('');
+  }).join('') + '</div>';
+  fitCardList();
+}
+
+function fitCardList() {
+  requestAnimationFrame(function() {
+    var list = document.getElementById('poster-card-list');
+    var wrap = document.getElementById('card-rows-wrap');
+    if (!list || !wrap) return;
+
+    // 초기화
+    wrap.style.transform = '';
+    wrap.style.width = '';
+
+    // 사용 가능한 높이/너비 (overflow:hidden인 list 기준 → 항상 일정)
+    var availH = list.clientHeight;
+    var availW = list.clientWidth;
+    if (availH <= 0) return;
+
+    // 자연 높이 측정: wrap을 일시적으로 flex 해제 → 내용 높이 그대로
+    wrap.style.flex = 'none';
+    wrap.style.height = 'auto';
+
+    var naturalH = wrap.scrollHeight;
+
+    // 원상복구 (인라인 스타일 제거 → CSS flex:1 복귀)
+    wrap.style.flex = '';
+    wrap.style.height = '';
+
+    if (naturalH <= availH || naturalH <= 0) return;
+
+    // 스케일 적용
+    var scale = availH / naturalH;
+    wrap.style.width = (availW / scale) + 'px';   // 가로 폭 보정
+    wrap.style.transform = 'scale(' + scale.toFixed(4) + ')';
+    wrap.style.transformOrigin = 'top left';
+  });
 }
 
 /* ── 사이드바 빌드 */
@@ -515,9 +576,11 @@ function buildSidebar() {
     var num  = lsGet(c.id+'_num',  c.number);
     var cond = lsGet(c.id+'_cond', c.conditions);
     var note = lsGet(c.id+'_note', c.note);
+    var visible = lsGet(c.id+'_visible', '1') === '1';
     return '<div class="acc">'
-      + '<div class="acc-head" onclick="toggleAcc(this)">'
+      + '<div class="acc-head' + (visible ? '' : ' hidden-card') + '" onclick="toggleAcc(this)">'
       + '<div class="acc-title"><div class="acc-logo">'+LOGOS_SM[c.id]+'</div><span>'+esc(c.name)+'</span></div>'
+      + '<button class="acc-toggle' + (visible ? ' on' : '') + '" onclick="toggleCardVisible(event,\''+c.id+'\',this)" title="포스터에 표시/숨김"></button>'
       + '<svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
       + '</div>'
       + '<div class="acc-body closed">'
@@ -527,7 +590,7 @@ function buildSidebar() {
         + '<input type="text" id="in-'+c.id+'-num" value="'+esc(num)+'" oninput="update(\''+c.id+'\',\'num\',this.value)"></div>'
         + '<div class="field"><label>할부 조건</label>'
         + '<div class="field-hint">Enter로 항목 구분</div>'
-        + '<textarea id="in-'+c.id+'-cond" rows="3" oninput="update(\''+c.id+'\',\'cond\',this.value)">'+esc(cond)+'</textarea></div>'
+        + '<textarea id="in-'+c.id+'-cond" rows="3" oninput="autoResize(this);update(\''+c.id+'\',\'cond\',this.value)">'+esc(cond)+'</textarea></div>'
         + '<div class="field"><label>비고 <span style="color:var(--ui-lo);font-weight:400">(선택)</span></label>'
         + '<input type="text" id="in-'+c.id+'-note" value="'+esc(note)+'" oninput="update(\''+c.id+'\',\'note\',this.value)"></div>'
       + '</div>'
@@ -535,8 +598,25 @@ function buildSidebar() {
   }).join('');
 }
 
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = (el.scrollHeight + 2) + 'px';
+}
+
 function update(id, field, val) {
   lsSet(id+'_'+field, val);
+  renderPoster();
+}
+
+/* ── 카드 표시/숨김 토글 */
+function toggleCardVisible(e, id, btn) {
+  e.stopPropagation();
+  var visible = lsGet(id+'_visible', '1') === '1';
+  var newVal = visible ? '0' : '1';
+  lsSet(id+'_visible', newVal);
+  btn.classList.toggle('on', !visible);
+  var head = btn.closest('.acc-head');
+  head.classList.toggle('hidden-card', visible);
   renderPoster();
 }
 
@@ -662,8 +742,11 @@ async function exportPDF() {
 
 /* ── 초기화 */
 buildSidebar();
+document.querySelectorAll('.tab-body textarea').forEach(autoResize);
 renderPoster();
 renderHistoryList();
+// 이미지 로드 완료 후 재측정 (로고 이미지 높이 반영)
+window.addEventListener('load', function() { fitCardList(); });
 </script>
 </body>
 </html>
