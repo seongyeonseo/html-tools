@@ -162,6 +162,18 @@ body { font-family: "Pretendard", -apple-system, sans-serif; background: var(--u
 .job-section-content li.indented { padding-left: 34px; font-size: 16px; }
 .job-section-content li.indented::before { left: 16px; font-size: 18px; }
 .pos-divider-bar { display: none !important; }
+/* 저장 이름 모달 */
+.save-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.32); z-index: 9000; display: none; align-items: center; justify-content: center; }
+.save-modal-overlay.open { display: flex; }
+.save-modal { background: var(--ui-panel); border-radius: 16px; padding: 22px 20px 20px; width: 288px; box-shadow: 0 12px 40px rgba(0,0,0,.18); }
+.save-modal-title { font-size: 14px; font-weight: 700; color: var(--ui-hi); margin-bottom: 12px; }
+.save-modal-input { width: 100%; border: 1px solid var(--ui-border); border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: "Pretendard", sans-serif; color: var(--ui-hi); background: var(--ui-surface); outline: none; letter-spacing: -.04em; transition: border-color .12s; }
+.save-modal-input:focus { border-color: var(--primary); background: #fff; }
+.save-modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.save-modal-cancel { flex: 1; height: 36px; border: 1px solid var(--ui-border); border-radius: 8px; background: none; font-size: 13px; font-weight: 600; color: var(--ui-md); cursor: pointer; font-family: inherit; transition: background .12s; }
+.save-modal-cancel:hover { background: var(--ui-surface); }
+.save-modal-confirm { flex: 1; height: 36px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .12s; }
+.save-modal-confirm:hover { background: var(--primary-hov); }
 </style>
 </head>
 <body>
@@ -387,6 +399,17 @@ body { font-family: "Pretendard", -apple-system, sans-serif; background: var(--u
   </div>
 </div>
 
+<div class="save-modal-overlay" id="save-modal-overlay" onclick="closeSaveModal()">
+  <div class="save-modal" onclick="event.stopPropagation()">
+    <div class="save-modal-title">저장 이름</div>
+    <input type="text" class="save-modal-input" id="save-modal-input" placeholder="저장 이름을 입력하세요" onkeydown="if(event.key==='Enter')confirmSave();else if(event.key==='Escape')closeSaveModal();">
+    <div class="save-modal-actions">
+      <button class="save-modal-cancel" onclick="closeSaveModal()">취소</button>
+      <button class="save-modal-confirm" onclick="confirmSave()">저장</button>
+    </div>
+  </div>
+</div>
+
 <script>
   var BRAND_COLOR = "#8EB9D7";
 
@@ -487,7 +510,9 @@ body { font-family: "Pretendard", -apple-system, sans-serif; background: var(--u
 
   var HIST_KEY="onlif_history";
   function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY))||[];}catch(e){return[];}}
-  function saveSnapshot(){var data={};document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea').forEach(function(el){if(el.id)data[el.id]=el.value;});var hist=getHistory();hist.unshift({time:Date.now(),label:document.getElementById("in-job-title").value||"저장",data:data,pos2:document.getElementById("pos2-zone").style.display!=="none"});if(hist.length>10)hist=hist.slice(0,10);localStorage.setItem(HIST_KEY,JSON.stringify(hist));renderHistoryList();var btn=document.querySelector("#split-save .s-main"),orig=btn.textContent;btn.textContent="저장됨";btn.style.color="#048848";setTimeout(function(){btn.textContent=orig;btn.style.color="";},1200);}
+  function saveSnapshot(){var input=document.getElementById('save-modal-input');input.value=document.getElementById("in-job-title").value||"";document.getElementById('save-modal-overlay').classList.add('open');setTimeout(function(){input.focus();input.select();},50);}
+  function confirmSave(){var label=document.getElementById('save-modal-input').value.trim()||document.getElementById("in-job-title").value||"저장";closeSaveModal();var data={};document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea').forEach(function(el){if(el.id)data[el.id]=el.value;});var hist=getHistory();hist.unshift({time:Date.now(),label:label,data:data,pos2:document.getElementById("pos2-zone").style.display!=="none"});if(hist.length>10)hist=hist.slice(0,10);localStorage.setItem(HIST_KEY,JSON.stringify(hist));renderHistoryList();var btn=document.querySelector("#split-save .s-main"),orig=btn.textContent;btn.textContent="저장됨";btn.style.color="#048848";setTimeout(function(){btn.textContent=orig;btn.style.color="";},1200);}
+  function closeSaveModal(){document.getElementById('save-modal-overlay').classList.remove('open');}
   function restoreSnapshot(idx){var h=getHistory()[idx];if(!h)return;Object.keys(h.data).forEach(function(id){var el=document.getElementById(id);if(el){el.value=h.data[id];el.dispatchEvent(new Event("input"));}});if(h.pos2)addPosition2();else removePosition2();closeDropdowns();}
   function clearHistory(){localStorage.removeItem(HIST_KEY);renderHistoryList();}
   function renderHistoryList(){var hist=getHistory(),list=document.getElementById("dd-history-list");if(!hist.length){list.innerHTML='<div class="hist-empty">저장된 기록이 없습니다</div>';return;}var COLORS=["linear-gradient(135deg,#e8e8ff,#c0c0ff)","linear-gradient(135deg,#d8f5e8,#9ae8c0)","linear-gradient(135deg,#fdecd8,#f8c4a0)"];list.innerHTML=hist.map(function(h,i){var d=new Date(h.time);var t=d.toLocaleDateString("ko-KR",{month:"2-digit",day:"2-digit"})+" "+d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});return '<div class="hist-item"><div class="hist-thumb" style="background:'+COLORS[i%3]+'"></div><div class="hist-info"><div class="hist-name">'+h.label+'</div><div class="hist-time">'+t+'</div></div><div class="hist-restore" onclick="restoreSnapshot('+i+')">불러오기</div></div>';}).join("");}
