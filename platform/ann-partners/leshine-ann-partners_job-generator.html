@@ -1056,7 +1056,7 @@ body {
     var data={};
     document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea').forEach(function(el){ if(el.id)data[el.id]=el.value; });
     var hist=getHistory();
-    hist.unshift({time:Date.now(), label:document.getElementById("in-job-title").value||"저장", data:data});
+    hist.unshift({time:Date.now(), label:document.getElementById("in-job-title").value||"저장", data:data, pos2:document.getElementById("pos2-zone").style.display!=="none"});
     if(hist.length>10) hist=hist.slice(0,10);
     localStorage.setItem(HIST_KEY,JSON.stringify(hist));
     renderHistoryList();
@@ -1068,6 +1068,7 @@ body {
   function restoreSnapshot(idx) {
     var h=getHistory()[idx]; if(!h)return;
     Object.keys(h.data).forEach(function(id){ var el=document.getElementById(id); if(el){el.value=h.data[id];el.dispatchEvent(new Event("input"));} });
+    if(h.pos2) addPosition2(); else removePosition2();
     closeDropdowns();
   }
   function clearHistory(){ localStorage.removeItem(HIST_KEY); renderHistoryList(); }
