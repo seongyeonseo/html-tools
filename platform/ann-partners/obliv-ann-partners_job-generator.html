@@ -7,14 +7,134 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: "Pretendard", sans-serif; background: transparent; min-height: 100vh; }
-.app-wrapper { display: flex; width: 1400px; margin: 0 auto; padding: 32px 0; align-items: flex-start; }
-.preview-area { flex: 1; min-width: 0; }
+:root {
+  --primary:     #1010FF;
+  --primary-hov: #0a0acc;
+  --pri-alpha:   rgba(16,16,255,.07);
+  --pri-border:  rgba(16,16,255,.16);
+  --ui-bg:       #F2F4F6;
+  --ui-panel:    #ffffff;
+  --ui-border:   #E5E8EB;
+  --ui-hi:       #191F28;
+  --ui-md:       #6B7684;
+  --ui-lo:       #8B95A1;
+  --ui-surface:  #F7F8FA;
+  --topbar-h:    56px;
+  --sidebar-w:   300px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: "Pretendard", -apple-system, sans-serif; background: var(--ui-bg); color: var(--ui-hi); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+
+.topbar { height: var(--topbar-h); background: var(--ui-panel); border-bottom: 1px solid var(--ui-border); display: flex; align-items: center; padding: 0 20px; gap: 10px; flex-shrink: 0; position: relative; z-index: 100; }
+.tb-space { flex: 1; }
+
+.split { display: flex; border-radius: 9px; overflow: hidden; flex-shrink: 0; }
+.split.save { border: 1px solid var(--ui-border); }
+.split.save .s-main { height: 36px; padding: 0 14px; background: var(--ui-surface); color: var(--ui-hi); border: none; border-right: 1px solid var(--ui-border); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .12s; }
+.split.save .s-main:hover { background: var(--ui-border); }
+.split.save .s-arr { height: 36px; width: 34px; background: var(--ui-surface); border: none; color: var(--ui-lo); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+.split.save .s-arr:hover { background: var(--ui-border); color: var(--ui-hi); }
+.split.save.open .s-arr { background: var(--ui-border); color: var(--ui-hi); }
+.split.export { border: 1px solid var(--primary); margin-left: 8px; }
+.split.export .s-main { height: 36px; padding: 0 14px; background: var(--primary); color: #fff; border: none; border-right: 1px solid rgba(255,255,255,.2); font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: background .12s; }
+.split.export .s-main:hover { background: var(--primary-hov); }
+.split.export .s-arr { height: 36px; width: 34px; background: var(--primary); border: none; color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .12s; }
+.split.export .s-arr:hover { background: var(--primary-hov); }
+.split.export.open .s-arr { background: #0808cc; }
+
+.dropdown { position: absolute; top: calc(var(--topbar-h) + 4px); background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.12); z-index: 200; overflow: hidden; display: none; }
+.dropdown.open { display: block; }
+.dd-head { padding: 11px 17px; border-bottom: 1px solid var(--ui-border); font-size: 11px; font-weight: 700; color: var(--ui-md); text-transform: uppercase; letter-spacing: .5px; }
+.dd-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 17px; border-bottom: 1px solid var(--ui-border); cursor: pointer; transition: background .1s; }
+.dd-item:last-child { border-bottom: none; }
+.dd-item:hover { background: var(--ui-surface); }
+.dd-item-label { font-size: 13px; font-weight: 600; color: var(--ui-hi); }
+.dd-item-desc { font-size: 11px; color: var(--ui-lo); margin-top: 1px; }
+.dd-default { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 8px; background: #E8FAF4; color: #048848; flex-shrink: 0; }
+.hist-item { display: flex; align-items: center; gap: 12px; padding: 11px 17px; border-bottom: 1px solid var(--ui-border); cursor: pointer; transition: background .1s; }
+.hist-item:last-child { border-bottom: none; }
+.hist-item:hover { background: var(--ui-surface); }
+.hist-thumb { width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0; }
+.hist-info { flex: 1; min-width: 0; }
+.hist-name { font-size: 13px; font-weight: 600; color: var(--ui-hi); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-time { font-size: 11px; color: var(--ui-lo); margin-top: 2px; }
+.hist-restore { flex-shrink: 0; font-size: 11px; font-weight: 600; color: var(--primary); background: var(--pri-alpha); border: 1px solid var(--pri-border); padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+.hist-restore:hover { background: rgba(16,16,255,.14); }
+.hist-empty { padding: 20px 17px; font-size: 13px; color: var(--ui-lo); text-align: center; }
+.dd-footer { padding: 10px 17px; border-top: 1px solid var(--ui-border); }
+.dd-footer-btn { width: 100%; height: 34px; border: 1px solid var(--ui-border); border-radius: 8px; background: none; font-size: 12px; font-weight: 600; color: var(--ui-md); cursor: pointer; font-family: inherit; transition: background .12s; }
+.dd-footer-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+
+.main-layout { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.canvas-area { flex: 1; min-width: 0; min-height: 0; overflow-y: auto; overflow-x: auto; background: var(--ui-bg); display: flex; justify-content: center; align-items: flex-start; padding: 40px; }
+.canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
+.canvas-area::-webkit-scrollbar-thumb { background: #C8CDD6; border-radius: 3px; }
+
+.resize-handle { width: 4px; flex-shrink: 0; background: transparent; border-left: 1px solid var(--ui-border); cursor: col-resize; position: relative; transition: background .12s; user-select: none; }
+.resize-handle:hover, .resize-handle.dragging { background: var(--pri-alpha); border-left-color: var(--primary); }
+.resize-handle::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 2px; height: 28px; border-radius: 2px; background: var(--ui-border); }
+.resize-handle:hover::after, .resize-handle.dragging::after { background: var(--primary); }
+
+.sidebar { width: var(--sidebar-w); min-width: 200px; max-width: 520px; background: var(--ui-panel); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+
+.fmt-toolbar { position: fixed; display: none; align-items: center; gap: 1px; background: var(--ui-panel); border: 1px solid var(--ui-border); border-radius: 10px; padding: 4px 6px; box-shadow: 0 4px 16px rgba(0,0,0,.10), 0 1px 4px rgba(0,0,0,.06); z-index: 9999; }
+.fmt-toolbar.visible { display: flex; }
+.fmt-btn { height: 30px; min-width: 32px; padding: 0 8px; background: none; border: none; color: var(--ui-md); font-size: 13px; font-weight: 700; font-family: "Pretendard", sans-serif; border-radius: 7px; cursor: pointer; white-space: nowrap; transition: background .1s, color .1s; display: flex; align-items: center; justify-content: center; }
+.fmt-btn:hover { background: var(--ui-surface); color: var(--ui-hi); }
+.fmt-btn.active { background: var(--pri-alpha); color: var(--primary); }
+.fmt-sep { width: 1px; height: 16px; background: var(--ui-border); margin: 0 3px; flex-shrink: 0; }
+.fmt-btn--text { font-size: 11px; font-weight: 700; letter-spacing: -.02em; }
+.fmt-btn[data-tip] { position: relative; }
+.fmt-btn[data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 7px); left: 50%; transform: translateX(-50%); background: var(--ui-hi); color: #fff; font-size: 11px; font-weight: 500; padding: 4px 8px; border-radius: 6px; white-space: nowrap; pointer-events: none; }
+
+.tab-bar { display: flex; border-bottom: 1px solid var(--ui-border); flex-shrink: 0; }
+.tab-btn { flex: 1; height: 44px; border: none; background: none; font-size: 13px; font-weight: 600; color: var(--ui-md); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: inherit; transition: color .12s; }
+.tab-btn:hover { color: var(--ui-hi); }
+.tab-btn.on { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-btn.add-btn { flex: 0 0 42px; font-size: 22px; line-height: 1; color: var(--ui-lo); }
+.tab-btn.add-btn:hover { color: var(--primary); }
+
+.tab-body { flex: 1; overflow-y: auto; }
+.tab-body::-webkit-scrollbar { width: 3px; }
+.tab-body::-webkit-scrollbar-thumb { background: #D8DADF; border-radius: 2px; }
+.tab-panel { display: none; }
+.tab-panel.on { display: block; }
+
+.acc { border-bottom: 1px solid var(--ui-border); }
+.acc:last-child { border-bottom: none; }
+.acc-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 17px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--ui-hi); transition: background .1s; user-select: none; }
+.acc-head:hover { background: var(--ui-surface); }
+.acc-head.open { color: var(--primary); }
+.acc-arr { flex-shrink: 0; color: var(--ui-lo); transition: transform .15s; }
+.acc-arr.r { transform: rotate(180deg); color: var(--primary); }
+.acc-body { padding: 2px 17px 14px; }
+.acc-body.closed { display: none; }
+
+.field { margin-bottom: 10px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 11px; font-weight: 600; color: var(--ui-md); margin-bottom: 5px; }
+.field input[type="text"], .field textarea { width: 100%; border: 1px solid var(--ui-border); border-radius: 8px; padding: 9px 11px; font-size: 13px; font-family: "Pretendard", sans-serif; color: var(--ui-hi); background: var(--ui-surface); resize: vertical; line-height: 1.6; outline: none; transition: border-color .12s; letter-spacing: -.04em; }
+.field input:focus, .field textarea:focus { border-color: var(--primary); background: #fff; }
+.field textarea { min-height: 80px; }
+.field-hint { font-size: 11px; color: var(--ui-lo); margin-bottom: 8px; }
+
+.order-list { list-style: none; }
+.order-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; margin-bottom: 6px; background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 9px; cursor: grab; font-size: 13px; font-weight: 600; color: var(--ui-hi); user-select: none; transition: border-color .12s; }
+.order-item:last-child { margin-bottom: 0; }
+.order-item:active { cursor: grabbing; }
+.order-item.dragging { opacity: .4; }
+.order-item.drag-over { border-color: var(--primary); background: var(--pri-alpha); }
+.order-handle { color: var(--ui-lo); font-size: 16px; }
+
+.pos2-remove-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 17px; border-bottom: 1px solid var(--ui-border); background: var(--ui-surface); flex-shrink: 0; }
+.pos2-remove-label { font-size: 13px; font-weight: 700; color: var(--ui-md); }
+.btn-remove-pos { font-size: 13px; font-weight: 600; color: var(--ui-lo); background: none; border: none; cursor: pointer; font-family: "Pretendard", sans-serif; transition: color .12s; }
+.btn-remove-pos:hover { color: #D63B3B; }
+
+/* ── 포스터 */
 #poster-canvas { width: 653px; background: #fff; overflow: hidden; display: flex; flex-direction: column; }
 .poster-top-img { width: 100%; display: block; vertical-align: top; flex-shrink: 0; }
-
-/* 팀 소개 섹션 */
 .people-section { background: #fff; padding: 48px 40px 52px; flex-shrink: 0; }
 .people-box { background: #fff; border: 1px solid #E4E4E4; border-radius: 12px; padding: 36px 40px; }
 .people-block { margin-bottom: 40px; }
@@ -22,8 +142,6 @@ body { font-family: "Pretendard", sans-serif; background: transparent; min-heigh
 .people-title { font-family: "Pretendard", sans-serif; font-weight: 700; font-size: 22px; color: #C17F51; letter-spacing: -0.04em; margin-bottom: 14px; }
 .people-body { font-family: "Pretendard", sans-serif; font-weight: 400; font-size: 15px; color: #333; line-height: 1.65; letter-spacing: -0.05em; white-space: pre-wrap; }
 .people-body strong { font-weight: 700; color: #111; }
-
-/* 직무 편집 구역 */
 .poster-edit-zone { background: #fff; padding: 40px 40px 44px; flex-shrink: 0; }
 .job-category { display: block; color: #C17F51; font-family: "Pretendard", sans-serif; font-weight: 700; font-size: 30px; margin-bottom: 10px; letter-spacing: 0.01em; }
 .job-header { margin-bottom: 30px; }
@@ -43,55 +161,46 @@ body { font-family: "Pretendard", sans-serif; background: transparent; min-heigh
 .job-section-content li.list-subheading::before { display: none; }
 .job-section-content li.indented { padding-left: 34px; font-size: 16px; }
 .job-section-content li.indented::before { left: 16px; font-size: 18px; }
-
-/* 사이드바 - 항상 #1010FF */
-.sidebar { width: 300px; flex-shrink: 0; background: transparent; padding-left: 28px; padding-right: 14px; position: sticky; top: 32px; max-height: calc(100vh - 64px); overflow-y: auto; }
-.sidebar::-webkit-scrollbar { width: 4px; }
-.sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
-.ctrl-section { padding-bottom: 16px; margin-bottom: 16px; border-bottom: 1px solid #e0e0e0; }
-.ctrl-section:last-of-type { border-bottom: none; }
-.ctrl-label { font-family: "Pretendard", sans-serif; font-size: 13px; font-weight: 700; color: #1010FF; letter-spacing: -0.04em; margin-bottom: 10px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; user-select: none; }
-.ctrl-label::after { content: "▾"; font-size: 11px; color: #1010FF; transition: transform 0.2s; display: inline-block; line-height: 1; }
-.ctrl-section.collapsed .ctrl-label { margin-bottom: 0; }
-.ctrl-section.collapsed .ctrl-label::after { transform: rotate(-90deg); }
-.ctrl-section.collapsed .ctrl-field,
-.ctrl-section.collapsed .hint-text,
-.ctrl-section.collapsed .section-order-list { display: none; }
-.shortcut-guide { font-size: 11px; color: #666; background: #f6f6ff; border: 1px solid #dcdcff; border-radius: 6px; padding: 8px 11px; margin-bottom: 16px; letter-spacing: -0.02em; line-height: 1.8; }
-.shortcut-guide strong { color: #1010FF; font-weight: 700; }
-.ctrl-field { margin-bottom: 10px; }
-.ctrl-field label { display: block; font-family: "Pretendard", sans-serif; font-size: 11px; font-weight: 600; color: #555; margin-bottom: 5px; letter-spacing: -0.02em; }
-.ctrl-field input[type="text"], .ctrl-field textarea { width: 100%; border: 1px solid #e0e0e0; border-radius: 6px; padding: 8px 10px; font-size: 12px; font-family: "Pretendard", sans-serif; color: #222; background: #fff; resize: vertical; line-height: 1.65; outline: none; transition: border-color 0.15s; letter-spacing: -0.05em; }
-.ctrl-field input:focus, .ctrl-field textarea:focus { border-color: #1010FF; }
-.ctrl-field textarea { min-height: 72px; }
-.section-order-list { list-style: none; }
-.section-order-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; margin-bottom: 6px; background: #f8f8f8; border: 1px solid #e0e0e0; border-radius: 6px; cursor: grab; font-size: 12px; font-family: "Pretendard", sans-serif; font-weight: 600; color: #333; letter-spacing: -0.02em; user-select: none; }
-.section-order-item:active { cursor: grabbing; }
-.section-order-item.dragging { opacity: 0.4; }
-.section-order-item.drag-over { border-color: #1010FF; background: #f0f0ff; }
-.drag-handle { color: #aaa; font-size: 14px; }
-.hint-text { font-size: 10px; color: #aaa; margin-bottom: 8px; letter-spacing: -0.02em; }
-.btn-export { width: 100%; background: #1010FF; color: #fff; border: none; border-radius: 7px; padding: 12px 0; font-size: 13px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; margin-top: 20px; transition: background 0.15s; letter-spacing: -0.03em; }
-.btn-export:hover { background: #0000cc; }
-.btn-export:disabled { background: #888; cursor: default; }
-
-/* 포지션 2 구분 */
 .pos-divider-bar { display: none !important; }
-
-/* 포지션 그룹 헤더 */
-.pos-group-label { font-size: 11px; font-weight: 800; color: #fff; background: #C17F51; border-radius: 6px; padding: 7px 12px; margin-bottom: 14px; letter-spacing: -0.02em; display: flex; align-items: center; justify-content: space-between; }
-.btn-remove-pos { background: none; border: none; color: rgba(255,255,255,0.75); cursor: pointer; font-size: 13px; padding: 0; line-height: 1; font-family: "Pretendard", sans-serif; }
-.btn-remove-pos:hover { color: #fff; }
-.btn-add-pos { width: 100%; background: transparent; border: 1.5px dashed #C17F51; color: #C17F51; border-radius: 7px; padding: 10px 0; font-size: 12px; font-weight: 700; font-family: "Pretendard", sans-serif; cursor: pointer; letter-spacing: -0.03em; transition: all 0.15s; margin-bottom: 16px; display: block; }
-.btn-add-pos:hover { background: #f0f4ff; }
 </style>
 </head>
 <body>
-<div class="app-wrapper">
-  <div class="preview-area">
+
+<div class="topbar">
+  <div class="tb-space"></div>
+  <div class="split save" id="split-save">
+    <button class="s-main" onclick="saveSnapshot()">저장</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-history','split-save')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="split export" id="split-export">
+    <button class="s-main" onclick="exportJPG()">내보내기</button>
+    <button class="s-arr" onclick="toggleDropdown('dd-export','split-export')">
+      <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M1.5 3l3 3 3-3" stroke="rgba(255,255,255,.8)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+  <div class="dropdown" id="dd-history" style="right:96px; width:244px;">
+    <div class="dd-head">저장 히스토리</div>
+    <div id="dd-history-list"><div class="hist-empty">저장된 기록이 없습니다</div></div>
+    <div class="dd-footer"><button class="dd-footer-btn" onclick="clearHistory()">기록 전체 삭제</button></div>
+  </div>
+  <div class="dropdown" id="dd-export" style="right:16px; width:208px;">
+    <div class="dd-head">형식 선택</div>
+    <div class="dd-item" onclick="exportJPG(); closeDropdowns();">
+      <div><div class="dd-item-label">JPG</div><div class="dd-item-desc">고화질 이미지</div></div>
+      <span class="dd-default">기본</span>
+    </div>
+    <div class="dd-item" onclick="exportPNG(); closeDropdowns();">
+      <div><div class="dd-item-label">PNG</div><div class="dd-item-desc">투명 배경 지원</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="main-layout">
+  <div class="canvas-area">
     <div id="poster-canvas">
       <img class="poster-top-img" src="https://djat5i2cugmqc.cloudfront.net/design_contents/obliv_new_members_v260313_v2.jpg" alt="오블리브 상단">
-
       <div class="people-section">
         <div class="people-box">
           <div class="people-block">
@@ -111,49 +220,45 @@ body { font-family: "Pretendard", sans-serif; background: transparent; min-heigh
           </div>
         </div>
       </div>
-
       <div class="poster-edit-zone" id="pos1-zone">
         <div class="job-header">
           <div class="job-category" id="out-category">신입/경력</div>
           <div class="job-main-title" id="out-job-title">오블리브앤파트너스 담당자</div>
         </div>
         <div class="job-sections-wrap" id="job-sections-wrap">
-        <div class="job-section" data-key="duties">
-          <div class="job-section-title-wrap"><div class="job-section-title">주요 업무</div></div>
-          <ul class="job-section-content" id="out-duties">
-            <li>파트너 병원과 구축하는 성약 체결 Full-cycle</li>
-            <li>원무지 채용 통한 병원 기반/성장관리</li>
-            <li>파트너 서비스 통한 서비스 체계화(인력 구축 및 인재 양성)</li>
-            <li>파트너 병원의 의료 비엔셍 기획/운영</li>
-          </ul>
-        </div>
-        <div class="job-section" data-key="preferred">
-          <div class="job-section-title-wrap"><div class="job-section-title">우대 사항</div></div>
-          <ul class="job-section-content" id="out-preferred">
-            <li>다양한 직종 경험 6개월 이상 서울 경험이 있는 분</li>
-            <li>원장님들이 이미지/신뢰, 성실, TM 독자적 능력이 있는 분</li>
-          </ul>
-        </div>
-        <div class="job-section" data-key="qualifications">
-          <div class="job-section-title-wrap"><div class="job-section-title">자격 요건</div></div>
-          <ul class="job-section-content" id="out-qualifications">
-            <li>학력 무관</li>
-            <li>연령 무관</li>
-            <li>메디컬·디지털마케팅 소상 경험이 있는 분</li>
-          </ul>
-        </div>
-        <div class="job-section" data-key="conditions">
-          <div class="job-section-title-wrap"><div class="job-section-title">근무 조건</div></div>
-          <ul class="job-section-content" id="out-conditions">
-            <li>급여 면접 후 협의 (수습 3개월)</li>
-            <li>주 5일 09:00~18:00 (연장근무 협의 가능)</li>
-            <li>연·월차 법정 내역·사내여행비 지원</li>
-          </ul>
-        </div>
+          <div class="job-section" data-key="duties">
+            <div class="job-section-title-wrap"><div class="job-section-title">주요 업무</div></div>
+            <ul class="job-section-content" id="out-duties">
+              <li>파트너 병원과 구축하는 성약 체결 Full-cycle</li>
+              <li>원무지 채용 통한 병원 기반/성장관리</li>
+              <li>파트너 서비스 통한 서비스 체계화(인력 구축 및 인재 양성)</li>
+              <li>파트너 병원의 의료 비엔셍 기획/운영</li>
+            </ul>
+          </div>
+          <div class="job-section" data-key="preferred">
+            <div class="job-section-title-wrap"><div class="job-section-title">우대 사항</div></div>
+            <ul class="job-section-content" id="out-preferred">
+              <li>다양한 직종 경험 6개월 이상 서울 경험이 있는 분</li>
+              <li>원장님들이 이미지/신뢰, 성실, TM 독자적 능력이 있는 분</li>
+            </ul>
+          </div>
+          <div class="job-section" data-key="qualifications">
+            <div class="job-section-title-wrap"><div class="job-section-title">자격 요건</div></div>
+            <ul class="job-section-content" id="out-qualifications">
+              <li>학력 무관</li><li>연령 무관</li>
+              <li>메디컬·디지털마케팅 소상 경험이 있는 분</li>
+            </ul>
+          </div>
+          <div class="job-section" data-key="conditions">
+            <div class="job-section-title-wrap"><div class="job-section-title">근무 조건</div></div>
+            <ul class="job-section-content" id="out-conditions">
+              <li>급여 면접 후 협의 (수습 3개월)</li>
+              <li>주 5일 09:00~18:00 (연장근무 협의 가능)</li>
+              <li>연·월차 법정 내역·사내여행비 지원</li>
+            </ul>
+          </div>
         </div>
       </div>
-
-      <!-- ── 포지션 2 (기본 숨김) ── -->
       <div class="pos-divider-bar" id="pos-divider-bar"></div>
       <div class="poster-edit-zone" id="pos2-zone" style="display:none">
         <div class="job-header">
@@ -161,445 +266,237 @@ body { font-family: "Pretendard", sans-serif; background: transparent; min-heigh
           <div class="job-main-title" id="out-job-title-p2">오블리브앤파트너스 담당자</div>
         </div>
         <div class="job-sections-wrap" id="job-sections-wrap-p2">
-          <div class="job-section" data-key="duties">
-            <div class="job-section-title-wrap"><div class="job-section-title">주요 업무</div></div>
-            <ul class="job-section-content" id="out-duties-p2"><li>업무 내용을 입력하세요</li></ul>
-          </div>
-          <div class="job-section" data-key="preferred">
-            <div class="job-section-title-wrap"><div class="job-section-title">우대 사항</div></div>
-            <ul class="job-section-content" id="out-preferred-p2"><li>우대 사항을 입력하세요</li></ul>
-          </div>
-          <div class="job-section" data-key="qualifications">
-            <div class="job-section-title-wrap"><div class="job-section-title">자격 요건</div></div>
-            <ul class="job-section-content" id="out-qualifications-p2"><li>자격 요건을 입력하세요</li></ul>
-          </div>
-          <div class="job-section" data-key="conditions">
-            <div class="job-section-title-wrap"><div class="job-section-title">근무 조건</div></div>
-            <ul class="job-section-content" id="out-conditions-p2"><li>근무 조건을 입력하세요</li></ul>
-          </div>
+          <div class="job-section" data-key="duties"><div class="job-section-title-wrap"><div class="job-section-title">주요 업무</div></div><ul class="job-section-content" id="out-duties-p2"><li>업무 내용을 입력하세요</li></ul></div>
+          <div class="job-section" data-key="preferred"><div class="job-section-title-wrap"><div class="job-section-title">우대 사항</div></div><ul class="job-section-content" id="out-preferred-p2"><li>우대 사항을 입력하세요</li></ul></div>
+          <div class="job-section" data-key="qualifications"><div class="job-section-title-wrap"><div class="job-section-title">자격 요건</div></div><ul class="job-section-content" id="out-qualifications-p2"><li>자격 요건을 입력하세요</li></ul></div>
+          <div class="job-section" data-key="conditions"><div class="job-section-title-wrap"><div class="job-section-title">근무 조건</div></div><ul class="job-section-content" id="out-conditions-p2"><li>근무 조건을 입력하세요</li></ul></div>
         </div>
       </div>
-
     </div>
   </div>
 
-  <div class="sidebar">
-    <div class="shortcut-guide">
-      <strong>Enter</strong> 줄바꿈으로 항목 구분 &nbsp;·&nbsp; <strong>Ctrl+B</strong> 볼드 &nbsp;·&nbsp; <strong>Ctrl+Shift+X</strong> 컬러<br>
-      <strong># 텍스트</strong> 대제목 &nbsp;·&nbsp; <strong>## 텍스트</strong> 소제목 &nbsp;·&nbsp; <strong>Space×2</strong> 들여쓰기
+  <div class="resize-handle" id="resize-handle"></div>
+
+  <div class="sidebar" id="sidebar">
+    <div class="tab-bar">
+      <button class="tab-btn on" id="tab-btn-team" onclick="switchTab('tab-team',this)">팀 소개</button>
+      <button class="tab-btn" id="tab-btn-pos1" onclick="switchTab('tab-pos1',this)">포지션 1</button>
+      <button class="tab-btn" id="tab-btn-pos2" onclick="switchTab('tab-pos2',this)" style="display:none">포지션 2</button>
+      <button class="tab-btn add-btn" id="btn-add-pos2" onclick="addPosition2()" title="포지션 2 추가">+</button>
     </div>
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">팀 소개</div>
-      <div class="ctrl-field">
-        <label>제목 1</label>
-        <input type="text" id="in-people-title1" value="메디빌더 피플팀은">
-      </div>
-      <div class="ctrl-field">
-        <label>내용 1 </label>
-        <textarea id="in-people-body1" rows="5">인사파트와 컬처파트로 구성되어 있으며,
+    <div class="tab-body">
+
+      <div class="tab-panel on" id="tab-team">
+        <div class="acc">
+          <div class="acc-head open" onclick="toggleAcc(this)"><span>팀 소개 문구</span><svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body">
+            <div class="field"><label>제목 1</label><input type="text" id="in-people-title1" value="메디빌더 피플팀은"></div>
+            <div class="field"><label>내용 1</label><textarea id="in-people-body1" rows="4">인사파트와 컬처파트로 구성되어 있으며,
 채용, 급여, 총무, 조직문화 등 여러 동료들과 함께 앤파트너스와 파트너 병원의
-새로운 인재를 채용하고, 구성원의 빠른 적응과 성장을 위한 **모든 것을 지원하는 팀**입니다.</textarea>
-      </div>
-      <div class="ctrl-field">
-        <label>제목 2</label>
-        <input type="text" id="in-people-title2" value="오블리브앤파트너스와 함께한다면?">
-      </div>
-      <div class="ctrl-field">
-        <label>내용 2 </label>
-        <textarea id="in-people-body2" rows="6">병원 운영에 꼭 필요한 핵심 인재를 확보하고, 적재적소에 배치하여
+새로운 인재를 채용하고, 구성원의 빠른 적응과 성장을 위한 **모든 것을 지원하는 팀**입니다.</textarea></div>
+            <div class="field"><label>제목 2</label><input type="text" id="in-people-title2" value="오블리브앤파트너스와 함께한다면?"></div>
+            <div class="field"><label>내용 2</label><textarea id="in-people-body2" rows="5">병원 운영에 꼭 필요한 핵심 인재를 확보하고, 적재적소에 배치하여
 파트너 병원이 성장하는 과정에 함께 합니다.
 
 앞으로의 의료 업계는 단순 치료뿐만 아니라 더 나은 삶을 살기 위한 하나의 영역으로
 성장할 가능성이 무궁무진한 비즈니스 영역이기에 의료 업계 속의 특수한 상황에서
-다양하고 많은 포지션을 경험하며, 채용 스페셜리스트로 커리어를 쌓아갈 수 있습니다!</textarea>
+다양하고 많은 포지션을 경험하며, 채용 스페셜리스트로 커리어를 쌓아갈 수 있습니다!</textarea></div>
+          </div>
+        </div>
       </div>
-    </div>
 
-    <!-- 포지션 1 그룹 -->
-    <div class="pos-group-label">포지션 1</div>
-
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">직무 기본정보</div>
-      <div class="ctrl-field">
-        <label>구분 태그</label>
-        <input type="text" id="in-category" value="신입/경력">
-      </div>
-      <div class="ctrl-field">
-        <label>직무 타이틀</label>
-        <input type="text" id="in-job-title" value="오블리브앤파트너스 담당자">
-      </div>
-    </div>
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">주요 업무</div>
-      <div class="ctrl-field">
-        <label>줄바꿈(Enter)으로 항목 구분 </label>
-        <textarea id="in-duties" rows="4">파트너 병원과 구축하는 성약 체결 Full-cycle
+      <div class="tab-panel" id="tab-pos1">
+        <div class="acc">
+          <div class="acc-head open" onclick="toggleAcc(this)"><span>직무 기본정보</span><svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body">
+            <div class="field"><label>구분 태그</label><input type="text" id="in-category" value="신입/경력"></div>
+            <div class="field"><label>직무 타이틀</label><input type="text" id="in-job-title" value="오블리브앤파트너스 담당자"></div>
+          </div>
+        </div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>주요 업무</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed">
+            <div class="field-hint">Enter로 항목 구분</div>
+            <div class="field"><textarea id="in-duties" rows="4">파트너 병원과 구축하는 성약 체결 Full-cycle
 원무지 채용 통한 병원 기반/성장관리
 파트너 서비스 통한 서비스 체계화(인력 구축 및 인재 양성)
-파트너 병원의 의료 비엔셍 기획/운영</textarea>
-      </div>
-    </div>
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">우대 사항</div>
-      <div class="ctrl-field">
-        <textarea id="in-preferred" rows="3">다양한 직종 경험 6개월 이상 서울 경험이 있는 분
-원장님들이 이미지/신뢰, 성실, TM 독자적 능력이 있는 분</textarea>
-      </div>
-    </div>
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">자격 요건</div>
-      <div class="ctrl-field">
-        <textarea id="in-qualifications" rows="3">학력 무관
+파트너 병원의 의료 비엔셍 기획/운영</textarea></div>
+          </div>
+        </div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>우대 사항</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed"><div class="field"><textarea id="in-preferred" rows="3">다양한 직종 경험 6개월 이상 서울 경험이 있는 분
+원장님들이 이미지/신뢰, 성실, TM 독자적 능력이 있는 분</textarea></div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>자격 요건</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed"><div class="field"><textarea id="in-qualifications" rows="3">학력 무관
 연령 무관
-메디컬·디지털마케팅 소상 경험이 있는 분</textarea>
-      </div>
-    </div>
-    <div class="ctrl-section collapsed">
-      <div class="ctrl-label">근무 조건</div>
-      <div class="ctrl-field">
-        <textarea id="in-conditions" rows="3">급여 면접 후 협의 (수습 3개월)
+메디컬·디지털마케팅 소상 경험이 있는 분</textarea></div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>근무 조건</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed"><div class="field"><textarea id="in-conditions" rows="3">급여 면접 후 협의 (수습 3개월)
 주 5일 09:00~18:00 (연장근무 협의 가능)
-연·월차 법정 내역·사내여행비 지원</textarea>
+연·월차 법정 내역·사내여행비 지원</textarea></div></div>
+        </div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>섹션 순서</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed">
+            <div class="field-hint">≡ 드래그로 순서 변경</div>
+            <ul class="order-list" id="section-order-list">
+              <li class="order-item" draggable="true" data-key="duties"><span class="order-handle">≡</span>주요 업무</li>
+              <li class="order-item" draggable="true" data-key="preferred"><span class="order-handle">≡</span>우대 사항</li>
+              <li class="order-item" draggable="true" data-key="qualifications"><span class="order-handle">≡</span>자격 요건</li>
+              <li class="order-item" draggable="true" data-key="conditions"><span class="order-handle">≡</span>근무 조건</li>
+            </ul>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="ctrl-section">
-      <div class="ctrl-label">섹션 순서</div>
-      <p class="hint-text">≡ 드래그로 순서를 변경하세요</p>
-      <ul class="section-order-list" id="section-order-list">
-        <li class="section-order-item" draggable="true" data-key="duties"><span class="drag-handle">≡</span>주요 업무</li>
-        <li class="section-order-item" draggable="true" data-key="preferred"><span class="drag-handle">≡</span>우대 사항</li>
-        <li class="section-order-item" draggable="true" data-key="qualifications"><span class="drag-handle">≡</span>자격 요건</li>
-        <li class="section-order-item" draggable="true" data-key="conditions"><span class="drag-handle">≡</span>근무 조건</li>
-      </ul>
-    </div>
-    <!-- 포지션 2 추가 버튼 -->
-    <button class="btn-add-pos" id="btn-add-pos2" onclick="addPosition2()">+ 포지션 2 추가</button>
 
-    <!-- 포지션 2 그룹 (숨김) -->
-    <div id="pos2-sidebar" style="display:none">
-      <div class="pos-group-label">포지션 2 <button class="btn-remove-pos" onclick="removePosition2()">✕ 제거</button></div>
-
-      <div class="ctrl-section collapsed">
-        <div class="ctrl-label">직무 기본정보</div>
-        <div class="ctrl-field">
-          <label>구분 태그</label>
-          <input type="text" id="in-category-p2" value="신입/경력">
+      <div class="tab-panel" id="tab-pos2">
+        <div class="pos2-remove-bar"><span class="pos2-remove-label">포지션 2</span><button class="btn-remove-pos" onclick="removePosition2()">제거</button></div>
+        <div class="acc">
+          <div class="acc-head open" onclick="toggleAcc(this)"><span>직무 기본정보</span><svg class="acc-arr r" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body">
+            <div class="field"><label>구분 태그</label><input type="text" id="in-category-p2" value="신입/경력"></div>
+            <div class="field"><label>직무 타이틀</label><input type="text" id="in-job-title-p2" value="오블리브앤파트너스 담당자"></div>
+          </div>
         </div>
-        <div class="ctrl-field">
-          <label>직무 타이틀</label>
-          <input type="text" id="in-job-title-p2" value="오블리브앤파트너스 담당자">
-        </div>
-      </div>
-      <div class="ctrl-section collapsed">
-        <div class="ctrl-label">주요 업무</div>
-        <div class="ctrl-field">
-          <label>줄바꿈(Enter)으로 항목 구분</label>
-          <textarea id="in-duties-p2" rows="4">업무 내용을 입력하세요</textarea>
-        </div>
-      </div>
-      <div class="ctrl-section collapsed">
-        <div class="ctrl-label">우대 사항</div>
-        <div class="ctrl-field">
-          <textarea id="in-preferred-p2" rows="3">우대 사항을 입력하세요</textarea>
-        </div>
-      </div>
-      <div class="ctrl-section collapsed">
-        <div class="ctrl-label">자격 요건</div>
-        <div class="ctrl-field">
-          <textarea id="in-qualifications-p2" rows="3">자격 요건을 입력하세요</textarea>
-        </div>
-      </div>
-      <div class="ctrl-section collapsed">
-        <div class="ctrl-label">근무 조건</div>
-        <div class="ctrl-field">
-          <textarea id="in-conditions-p2" rows="3">급여 면접 후 협의 (수습 3개월)
+        <div class="acc"><div class="acc-head" onclick="toggleAcc(this)"><span>주요 업무</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="acc-body closed"><div class="field-hint">Enter로 항목 구분</div><div class="field"><textarea id="in-duties-p2" rows="4">업무 내용을 입력하세요</textarea></div></div></div>
+        <div class="acc"><div class="acc-head" onclick="toggleAcc(this)"><span>우대 사항</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="acc-body closed"><div class="field"><textarea id="in-preferred-p2" rows="3">우대 사항을 입력하세요</textarea></div></div></div>
+        <div class="acc"><div class="acc-head" onclick="toggleAcc(this)"><span>자격 요건</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="acc-body closed"><div class="field"><textarea id="in-qualifications-p2" rows="3">자격 요건을 입력하세요</textarea></div></div></div>
+        <div class="acc"><div class="acc-head" onclick="toggleAcc(this)"><span>근무 조건</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="acc-body closed"><div class="field"><textarea id="in-conditions-p2" rows="3">급여 면접 후 협의 (수습 3개월)
 주 5일 09:00~18:00 (연장근무 협의 가능)
-연·월차 법정 내역·사내여행비 지원</textarea>
+연·월차 법정 내역·사내여행비 지원</textarea></div></div></div>
+        <div class="acc">
+          <div class="acc-head" onclick="toggleAcc(this)"><span>섹션 순서</span><svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="acc-body closed">
+            <div class="field-hint">≡ 드래그로 순서 변경</div>
+            <ul class="order-list" id="section-order-list-p2">
+              <li class="order-item" draggable="true" data-key="duties"><span class="order-handle">≡</span>주요 업무</li>
+              <li class="order-item" draggable="true" data-key="preferred"><span class="order-handle">≡</span>우대 사항</li>
+              <li class="order-item" draggable="true" data-key="qualifications"><span class="order-handle">≡</span>자격 요건</li>
+              <li class="order-item" draggable="true" data-key="conditions"><span class="order-handle">≡</span>근무 조건</li>
+            </ul>
+          </div>
         </div>
       </div>
-      <div class="ctrl-section">
-        <div class="ctrl-label">섹션 순서</div>
-        <p class="hint-text">≡ 드래그로 순서를 변경하세요</p>
-        <ul class="section-order-list" id="section-order-list-p2">
-          <li class="section-order-item" draggable="true" data-key="duties"><span class="drag-handle">≡</span>주요 업무</li>
-          <li class="section-order-item" draggable="true" data-key="preferred"><span class="drag-handle">≡</span>우대 사항</li>
-          <li class="section-order-item" draggable="true" data-key="qualifications"><span class="drag-handle">≡</span>자격 요건</li>
-          <li class="section-order-item" draggable="true" data-key="conditions"><span class="drag-handle">≡</span>근무 조건</li>
-        </ul>
-      </div>
-    </div>
 
-    <button class="btn-export" onclick="exportJPG()">JPG 저장</button>
+    </div>
   </div>
 </div>
 
 <script>
   var BRAND_COLOR = "#C17F51";
 
+  (function() {
+    var handle = document.getElementById('resize-handle'), sidebar = document.getElementById('sidebar');
+    var SIDEBAR_KEY = 'oblive_sidebar_w', MIN_W = 160, MAX_W = 420;
+    var savedW = parseInt(localStorage.getItem(SIDEBAR_KEY));
+    if (savedW && savedW >= MIN_W && savedW <= MAX_W) sidebar.style.width = savedW + 'px';
+    var dragging = false, startX = 0, startW = 0;
+    handle.addEventListener('mousedown', function(e) { dragging=true; startX=e.clientX; startW=sidebar.offsetWidth; handle.classList.add('dragging'); document.body.style.cursor='col-resize'; document.body.style.userSelect='none'; e.preventDefault(); });
+    document.addEventListener('mousemove', function(e) { if(!dragging)return; var delta=startX-e.clientX; sidebar.style.width=Math.min(MAX_W,Math.max(MIN_W,startW+delta))+'px'; });
+    document.addEventListener('mouseup', function() { if(!dragging)return; dragging=false; handle.classList.remove('dragging'); document.body.style.cursor=''; document.body.style.userSelect=''; localStorage.setItem(SIDEBAR_KEY,sidebar.offsetWidth); });
+  })();
+
+  function toggleAcc(head) {
+    var body=head.nextElementSibling, arr=head.querySelector('.acc-arr'), open=!body.classList.contains('closed');
+    if(open){body.classList.add('closed');head.classList.remove('open');arr.classList.remove('r');}
+    else{body.classList.remove('closed');head.classList.add('open');arr.classList.add('r');}
+  }
+
+  function switchTab(panelId, btn) {
+    document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('on');});
+    document.querySelectorAll('.tab-btn:not(.add-btn)').forEach(function(b){b.classList.remove('on');});
+    document.getElementById(panelId).classList.add('on'); btn.classList.add('on');
+  }
+
+  function toggleDropdown(ddId, splitId) {
+    var dd=document.getElementById(ddId), sp=document.getElementById(splitId), isOpen=dd.classList.contains('open');
+    closeDropdowns();
+    if(!isOpen){dd.classList.add('open');sp.classList.add('open');}
+  }
+  function closeDropdowns() {
+    document.querySelectorAll('.dropdown').forEach(function(d){d.classList.remove('open');});
+    document.querySelectorAll('.split').forEach(function(s){s.classList.remove('open');});
+  }
+  document.addEventListener('click', function(e) { if(!e.target.closest('.split')&&!e.target.closest('.dropdown'))closeDropdowns(); });
+
   function renderMarkup(text) {
     return text.split(/(\*\*\{c:.*?\}\*\*|\{c:\*\*.*?\*\*\}|\*\*.*?\*\*|\{c:.*?\})/g).map(function(part) {
-      if (/^\*\*\{c:.*\}\*\*$/.test(part)) {
-        var inner = part.slice(2, -2);
-        var content = inner.slice(3, -1);
-        return '<strong><span style="color:' + BRAND_COLOR + '">' + content + '</span></strong>';
-      } else if (/^\{c:\*\*.*\*\*\}$/.test(part)) {
-        var inner = part.slice(3, -1);
-        var content = inner.slice(2, -2);
-        return '<strong><span style="color:' + BRAND_COLOR + '">' + content + '</span></strong>';
-      } else if (part.startsWith("**") && part.endsWith("**")) {
-        return "<strong>" + part.slice(2,-2) + "</strong>";
-      } else if (part.startsWith("{c:") && part.endsWith("}")) {
-        return '<span style="color:' + BRAND_COLOR + '">' + part.slice(3,-1) + '</span>';
-      }
-      return part.replace(/\n/g, "<br>");
+      if(/^\*\*\{c:.*\}\*\*$/.test(part)){var c=part.slice(2,-2).slice(3,-1);return '<strong><span style="color:'+BRAND_COLOR+'">'+c+'</span></strong>';}
+      if(/^\{c:\*\*.*\*\*\}$/.test(part)){var c=part.slice(3,-1).slice(2,-2);return '<strong><span style="color:'+BRAND_COLOR+'">'+c+'</span></strong>';}
+      if(part.startsWith("**")&&part.endsWith("**"))return "<strong>"+part.slice(2,-2)+"</strong>";
+      if(part.startsWith("{c:")&&part.endsWith("}"))return '<span style="color:'+BRAND_COLOR+'">'+part.slice(3,-1)+'</span>';
+      return part.replace(/\n/g,"<br>");
     }).join("");
   }
 
-  function renderBold(text) {
-    return text.split(/\*\*(.*?)\*\*/g).map(function(part, i) {
-      return i % 2 === 1 ? "<strong>" + part + "</strong>" : part.replace(/\n/g, "<br>");
-    }).join("");
-  }
+  function replaceAt(el,s,en,text){el.focus();el.setSelectionRange(s,en);if(!document.execCommand('insertText',false,text)){el.value=el.value.substring(0,s)+text+el.value.substring(en);el.setSelectionRange(s,s+text.length);el.dispatchEvent(new InputEvent('input',{bubbles:true,cancelable:true}));}}
+  function applyWrap(el,o,c){var s=el.selectionStart,en=el.selectionEnd,sel=el.value.substring(s,en);if(!sel)return;replaceAt(el,s,en,o+sel+c);}
+  function toggleColor(el){var s=el.selectionStart,en=el.selectionEnd,sel=el.value.substring(s,en);if(!sel)return;if(sel.startsWith('{c:')&&sel.endsWith('}'))replaceAt(el,s,en,sel.slice(3,-1));else replaceAt(el,s,en,'{c:'+sel+'}');}
 
-  function applyWrap(textarea, open, close) {
-    var s = textarea.selectionStart, e = textarea.selectionEnd;
-    var sel = textarea.value.substring(s, e);
-    if (!sel) return;
-    textarea.value = textarea.value.substring(0,s) + open + sel + close + textarea.value.substring(e);
-    textarea.selectionStart = s;
-    textarea.selectionEnd = e + open.length + close.length;
-    textarea.dispatchEvent(new Event("input"));
-  }
-
-  function applyBold(textarea) { applyWrap(textarea, "**", "**"); }
-
-  document.getElementById("in-people-title1").addEventListener("input", function() {
-    document.getElementById("out-people-title1").textContent = this.value;
-  });
-  document.getElementById("in-people-title2").addEventListener("input", function() {
-    document.getElementById("out-people-title2").textContent = this.value;
-  });
-
-  ["in-people-body1", "in-people-body2"].forEach(function(id) {
-    var el = document.getElementById(id);
-    el.addEventListener("input", function() {
-      document.getElementById(id.replace("in-", "out-")).innerHTML = renderBold(this.value);
-    });
-    el.addEventListener("keydown", function(e) {
-      if ((e.ctrlKey || e.metaKey) && e.key === "b") {
-        e.preventDefault();
-        applyBold(this);
-      }
-    });
-  });
-
-  ["in-people-body1", "in-people-body2"].forEach(function(id) {
-    document.getElementById(id.replace("in-", "out-")).innerHTML = renderBold(document.getElementById(id).value);
-  });
-
-  function renderList(text) {
-    return text.split("\n").filter(function(l){ return l.trim(); })
-      .map(function(l){
-        if (l.startsWith("## ")) {
-          return '<li class="list-subheading">' + renderMarkup(l.slice(3).trim()) + '</li>';
-        } else if (l.startsWith("# ")) {
-          return '<li class="list-heading" style="color:' + BRAND_COLOR + '">' + renderMarkup(l.slice(2).trim()) + '</li>';
-        } else if (/^[ \t]{2,}/.test(l)) {
-          return '<li class="indented">' + renderMarkup(l.trim()) + '</li>';
-        }
-        return "<li>" + renderMarkup(l.trim()) + "</li>";
-      }).join("");
-  }
-
-  // ── 포지션 바인딩 공통 함수 ──
-  function bindPosition(suffix) {
-    var sfx = suffix ? "-" + suffix : "";
-
-    document.getElementById("in-category" + sfx).addEventListener("input", function() {
-      document.getElementById("out-category" + sfx).textContent = this.value;
-    });
-    document.getElementById("in-job-title" + sfx).addEventListener("input", function() {
-      document.getElementById("out-job-title" + sfx).textContent = this.value;
-    });
-
-    ["duties","preferred","qualifications","conditions"].forEach(function(key) {
-      var el = document.getElementById("in-" + key + sfx);
-      el.addEventListener("input", function() {
-        document.getElementById("out-" + key + sfx).innerHTML = renderList(this.value);
-      });
-      el.addEventListener("keydown", function(e) {
-        if ((e.ctrlKey||e.metaKey) && e.key === "b") { e.preventDefault(); applyWrap(this,"**","**"); }
-        if ((e.ctrlKey||e.metaKey) && e.shiftKey && (e.key==="X" || e.key==="x")) {
-          e.preventDefault();
-          var s=this.selectionStart, en=this.selectionEnd;
-          var sel=this.value.substring(s,en);
-          if (!sel) return;
-          if (sel.startsWith("{c:") && sel.endsWith("}")) {
-            this.value = this.value.substring(0,s) + sel.slice(3,-1) + this.value.substring(en);
-            this.selectionStart = s;
-            this.selectionEnd = en - 4;
-          } else {
-            applyWrap(this,"{c:","}");
-          }
-          this.dispatchEvent(new Event("input"));
-        }
-      });
-      document.getElementById("out-" + key + sfx).innerHTML = renderList(el.value);
-    });
-  }
-
-  bindPosition("");
-  bindPosition("p2");
-
-  // ── 섹션 순서 드래그앤드롭 ──
-  function initDragOrder(orderListId, wrapId) {
-    var dragSrc = null;
-    var orderList = document.getElementById(orderListId);
-    var wrap = document.getElementById(wrapId);
-
-    function reorderPreview() {
-      orderList.querySelectorAll(".section-order-item").forEach(function(item) {
-        var sec = wrap.querySelector('.job-section[data-key="' + item.dataset.key + '"]');
-        if (sec) wrap.appendChild(sec);
-      });
-    }
-
-    orderList.addEventListener("dragstart", function(e) {
-      dragSrc = e.target.closest(".section-order-item");
-      if (dragSrc) dragSrc.classList.add("dragging");
-    });
-    orderList.addEventListener("dragover", function(e) {
-      e.preventDefault();
-      var target = e.target.closest(".section-order-item");
-      if (target && target !== dragSrc) {
-        orderList.querySelectorAll(".section-order-item").forEach(function(el){ el.classList.remove("drag-over"); });
-        target.classList.add("drag-over");
-      }
-    });
-    orderList.addEventListener("drop", function(e) {
-      e.preventDefault();
-      var target = e.target.closest(".section-order-item");
-      if (target && target !== dragSrc) {
-        var items = Array.from(orderList.querySelectorAll(".section-order-item"));
-        var si = items.indexOf(dragSrc), ti = items.indexOf(target);
-        if (si < ti) orderList.insertBefore(dragSrc, target.nextSibling);
-        else orderList.insertBefore(dragSrc, target);
-        reorderPreview();
-      }
-      orderList.querySelectorAll(".section-order-item").forEach(function(el){ el.classList.remove("drag-over"); });
-    });
-    orderList.addEventListener("dragend", function() {
-      if (dragSrc) dragSrc.classList.remove("dragging");
-      dragSrc = null;
-    });
-  }
-
-  initDragOrder("section-order-list", "job-sections-wrap");
-  initDragOrder("section-order-list-p2", "job-sections-wrap-p2");
-
-  // ── 포지션 2 추가 / 제거 ──
-  function addPosition2() {
-    document.getElementById("btn-add-pos2").style.display = "none";
-    document.getElementById("pos2-sidebar").style.display = "block";
-    document.getElementById("pos-divider-bar").style.display = "block";
-    document.getElementById("pos2-zone").style.display = "block";
-  }
-  function removePosition2() {
-    document.getElementById("btn-add-pos2").style.display = "block";
-    document.getElementById("pos2-sidebar").style.display = "none";
-    document.getElementById("pos-divider-bar").style.display = "none";
-    document.getElementById("pos2-zone").style.display = "none";
-  }
-
-  function findBestSplitY(canvas, targetY, fromY) {
-    var searchRange = Math.min(500, targetY - fromY);
-    var imgY = targetY - searchRange;
-    var data = canvas.getContext("2d").getImageData(0, imgY, canvas.width, searchRange).data;
-    for (var row = searchRange - 1; row >= 0; row--) {
-      var blank = true;
-      for (var col = 0; col < canvas.width; col++) {
-        var idx = (row * canvas.width + col) * 4;
-        if (data[idx] < 240 || data[idx+1] < 240 || data[idx+2] < 240) { blank = false; break; }
-      }
-      if (blank) return imgY + row;
-    }
-    return targetY;
-  }
-
-  async function exportJPG() {
-    var btn = document.querySelector(".btn-export");
-    btn.textContent = "저장 중...";
-    btn.disabled = true;
-    try {
-      var el = document.getElementById("poster-canvas");
-      var canvas = await html2canvas(el, { scale: 1, useCORS: true, backgroundColor: "#ffffff" });
-      var maxH = 5000;
-      if (canvas.height <= maxH) {
-        var a = document.createElement("a");
-        a.download = "oblive_채용공고.jpg";
-        a.href = canvas.toDataURL("image/jpeg", 0.95);
-        a.click();
-      } else {
-        var slices = [], y = 0;
-        while (y < canvas.height) {
-          var next = Math.min(y + maxH, canvas.height);
-          if (next < canvas.height) next = findBestSplitY(canvas, next, y);
-          slices.push({ s: y, e: next });
-          y = next;
-        }
-        for (var i = 0; i < slices.length; i++) {
-          var sh = slices[i].e - slices[i].s;
-          var tmp = document.createElement("canvas");
-          tmp.width = canvas.width; tmp.height = sh;
-          tmp.getContext("2d").drawImage(canvas, 0, slices[i].s, canvas.width, sh, 0, 0, canvas.width, sh);
-          var a = document.createElement("a");
-          a.download = "oblive_채용공고_" + (i + 1) + ".jpg";
-          a.href = tmp.toDataURL("image/jpeg", 0.95);
-          a.click();
-          await new Promise(function(r){ setTimeout(r, 300); });
-        }
-      }
-    } catch(e) {
-      alert("저장 중 오류가 발생했습니다.");
-    }
-    btn.textContent = "JPG 저장";
-    btn.disabled = false;
-  }
-
-  // ── 섹션 토글 ──
-  document.querySelectorAll('.ctrl-label').forEach(function(label) {
-    label.addEventListener('click', function() {
-      this.closest('.ctrl-section').classList.toggle('collapsed');
-    });
-  });
-
-  // ── localStorage 자동저장/불러오기 ──
-  (function() {
-    var FILE_KEY = 'oblive';
-    var fields = document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea, .sidebar select');
-    fields.forEach(function(el, idx) {
-      var fieldKey = el.id ? el.id : (el.name ? el.name : ('idx' + idx));
-      var storageKey = FILE_KEY + '_' + fieldKey;
-      var saved = localStorage.getItem(storageKey);
-      if (saved !== null) {
-        el.value = saved;
-        el.dispatchEvent(new Event('input'));
-      }
-      el.addEventListener('input', function() {
-        localStorage.setItem(storageKey, this.value);
-      });
-    });
-
-    // 포지션 2 가시성 상태 저장/복원
-    var pos2Key = FILE_KEY + '_pos2_visible';
-    if (localStorage.getItem(pos2Key) === '1') {
-      addPosition2();
-    }
-    var origAdd = addPosition2;
-    addPosition2 = function() { origAdd(); localStorage.setItem(pos2Key, '1'); };
-    var origRemove = removePosition2;
-    removePosition2 = function() { origRemove(); localStorage.removeItem(pos2Key); };
+  (function(){
+    var TB_HTML='<button class="fmt-btn" data-action="bold" data-tip="굵게 (Ctrl+B)"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 2h4a2.5 2.5 0 0 1 0 5H3V2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 7h4.5a2.5 2.5 0 0 1 0 5H3V7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>'
+      +'<button class="fmt-btn" data-action="color" data-tip="브랜드 컬러"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.5"/><circle cx="6" cy="6" r="1.5" fill="currentColor"/></svg></button>'
+      +'<div class="fmt-sep"></div>'
+      +'<button class="fmt-btn fmt-btn--text" data-action="h1" data-tip="대제목">대제목</button>'
+      +'<button class="fmt-btn fmt-btn--text" data-action="h2" data-tip="소제목">소제목</button>'
+      +'<div class="fmt-sep"></div>'
+      +'<button class="fmt-btn" data-action="indent" data-tip="들여쓰기"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 3h10M1 6h6M1 9h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 5l2.5 1.5L8 8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';
+    var tb=document.createElement('div'); tb.className='fmt-toolbar'; tb.innerHTML=TB_HTML; document.body.appendChild(tb);
+    var activeEl=null,savedS=0,savedE=0,hideTimer=null;
+    function positionToolbar(x,y){tb.classList.add('visible');var tw=tb.offsetWidth,th=tb.offsetHeight,vw=window.innerWidth;var left=Math.min(Math.max(x-tw/2,8),vw-tw-8);var top=y-th-10;if(top<8)top=y+24;tb.style.left=left+'px';tb.style.top=top+'px';}
+    function hideToolbar(){tb.classList.remove('visible');activeEl=null;}
+    function showFor(el,x,y){var s=el.selectionStart,en=el.selectionEnd;if(s===en){hideToolbar();return;}activeEl=el;savedS=s;savedE=en;positionToolbar(x,y);var sel=el.value.substring(s,en);tb.querySelector('[data-action="bold"]').classList.toggle('active',/^\*\*[\s\S]*\*\*$/.test(sel));tb.querySelector('[data-action="color"]').classList.toggle('active',/^\{c:[\s\S]*\}$/.test(sel));}
+    document.querySelectorAll('.sidebar textarea').forEach(function(ta){ta.addEventListener('mouseup',function(e){if(tb.contains(e.target))return;clearTimeout(hideTimer);var el=this,cx=e.clientX,cy=e.clientY;setTimeout(function(){showFor(el,cx,cy);},10);});});
+    document.addEventListener('keyup',function(e){var el=document.activeElement;if(!el||el.tagName!=='TEXTAREA'||!el.closest('.sidebar'))return;if(!e.shiftKey&&!(e.ctrlKey||e.metaKey))return;var s=el.selectionStart,en=el.selectionEnd;if(s===en){hideToolbar();return;}var rect=el.getBoundingClientRect();showFor(el,rect.left+rect.width/2,rect.top+4);});
+    document.addEventListener('mousedown',function(e){if(tb.contains(e.target))return;hideTimer=setTimeout(hideToolbar,150);});
+    tb.addEventListener('mousedown',function(e){e.preventDefault();clearTimeout(hideTimer);if(activeEl){savedS=activeEl.selectionStart;savedE=activeEl.selectionEnd;}});
+    tb.addEventListener('click',function(e){var btn=e.target.closest('[data-action]');if(!btn||!activeEl)return;var el=activeEl,action=btn.dataset.action,s=savedS,en=savedE,sel=el.value.substring(s,en);if(!sel){hideToolbar();return;}el.focus();
+      if(action==='bold'){if(sel.startsWith('**')&&sel.endsWith('**'))replaceAt(el,s,en,sel.slice(2,-2));else replaceAt(el,s,en,'**'+sel+'**');}
+      else if(action==='color'){if(sel.startsWith('{c:')&&sel.endsWith('}'))replaceAt(el,s,en,sel.slice(3,-1));else replaceAt(el,s,en,'{c:'+sel+'}');}
+      else if(action==='h1'||action==='h2'||action==='indent'){var prefix=action==='h1'?'# ':action==='h2'?'## ':'  ';var lines=sel.split('\n');var allHave=lines.every(function(l){return l.startsWith(prefix);});var result=lines.map(function(l){return allHave?l.slice(prefix.length):prefix+l;}).join('\n');replaceAt(el,s,en,result);}
+      hideToolbar();});
   })();
+
+  document.getElementById("in-people-title1").addEventListener("input",function(){document.getElementById("out-people-title1").textContent=this.value;});
+  document.getElementById("in-people-title2").addEventListener("input",function(){document.getElementById("out-people-title2").textContent=this.value;});
+  ["in-people-body1","in-people-body2"].forEach(function(id){
+    var el=document.getElementById(id);
+    el.addEventListener("input",function(){document.getElementById(id.replace("in-","out-")).innerHTML=renderMarkup(this.value);});
+    el.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key==="b"){e.preventDefault();applyWrap(this,"**","**");}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==="X"||e.key==="x")){e.preventDefault();toggleColor(this);}});
+    document.getElementById(id.replace("in-","out-")).innerHTML=renderMarkup(el.value);
+  });
+
+  function renderList(text){return text.split("\n").filter(function(l){return l.trim();}).map(function(l){if(l.startsWith("## "))return '<li class="list-subheading">'+renderMarkup(l.slice(3).trim())+'</li>';if(l.startsWith("# "))return '<li class="list-heading" style="color:'+BRAND_COLOR+'">'+renderMarkup(l.slice(2).trim())+'</li>';if(/^[ \t]{2,}/.test(l))return '<li class="indented">'+renderMarkup(l.trim())+'</li>';return "<li>"+renderMarkup(l.trim())+"</li>";}).join("");}
+
+  function bindPosition(suffix){var sfx=suffix?"-"+suffix:"";document.getElementById("in-category"+sfx).addEventListener("input",function(){document.getElementById("out-category"+sfx).textContent=this.value;});document.getElementById("in-job-title"+sfx).addEventListener("input",function(){document.getElementById("out-job-title"+sfx).textContent=this.value;});["duties","preferred","qualifications","conditions"].forEach(function(key){var el=document.getElementById("in-"+key+sfx);el.addEventListener("input",function(){document.getElementById("out-"+key+sfx).innerHTML=renderList(this.value);});el.addEventListener("keydown",function(e){if((e.ctrlKey||e.metaKey)&&e.key==="b"){e.preventDefault();applyWrap(this,"**","**");}if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==="X"||e.key==="x")){e.preventDefault();toggleColor(this);}});document.getElementById("out-"+key+sfx).innerHTML=renderList(el.value);});}
+  bindPosition(""); bindPosition("p2");
+
+  function initDragOrder(olId,wrapId){var dragSrc=null,ol=document.getElementById(olId),wrap=document.getElementById(wrapId);function reorder(){ol.querySelectorAll(".order-item").forEach(function(it){var s=wrap.querySelector('.job-section[data-key="'+it.dataset.key+'"]');if(s)wrap.appendChild(s);});}ol.addEventListener("dragstart",function(e){dragSrc=e.target.closest(".order-item");if(dragSrc)dragSrc.classList.add("dragging");});ol.addEventListener("dragover",function(e){e.preventDefault();var t=e.target.closest(".order-item");if(t&&t!==dragSrc){ol.querySelectorAll(".order-item").forEach(function(el){el.classList.remove("drag-over");});t.classList.add("drag-over");}});ol.addEventListener("drop",function(e){e.preventDefault();var t=e.target.closest(".order-item");if(t&&t!==dragSrc){var items=Array.from(ol.querySelectorAll(".order-item")),si=items.indexOf(dragSrc),ti=items.indexOf(t);if(si<ti)ol.insertBefore(dragSrc,t.nextSibling);else ol.insertBefore(dragSrc,t);reorder();}ol.querySelectorAll(".order-item").forEach(function(el){el.classList.remove("drag-over");});});ol.addEventListener("dragend",function(){if(dragSrc)dragSrc.classList.remove("dragging");dragSrc=null;});}
+  initDragOrder("section-order-list","job-sections-wrap");
+  initDragOrder("section-order-list-p2","job-sections-wrap-p2");
+
+  function addPosition2(){document.getElementById("btn-add-pos2").style.display="none";document.getElementById("tab-btn-pos2").style.display="";document.getElementById("pos-divider-bar").style.display="block";document.getElementById("pos2-zone").style.display="block";switchTab("tab-pos2",document.getElementById("tab-btn-pos2"));localStorage.setItem("oblive_pos2_visible","1");}
+  function removePosition2(){document.getElementById("btn-add-pos2").style.display="";document.getElementById("tab-btn-pos2").style.display="none";document.getElementById("pos-divider-bar").style.display="none";document.getElementById("pos2-zone").style.display="none";switchTab("tab-pos1",document.getElementById("tab-btn-pos1"));localStorage.removeItem("oblive_pos2_visible");}
+
+  (function(){var KEY="oblive";document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea').forEach(function(el,i){var k=KEY+"_"+(el.id||"idx"+i);var saved=localStorage.getItem(k);if(saved!==null){el.value=saved;el.dispatchEvent(new Event("input"));}el.addEventListener("input",function(){localStorage.setItem(k,this.value);});});if(localStorage.getItem("oblive_pos2_visible")==="1")addPosition2();})();
+
+  var HIST_KEY="oblive_history";
+  function getHistory(){try{return JSON.parse(localStorage.getItem(HIST_KEY))||[];}catch(e){return[];}}
+  function saveSnapshot(){var data={};document.querySelectorAll('.sidebar input[type="text"], .sidebar textarea').forEach(function(el){if(el.id)data[el.id]=el.value;});var hist=getHistory();hist.unshift({time:Date.now(),label:document.getElementById("in-job-title").value||"저장",data:data});if(hist.length>10)hist=hist.slice(0,10);localStorage.setItem(HIST_KEY,JSON.stringify(hist));renderHistoryList();var btn=document.querySelector("#split-save .s-main"),orig=btn.textContent;btn.textContent="저장됨";btn.style.color="#048848";setTimeout(function(){btn.textContent=orig;btn.style.color="";},1200);}
+  function restoreSnapshot(idx){var h=getHistory()[idx];if(!h)return;Object.keys(h.data).forEach(function(id){var el=document.getElementById(id);if(el){el.value=h.data[id];el.dispatchEvent(new Event("input"));}});closeDropdowns();}
+  function clearHistory(){localStorage.removeItem(HIST_KEY);renderHistoryList();}
+  function renderHistoryList(){var hist=getHistory(),list=document.getElementById("dd-history-list");if(!hist.length){list.innerHTML='<div class="hist-empty">저장된 기록이 없습니다</div>';return;}var COLORS=["linear-gradient(135deg,#e8e8ff,#c0c0ff)","linear-gradient(135deg,#d8f5e8,#9ae8c0)","linear-gradient(135deg,#fdecd8,#f8c4a0)"];list.innerHTML=hist.map(function(h,i){var d=new Date(h.time);var t=d.toLocaleDateString("ko-KR",{month:"2-digit",day:"2-digit"})+" "+d.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"});return '<div class="hist-item"><div class="hist-thumb" style="background:'+COLORS[i%3]+'"></div><div class="hist-info"><div class="hist-name">'+h.label+'</div><div class="hist-time">'+t+'</div></div><div class="hist-restore" onclick="restoreSnapshot('+i+')">불러오기</div></div>';}).join("");}
+  renderHistoryList();
+
+  function findBestSplitY(canvas,targetY,fromY){var r=Math.min(500,targetY-fromY),iy=targetY-r,d=canvas.getContext("2d").getImageData(0,iy,canvas.width,r).data;for(var row=r-1;row>=0;row--){var blank=true;for(var col=0;col<canvas.width;col++){var idx=(row*canvas.width+col)*4;if(d[idx]<240||d[idx+1]<240||d[idx+2]<240){blank=false;break;}}if(blank)return iy+row;}return targetY;}
+  async function exportWithFormat(fmt){var btn=document.querySelector("#split-export .s-main"),orig=btn.textContent;btn.textContent="저장 중...";btn.disabled=true;try{var el=document.getElementById("poster-canvas");var canvas=await html2canvas(el,{scale:1,useCORS:true,backgroundColor:"#ffffff"});var maxH=5000,ext=fmt==="png"?"png":"jpg",mime=fmt==="png"?"image/png":"image/jpeg",q=fmt==="png"?1:0.95;if(canvas.height<=maxH){var a=document.createElement("a");a.download="oblive_채용공고."+ext;a.href=canvas.toDataURL(mime,q);a.click();}else{var slices=[],y=0;while(y<canvas.height){var next=Math.min(y+maxH,canvas.height);if(next<canvas.height)next=findBestSplitY(canvas,next,y);slices.push({s:y,e:next});y=next;}for(var i=0;i<slices.length;i++){var sh=slices[i].e-slices[i].s,tmp=document.createElement("canvas");tmp.width=canvas.width;tmp.height=sh;tmp.getContext("2d").drawImage(canvas,0,slices[i].s,canvas.width,sh,0,0,canvas.width,sh);var a=document.createElement("a");a.download="oblive_채용공고_"+(i+1)+"."+ext;a.href=tmp.toDataURL(mime,q);a.click();await new Promise(function(r){setTimeout(r,300);}); }}}catch(e){alert("저장 중 오류가 발생했습니다.");}btn.textContent=orig;btn.disabled=false;}
+  function exportJPG(){exportWithFormat("jpg");}
+  function exportPNG(){exportWithFormat("png");}
 </script>
 </body>
 </html>
