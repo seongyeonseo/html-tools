@@ -1597,39 +1597,23 @@ async function scanSheetTabs() {
   scanStatus.textContent = '';
 
   try {
-    // 1. pubhtml 가져와서 GID 목록 추출
+    // 1. pubhtml 가져와서 items.push({name:..., gid:...}) 패턴으로 탭명+GID 동시 추출
     const pubUrl = baseUrl.replace(/\/pub\?.*/, '/pubhtml');
     const htmlRes = await proxyFetch(pubUrl);
     const html = await htmlRes.text();
-    const gids = [...new Set((html.match(/gid=(\d+)/g) || []).map(g => g.slice(4)))];
 
-    if (!gids.length) throw new Error('탭을 찾을 수 없어요. URL을 확인해주세요.');
-
-    // 2. 각 GID 데이터 읽어 월 감지
+    // items.push({...}) 블록에서 name + gid 쌍 추출
+    const blockRe = /items\.push\(\{([^}]+)\}\)/g;
     const tabs = [];
-    for (const gid of gids) {
-      try {
-        const csvUrl = baseUrl.split('?')[0] + `?output=csv&gid=${gid}`;
-        const r = await proxyFetch(csvUrl);
-        const txt = await r.text();
-        const m = txt.match(/~(\d{1,2})\.\d{1,2}/);
-        const label = m ? `${m[1]}월` : `탭${tabs.length + 1}`;
-        tabs.push({ gid, label });
-      } catch { tabs.push({ gid, label: `탭${tabs.length + 1}` }); }
+    let bm;
+    while ((bm = blockRe.exec(html)) !== null) {
+      const block = bm[1];
+      const nm = block.match(/name:\s*"([^"]+)"/);
+      const gm = block.match(/gid:\s*"(\d+)"/);
+      if (nm && gm) tabs.push({ gid: gm[1], label: nm[1] });
     }
 
-    // 중복 월 처리 (같은 월이 여러 탭이면 번호 붙이기)
-    const seen = {};
-    tabs.forEach(t => {
-      seen[t.label] = (seen[t.label] || 0) + 1;
-    });
-    const cnt = {};
-    tabs.forEach(t => {
-      if (seen[t.label] > 1) {
-        cnt[t.label] = (cnt[t.label] || 0) + 1;
-        t.label = `${t.label} (${cnt[t.label]})`;
-      }
-    });
+    if (!tabs.length) throw new Error('탭을 찾을 수 없어요. URL을 확인해주세요.');
 
     // 3. 버튼 렌더링
     renderTabButtons(tabs);
