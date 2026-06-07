@@ -291,6 +291,17 @@ body {
 }
 .apply-btn:hover { background: var(--ui-primary-hov); }
 
+/* ── 시트 연동 컬럼 버튼 */
+.col-btn {
+  height: 28px; padding: 0 10px;
+  background: var(--ui-surface); color: var(--ui-md);
+  border: 1px solid var(--ui-border); border-radius: 6px;
+  font-size: 12px; font-weight: 600; font-family: inherit;
+  cursor: pointer; transition: all .12s;
+}
+.col-btn:hover { background: var(--ui-border); color: var(--ui-hi); }
+.col-btn.active { background: var(--ui-primary); color: #fff; border-color: var(--ui-primary); }
+
 /* ── 페이지 토글 */
 .page-toggle-item {
   display: flex; align-items: center; justify-content: space-between;
@@ -1094,6 +1105,39 @@ body {
     <!-- 공통 탭 -->
     <div class="tab-panel on" id="tab-common">
 
+      <!-- 구글 시트 연동 -->
+      <div class="acc">
+        <div class="acc-head open" onclick="toggleAcc(this)">
+          구글 시트 연동 <span class="acc-arr r">▾</span>
+        </div>
+        <div class="acc-body">
+          <div class="field">
+            <label>시트 CSV URL</label>
+            <input type="text" id="sheet-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2I1HC1VQkGKAaw6WXOh-wd4J1jk9qVli1BgfNSnnyItzJCaJleIYzfZkrhwzMlw/pub?output=csv" placeholder="...pub?output=csv">
+          </div>
+          <div class="field">
+            <label>시술 종류</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+              <button class="col-btn active" data-col="1" onclick="selectCol(this)">피부</button>
+              <button class="col-btn" data-col="2" onclick="selectCol(this)">발톱</button>
+              <button class="col-btn" data-col="3" onclick="selectCol(this)">도수</button>
+              <button class="col-btn" data-col="4" onclick="selectCol(this)">롱래스팅</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>적용 페이지</label>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+              <button class="col-btn active" data-page="all" onclick="selectPageTarget(this)">전체</button>
+              <button class="col-btn" data-page="page1" onclick="selectPageTarget(this)">페이지 1</button>
+              <button class="col-btn" data-page="page2" onclick="selectPageTarget(this)">페이지 2</button>
+              <button class="col-btn" data-page="page3" onclick="selectPageTarget(this)">페이지 3</button>
+            </div>
+          </div>
+          <button class="apply-btn" id="btn-sheet-load" onclick="loadFromSheet()">데이터 불러오기</button>
+          <div id="sheet-status" style="font-size:11px;margin-top:8px;color:var(--ui-lo);"></div>
+        </div>
+      </div>
+
       <!-- 테마 컬러 -->
       <div class="acc">
         <div class="acc-head open" onclick="toggleAcc(this)">
@@ -1441,6 +1485,170 @@ document.addEventListener('mousemove', e => {
   sidebar.style.width = newW + 'px';
 });
 document.addEventListener('mouseup', () => { dragging = false; handle.classList.remove('dragging'); });
+
+/* ── 구글 시트 연동 ── */
+let selectedCol = 1;      // 1=피부, 2=발톱, 3=도수, 4=롱래스팅
+let selectedPageTarget = 'all';
+
+function selectCol(btn) {
+  document.querySelectorAll('.col-btn[data-col]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedCol = parseInt(btn.dataset.col);
+}
+
+function selectPageTarget(btn) {
+  document.querySelectorAll('.col-btn[data-page]').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedPageTarget = btn.dataset.page;
+}
+
+function parseCSVFull(text) {
+  const rows = [];
+  let row = [], field = '', inQuote = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuote) {
+      if (c === '"' && text[i+1] === '"') { field += '"'; i++; }
+      else if (c === '"') { inQuote = false; }
+      else { field += c; }
+    } else {
+      if (c === '"') { inQuote = true; }
+      else if (c === ',') { row.push(field.trim()); field = ''; }
+      else if (c === '\n') { row.push(field.trim()); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') { field += c; }
+    }
+  }
+  if (field || row.length) { row.push(field.trim()); rows.push(row); }
+  return rows;
+}
+
+// 시트 카드명 → HTML 카드명 매핑
+const CARD_NAME_MAP = {
+  '비씨카드': 'BC카드', 'bc카드': 'BC카드',
+  '신한카드': '신한카드', '국민카드': '국민카드',
+  '롯데카드': '롯데카드', '삼성카드': '삼성카드',
+  '현대카드': '현대카드', '농협카드': '농협카드',
+  '하나카드': '하나카드', '우리카드': '우리카드',
+};
+
+// "N개월 할부 -> M회차부터 무이자" → "N개월 : M~N회차 무이자적용"
+function convertPartialText(raw) {
+  return raw.split('\n').map(line => {
+    line = line.trim();
+    if (!line) return '';
+    // "4개월 ~ 6개월 할부 -> 3회차부터 무이자" (range)
+    let m = line.match(/(\d+)개월\s*~\s*(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
+    if (m) return `${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`;
+    // "6개월 할부 -> 4회차부터 무이자" (single)
+    m = line.match(/(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
+    if (m) return `${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`;
+    return line;
+  }).filter(Boolean).join('\n');
+}
+
+// 기간 파싱: "(~3.31)" → "(~03.31)"
+function normalizePeriod(str) {
+  if (!str) return '';
+  const m = str.match(/~(\d+)\.(\d+)/);
+  if (!m) return str;
+  const mon = String(m[1]).padStart(2,'0');
+  const day = String(m[2]).padStart(2,'0');
+  return `(~${mon}.${day})`;
+}
+
+async function loadFromSheet() {
+  const url = document.getElementById('sheet-url').value.trim();
+  const status = document.getElementById('sheet-status');
+  const btn = document.getElementById('btn-sheet-load');
+  if (!url) { status.textContent = '❌ URL을 입력해주세요'; return; }
+
+  btn.textContent = '불러오는 중...'; btn.disabled = true;
+  status.textContent = '';
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch 실패');
+    const text = await res.text();
+    const rows = parseCSVFull(text);
+
+    // 섹션 분리
+    let fullRows = [], partialRows = [], mode = null;
+    for (const row of rows) {
+      const first = (row[0] || '').trim();
+      if (first === '무이자') { mode = 'full'; continue; }
+      if (first.startsWith('부분 무이자')) { mode = 'partial'; continue; }
+      if (!first || first === '' || (row[0] === '' && row[1] === '피부')) continue;
+      if (mode === 'full' && first) fullRows.push(row);
+      if (mode === 'partial' && first) partialRows.push(row);
+    }
+
+    // 적용 대상 페이지 결정
+    const targets = selectedPageTarget === 'all'
+      ? ['page1','page2','page3']
+      : [selectedPageTarget];
+
+    let updated = 0;
+    targets.forEach(pageId => {
+      const page = document.getElementById(pageId);
+      if (!page || page.style.display === 'none') return;
+
+      // ── 전체 무이자: 기간 업데이트
+      fullRows.forEach(row => {
+        const cardName = CARD_NAME_MAP[row[0]] || row[0];
+        const val = row[selectedCol] || '';
+        if (!val || val === '적용대상 X') return;
+
+        const period = normalizePeriod(val.match(/\(~[\d.]+\)/)?.[0] || '');
+        if (!period) return;
+
+        // 해당 카드의 기간 텍스트 찾아서 업데이트
+        page.querySelectorAll('.card-name-label, .card-name').forEach(el => {
+          const parent = el.closest('.card-item, .partial-card-cell');
+          if (!parent) return;
+          const nameEl = parent.querySelector('.card-name-label');
+          if (nameEl && nameEl.textContent.trim() === cardName) {
+            const periodEl = parent.querySelector('.card-period');
+            if (periodEl) { periodEl.textContent = period; updated++; }
+          }
+        });
+      });
+
+      // ── 부분 무이자: 할부 조건 업데이트
+      partialRows.forEach(row => {
+        const cardName = CARD_NAME_MAP[row[0]] || row[0];
+        const val = row[selectedCol] || '';
+
+        // 페이지에서 해당 카드 행 찾기
+        page.querySelectorAll('.partial-table tbody tr').forEach(tr => {
+          const cell = tr.querySelector('.partial-card-cell');
+          if (!cell) return;
+          const name = cell.textContent.trim().replace(/\(~[\d.]+\)/, '').trim();
+          if (name !== cardName) return;
+
+          const monthsTd = tr.querySelectorAll('td')[1];
+          if (!monthsTd) return;
+
+          if (val === '적용대상 X') {
+            monthsTd.innerHTML = '<div style="color:#c0392b;font-weight:600;">적용대상 X</div>';
+          } else if (val) {
+            const converted = convertPartialText(val);
+            monthsTd.innerHTML = converted.split('\n')
+              .map(l => `<div contenteditable="true">${l}</div>`)
+              .join('');
+          }
+          updated++;
+        });
+      });
+    });
+
+    status.innerHTML = `✅ ${updated}개 항목 업데이트 완료`;
+    setTimeout(fitPages, 100);
+  } catch(e) {
+    status.textContent = '❌ 불러오기 실패: ' + e.message;
+  } finally {
+    btn.textContent = '데이터 불러오기'; btn.disabled = false;
+  }
+}
 
 /* ── 히스토리 저장/복원 ── */
 const HIST_KEY = 'obliv-installment-history';
