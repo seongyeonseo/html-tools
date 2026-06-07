@@ -1538,36 +1538,42 @@ const CARD_NAME_MAP = {
   '하나카드': '하나카드', '우리카드': '우리카드',
 };
 
-// 부분 무이자 텍스트 변환 (두 가지 형식 지원)
+// 부분 무이자 텍스트 변환
 function convertPartialText(raw) {
-  return raw.split('\n').map(line => {
-    line = line.trim();
-    if (!line || line.match(/^[~(]/)) return ''; // 기간 줄 제거
-    if (line === '없음' || line === '적용대상 X') return '';
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  const result = [];
+
+  for (const line of lines) {
+    // 기간 줄 제거 (~로 시작하거나 괄호로만 된 줄)
+    if (line.match(/^\(~[\d.]+\)$/) || line.match(/^~\d/)) continue;
+    if (line === '없음' || line === '적용대상 X') continue;
+    // 월 목록 헤더 제거 (예: "6개월,10개월,12개월")
+    if (line.match(/^[\d개월,\s]+$/)) continue;
 
     // 형식 1: "N개월 할부 -> M회차부터 무이자" (구형)
     let m = line.match(/(\d+)개월\s*~\s*(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
-    if (m) return `${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`;
+    if (m) { result.push(`${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`); continue; }
     m = line.match(/(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
-    if (m) return `${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`;
+    if (m) { result.push(`${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`); continue; }
 
-    // 형식 2: "N개월: 1-M회차 부담" → (M+1)~N 회차 무이자 (신형)
-    m = line.match(/(\d+)개월[:\s]+(?:1-)?(\d+)회차\s*(?:고객)?부담/);
+    // 형식 2: "N개월[괄호제외사항] 1~M회차 또는 1-M회차 부담"
+    m = line.match(/(\d+)개월[^0-9]*?(?:1[-~])?(\d+)회차\s*(?:고객)?부담/);
     if (m) {
       const total = parseInt(m[1]);
       const burden = parseInt(m[2]);
-      return `${total}개월 : ${burden+1}~${total}회차 무이자적용`;
+      result.push(`${total}개월 : ${burden+1}~${total}회차 무이자적용`);
+      continue;
     }
 
-    // 형식 3: "N~M개월: 1-K회차 부담"
-    m = line.match(/(\d+)~(\d+)개월[:\s]+(?:1-)?(\d+)회차\s*(?:고객)?부담/);
+    // 형식 3: "N~M개월 ... K회차 부담"
+    m = line.match(/(\d+)~(\d+)개월[^0-9]*?(\d+)회차\s*(?:고객)?부담/);
     if (m) {
       const burden = parseInt(m[3]);
-      return `${m[1]}~${m[2]}개월 : ${burden+1}~${m[2]}회차 무이자적용`;
+      result.push(`${m[1]}~${m[2]}개월 : ${burden+1}~${m[2]}회차 무이자적용`);
+      continue;
     }
-
-    return line;
-  }).filter(Boolean).join('\n');
+  }
+  return result.join('\n');
 }
 
 // 기간 파싱: "(~3.31)" → "(~03.31)"
@@ -1752,13 +1758,13 @@ async function loadFromSheet() {
           const monthsTd = tr.querySelectorAll('td')[1];
           if (!monthsTd) return;
 
-          if (val === '적용대상 X') {
-            monthsTd.innerHTML = '<div style="color:#c0392b;font-weight:600;">적용대상 X</div>';
+          if (val === '없음' || val === '적용대상 X') {
+            monthsTd.innerHTML = '<div contenteditable="true" style="color:#c0392b;font-weight:600;">적용대상 X</div>';
           } else if (val) {
             const converted = convertPartialText(val);
-            monthsTd.innerHTML = converted.split('\n')
-              .map(l => `<div contenteditable="true">${l}</div>`)
-              .join('');
+            if (converted) {
+              monthsTd.innerHTML = `<div contenteditable="true" style="white-space:pre-line;">${converted}</div>`;
+            }
           }
           updated++;
         });
