@@ -1116,10 +1116,15 @@ body {
             <input type="text" id="sheet-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2I1HC1VQkGKAaw6WXOh-wd4J1jk9qVli1BgfNSnnyItzJCaJleIYzfZkrhwzMlw/pub?output=csv" placeholder="...pub?output=csv">
           </div>
           <div class="field">
-            <label>월 선택</label>
-            <div id="sheet-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-              <button class="col-btn" style="font-size:11px;" onclick="scanSheetTabs()">🔄 탭 스캔</button>
+            <label>월 선택 <span style="font-weight:400;color:var(--ui-lo)">— 탭 GID 입력 후 스캔</span></label>
+            <div style="display:flex;gap:6px;margin-top:4px;">
+              <input type="text" id="sheet-gids" placeholder="GID 쉼표 구분 (시트URL #gid=숫자)" style="flex:1;font-size:11px;">
+              <button class="col-btn" style="flex-shrink:0;" onclick="buildTabsFromGids()">확인</button>
             </div>
+            <div style="font-size:10px;color:var(--ui-lo);margin-top:4px;">
+              시트 하단 탭 우클릭 → 링크 복사 → #gid= 뒤 숫자
+            </div>
+            <div id="sheet-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
           </div>
           <div class="field">
             <label>시술 종류</label>
@@ -1563,6 +1568,64 @@ function normalizePeriod(str) {
   return `(~${mon}.${day})`;
 }
 
+// CORS 프록시 다중 시도
+async function fetchProxy(url) {
+  const proxies = [
+    u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  ];
+  for (const makeUrl of proxies) {
+    try {
+      const res = await fetch(makeUrl(url), { signal: AbortSignal.timeout(6000) });
+      if (res.ok) return res;
+    } catch(e) { /* 다음 프록시 시도 */ }
+  }
+  throw new Error('네트워크 연결을 확인해 주세요 (모든 프록시 실패)');
+}
+
+// GID 목록으로 탭 버튼 생성 (각 탭 첫 행 읽어 월 자동 감지)
+async function buildTabsFromGids() {
+  const gidInput = document.getElementById('sheet-gids').value.trim();
+  const tabsDiv = document.getElementById('sheet-tabs');
+  if (!gidInput) { tabsDiv.innerHTML = '<span style="font-size:11px;color:#c0392b">GID를 입력해주세요</span>'; return; }
+
+  const baseUrl = document.getElementById('sheet-url').value.trim().split('?')[0];
+  const gids = gidInput.split(',').map(g => g.trim()).filter(Boolean);
+
+  tabsDiv.innerHTML = '<span style="font-size:11px;color:var(--ui-lo)">읽는 중...</span>';
+
+  const tabs = [];
+  for (const gid of gids) {
+    try {
+      const csvUrl = `${baseUrl}?output=csv&gid=${gid}`;
+      const isLocal = location.protocol === 'file:';
+      const res = isLocal ? await fetchProxy(csvUrl) : await fetch(csvUrl);
+      const txt = await res.text();
+      const m = txt.match(/~(\d{1,2})\.\d{2}/);
+      const label = m ? `${m[1]}월` : `탭${tabs.length+1}`;
+      tabs.push({ gid, label });
+    } catch(e) {
+      tabs.push({ gid, label: `탭${tabs.length+1}` });
+    }
+  }
+
+  renderTabButtons(tabs);
+}
+
+function renderTabButtons(tabs) {
+  const tabsDiv = document.getElementById('sheet-tabs');
+  tabsDiv.innerHTML = tabs.map(t =>
+    `<button class="col-btn${selectedGid===t.gid?' active':''}" onclick="selectSheetTab(this,'${t.gid}')">${t.label}</button>`
+  ).join('');
+  if (tabs.length && !selectedGid) {
+    selectedGid = tabs[0].gid;
+    tabsDiv.querySelector('.col-btn')?.classList.add('active');
+    const baseUrl = document.getElementById('sheet-url').value.split('?')[0];
+    document.getElementById('sheet-url').value = `${baseUrl}?output=csv&gid=${selectedGid}`;
+  }
+}
+
 // 탭 스캔: pubhtml에서 GID 목록 추출 → 각 탭 첫 행 읽어 월 감지
 async function scanSheetTabs() {
   const baseUrl = document.getElementById('sheet-url').value.trim();
@@ -1636,12 +1699,8 @@ async function loadFromSheet() {
   status.textContent = '';
 
   try {
-    // 로컬(file://)에서는 CORS 프록시 경유
     const isLocal = location.protocol === 'file:';
-    const fetchUrl = isLocal
-      ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-      : url;
-    const res = await fetch(fetchUrl);
+    const res = isLocal ? await fetchProxy(url) : await fetch(url);
     if (!res.ok) throw new Error('fetch 실패 (' + res.status + ')');
     const text = await res.text();
     const rows = parseCSVFull(text);
