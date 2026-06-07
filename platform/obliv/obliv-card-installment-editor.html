@@ -1538,17 +1538,34 @@ const CARD_NAME_MAP = {
   '하나카드': '하나카드', '우리카드': '우리카드',
 };
 
-// "N개월 할부 -> M회차부터 무이자" → "N개월 : M~N회차 무이자적용"
+// 부분 무이자 텍스트 변환 (두 가지 형식 지원)
 function convertPartialText(raw) {
   return raw.split('\n').map(line => {
     line = line.trim();
-    if (!line) return '';
-    // "4개월 ~ 6개월 할부 -> 3회차부터 무이자" (range)
+    if (!line || line.match(/^[~(]/)) return ''; // 기간 줄 제거
+    if (line === '없음' || line === '적용대상 X') return '';
+
+    // 형식 1: "N개월 할부 -> M회차부터 무이자" (구형)
     let m = line.match(/(\d+)개월\s*~\s*(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
     if (m) return `${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`;
-    // "6개월 할부 -> 4회차부터 무이자" (single)
     m = line.match(/(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
     if (m) return `${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`;
+
+    // 형식 2: "N개월: 1-M회차 부담" → (M+1)~N 회차 무이자 (신형)
+    m = line.match(/(\d+)개월[:\s]+(?:1-)?(\d+)회차\s*(?:고객)?부담/);
+    if (m) {
+      const total = parseInt(m[1]);
+      const burden = parseInt(m[2]);
+      return `${total}개월 : ${burden+1}~${total}회차 무이자적용`;
+    }
+
+    // 형식 3: "N~M개월: 1-K회차 부담"
+    m = line.match(/(\d+)~(\d+)개월[:\s]+(?:1-)?(\d+)회차\s*(?:고객)?부담/);
+    if (m) {
+      const burden = parseInt(m[3]);
+      return `${m[1]}~${m[2]}개월 : ${burden+1}~${m[2]}회차 무이자적용`;
+    }
+
     return line;
   }).filter(Boolean).join('\n');
 }
@@ -1689,7 +1706,8 @@ async function loadFromSheet() {
 
       // ── 전체 무이자: 기간 업데이트
       fullRows.forEach(row => {
-        const cardName = CARD_NAME_MAP[row[0]] || row[0];
+        const rawName = (row[0] || '').split('\n')[0].trim();
+        const cardName = CARD_NAME_MAP[rawName] || rawName;
         const val = row[selectedCol] || '';
         if (!val || val === '적용대상 X') return;
 
@@ -1710,15 +1728,19 @@ async function loadFromSheet() {
 
       // ── 부분 무이자: 할부 조건 업데이트
       partialRows.forEach(row => {
-        const cardName = CARD_NAME_MAP[row[0]] || row[0];
+        // 카드명 첫 줄만 추출 (예: "비씨카드\n(~6.30)" → "비씨카드")
+        const rawName = (row[0] || '').split('\n')[0].trim();
+        const cardName = CARD_NAME_MAP[rawName] || rawName;
         const val = row[selectedCol] || '';
 
         // 페이지에서 해당 카드 행 찾기
         page.querySelectorAll('.partial-table tbody tr').forEach(tr => {
           const cell = tr.querySelector('.partial-card-cell');
           if (!cell) return;
-          const name = cell.textContent.trim().replace(/\(~[\d.]+\)/, '').trim();
-          if (name !== cardName) return;
+          // 카드명만 추출 (기간, 공백, 이미지 alt 텍스트 제거)
+          const rawText = cell.textContent.replace(/\(~[\d.]+\)/g, '').replace(/\s+/g, '').trim();
+          const cardNameClean = cardName.replace(/\s+/g, '');
+          if (!rawText.includes(cardNameClean)) return;
 
           const monthsTd = tr.querySelectorAll('td')[1];
           if (!monthsTd) return;
