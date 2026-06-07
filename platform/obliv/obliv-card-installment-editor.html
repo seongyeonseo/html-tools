@@ -1112,8 +1112,14 @@ body {
         </div>
         <div class="acc-body">
           <div class="field">
-            <label>시트 CSV URL</label>
+            <label>시트 CSV URL (기본 탭)</label>
             <input type="text" id="sheet-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2I1HC1VQkGKAaw6WXOh-wd4J1jk9qVli1BgfNSnnyItzJCaJleIYzfZkrhwzMlw/pub?output=csv" placeholder="...pub?output=csv">
+          </div>
+          <div class="field">
+            <label>월 선택</label>
+            <div id="sheet-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+              <button class="col-btn" style="font-size:11px;" onclick="scanSheetTabs()">🔄 탭 스캔</button>
+            </div>
           </div>
           <div class="field">
             <label>시술 종류</label>
@@ -1487,8 +1493,9 @@ document.addEventListener('mousemove', e => {
 document.addEventListener('mouseup', () => { dragging = false; handle.classList.remove('dragging'); });
 
 /* ── 구글 시트 연동 ── */
-let selectedCol = 1;      // 1=피부, 2=발톱, 3=도수, 4=롱래스팅
+let selectedCol = 1;
 let selectedPageTarget = 'all';
+let selectedGid = null;  // 선택된 탭 GID
 
 function selectCol(btn) {
   document.querySelectorAll('.col-btn[data-col]').forEach(b => b.classList.remove('active'));
@@ -1556,6 +1563,69 @@ function normalizePeriod(str) {
   return `(~${mon}.${day})`;
 }
 
+// 탭 스캔: pubhtml에서 GID 목록 추출 → 각 탭 첫 행 읽어 월 감지
+async function scanSheetTabs() {
+  const baseUrl = document.getElementById('sheet-url').value.trim();
+  const tabsDiv = document.getElementById('sheet-tabs');
+  if (!baseUrl) return;
+
+  tabsDiv.innerHTML = '<span style="font-size:11px;color:var(--ui-lo)">스캔 중...</span>';
+
+  try {
+    // pubhtml에서 GID 추출
+    const pubBase = baseUrl.replace(/\/pub\?.*/, '/pubhtml');
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(pubBase)}`;
+    const res = await fetch(proxyUrl);
+    const html = await res.text();
+    const gids = [...new Set(html.match(/gid=(\d+)/g)?.map(g => g.replace('gid=','')) || [])];
+
+    if (!gids.length) {
+      tabsDiv.innerHTML = '<span style="font-size:11px;color:#c0392b">GID를 찾을 수 없어요</span>';
+      return;
+    }
+
+    // 각 GID에서 월 감지
+    const tabs = [];
+    for (const gid of gids) {
+      try {
+        const csvUrl = baseUrl.split('?')[0] + `?output=csv&gid=${gid}`;
+        const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`);
+        const txt = await r.text();
+        // 날짜 패턴으로 월 추출: (~6.30) → 6월
+        const m = txt.match(/~(\d{1,2})\.\d{2}/);
+        const label = m ? `${m[1]}월` : `탭${tabs.length+1}`;
+        tabs.push({ gid, label });
+      } catch(e) { /* skip */ }
+    }
+
+    // 탭 버튼 렌더링
+    tabsDiv.innerHTML = tabs.map(t =>
+      `<button class="col-btn${selectedGid===t.gid?' active':''}" onclick="selectSheetTab(this,'${t.gid}')">${t.label}</button>`
+    ).join('') + '<button class="col-btn" style="font-size:11px;" onclick="scanSheetTabs()">🔄</button>';
+
+    // 첫 번째 탭 자동 선택
+    if (tabs.length && !selectedGid) {
+      selectedGid = tabs[0].gid;
+      tabsDiv.querySelector('.col-btn').classList.add('active');
+      // URL도 업데이트
+      const newUrl = baseUrl.split('?')[0] + `?output=csv&gid=${selectedGid}`;
+      document.getElementById('sheet-url').value = newUrl;
+    }
+  } catch(e) {
+    tabsDiv.innerHTML = `<span style="font-size:11px;color:#c0392b">오류: ${e.message}</span>`;
+  }
+}
+
+function selectSheetTab(btn, gid) {
+  document.querySelectorAll('#sheet-tabs .col-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedGid = gid;
+  // URL gid 업데이트
+  const base = document.getElementById('sheet-url').value;
+  const newUrl = base.split('?')[0] + `?output=csv&gid=${gid}`;
+  document.getElementById('sheet-url').value = newUrl;
+}
+
 async function loadFromSheet() {
   const url = document.getElementById('sheet-url').value.trim();
   const status = document.getElementById('sheet-status');
@@ -1566,8 +1636,13 @@ async function loadFromSheet() {
   status.textContent = '';
 
   try {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('fetch 실패');
+    // 로컬(file://)에서는 CORS 프록시 경유
+    const isLocal = location.protocol === 'file:';
+    const fetchUrl = isLocal
+      ? `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+      : url;
+    const res = await fetch(fetchUrl);
+    if (!res.ok) throw new Error('fetch 실패 (' + res.status + ')');
     const text = await res.text();
     const rows = parseCSVFull(text);
 
