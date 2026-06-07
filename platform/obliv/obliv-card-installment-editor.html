@@ -1737,8 +1737,15 @@ async function loadFromSheet() {
         page.querySelectorAll('.partial-table tbody tr').forEach(tr => {
           const cell = tr.querySelector('.partial-card-cell');
           if (!cell) return;
-          // 카드명만 추출 (기간, 공백, 이미지 alt 텍스트 제거)
-          const rawText = cell.textContent.replace(/\(~[\d.]+\)/g, '').replace(/\s+/g, '').trim();
+          // img alt 텍스트 제외하고 순수 텍스트 노드만 읽기
+          const textNodes = [...cell.querySelectorAll('.card-name, br')]
+            .flatMap(el => el.nodeName === 'BR' ? [] : [el.childNodes[0]?.textContent || el.textContent])
+            .join('');
+          // card-name이 없으면 직접 텍스트 노드 수집
+          const directText = textNodes || [...cell.childNodes]
+            .filter(n => n.nodeType === 3)
+            .map(n => n.textContent).join('');
+          const rawText = (textNodes || directText).replace(/\(~[\d.]+\)/g, '').replace(/\s+/g, '');
           const cardNameClean = cardName.replace(/\s+/g, '');
           if (!rawText.includes(cardNameClean)) return;
 
