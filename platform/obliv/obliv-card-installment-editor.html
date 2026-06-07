@@ -1538,30 +1538,32 @@ const CARD_NAME_MAP = {
   '하나카드': '하나카드', '우리카드': '우리카드',
 };
 
-// 부분 무이자 텍스트 변환
+// 부분 무이자 텍스트 변환 → { main: 할부조건, note: 비고 }
 function convertPartialText(raw) {
   const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  const result = [];
+  const mainLines = [], noteLines = [];
 
   for (const line of lines) {
-    // 기간 줄 제거 (~로 시작하거나 괄호로만 된 줄)
     if (line.match(/^\(~[\d.]+\)$/) || line.match(/^~\d/)) continue;
     if (line === '없음' || line === '적용대상 X') continue;
-    // 월 목록 헤더 제거 (예: "6개월,10개월,12개월")
     if (line.match(/^[\d개월,\s]+$/)) continue;
+
+    // 괄호 안 내용 추출 → 비고
+    const parenMatch = line.match(/\(([^)]+)\)/g);
+    const noteFromLine = parenMatch ? parenMatch.map(p => p.slice(1,-1)).join(', ') : null;
 
     // 형식 1: "N개월 할부 -> M회차부터 무이자" (구형)
     let m = line.match(/(\d+)개월\s*~\s*(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
-    if (m) { result.push(`${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`); continue; }
+    if (m) { mainLines.push(`${m[1]}~${m[2]}개월 : ${m[3]}~${m[2]}회차 무이자적용`); continue; }
     m = line.match(/(\d+)개월\s*할부\s*->\s*(\d+)회차부터\s*무이자/);
-    if (m) { result.push(`${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`); continue; }
+    if (m) { mainLines.push(`${m[1]}개월 : ${m[2]}~${m[1]}회차 무이자적용`); continue; }
 
-    // 형식 2: "N개월[괄호제외사항] 1~M회차 또는 1-M회차 부담"
+    // 형식 2: "N개월[괄호] 1-M회차 부담"
     m = line.match(/(\d+)개월[^0-9]*?(?:1[-~])?(\d+)회차\s*(?:고객)?부담/);
     if (m) {
-      const total = parseInt(m[1]);
-      const burden = parseInt(m[2]);
-      result.push(`${total}개월 : ${burden+1}~${total}회차 무이자적용`);
+      const total = parseInt(m[1]), burden = parseInt(m[2]);
+      mainLines.push(`${total}개월 : ${burden+1}~${total}회차 무이자적용`);
+      if (noteFromLine) noteLines.push(`${total}개월 제외: ${noteFromLine}`);
       continue;
     }
 
@@ -1569,11 +1571,12 @@ function convertPartialText(raw) {
     m = line.match(/(\d+)~(\d+)개월[^0-9]*?(\d+)회차\s*(?:고객)?부담/);
     if (m) {
       const burden = parseInt(m[3]);
-      result.push(`${m[1]}~${m[2]}개월 : ${burden+1}~${m[2]}회차 무이자적용`);
+      mainLines.push(`${m[1]}~${m[2]}개월 : ${burden+1}~${m[2]}회차 무이자적용`);
+      if (noteFromLine) noteLines.push(`${m[1]}~${m[2]}개월 제외: ${noteFromLine}`);
       continue;
     }
   }
-  return result.join('\n');
+  return { main: mainLines.join('\n'), note: noteLines.join('\n') };
 }
 
 // 기간 파싱: "(~3.31)" → "(~03.31)"
@@ -1758,13 +1761,14 @@ async function loadFromSheet() {
           const monthsTd = tr.querySelectorAll('td')[1];
           if (!monthsTd) return;
 
+          const noteTd = tr.querySelectorAll('td')[2];
           if (val === '없음' || val === '적용대상 X') {
             monthsTd.innerHTML = '<div contenteditable="true" style="color:#c0392b;font-weight:600;">적용대상 X</div>';
+            if (noteTd) noteTd.innerHTML = '';
           } else if (val) {
-            const converted = convertPartialText(val);
-            if (converted) {
-              monthsTd.innerHTML = `<div contenteditable="true" style="white-space:pre-line;">${converted}</div>`;
-            }
+            const { main, note } = convertPartialText(val);
+            if (main) monthsTd.innerHTML = `<div contenteditable="true" style="white-space:pre-line;">${main}</div>`;
+            if (noteTd && note) noteTd.innerHTML = `<div contenteditable="true" style="white-space:pre-line;font-size:10px;color:#666;">${note}</div>`;
           }
           updated++;
         });
