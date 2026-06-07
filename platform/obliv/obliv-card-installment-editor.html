@@ -1116,15 +1116,10 @@ body {
             <input type="text" id="sheet-url" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vT2I1HC1VQkGKAaw6WXOh-wd4J1jk9qVli1BgfNSnnyItzJCaJleIYzfZkrhwzMlw/pub?output=csv" placeholder="...pub?output=csv">
           </div>
           <div class="field">
-            <label>월 선택 <span style="font-weight:400;color:var(--ui-lo)">— 탭 GID 입력 후 스캔</span></label>
-            <div style="display:flex;gap:6px;margin-top:4px;">
-              <input type="text" id="sheet-gids" placeholder="GID 쉼표 구분 (시트URL #gid=숫자)" style="flex:1;font-size:11px;">
-              <button class="col-btn" style="flex-shrink:0;" onclick="buildTabsFromGids()">확인</button>
-            </div>
-            <div style="font-size:10px;color:var(--ui-lo);margin-top:4px;">
-              시트 하단 탭 우클릭 → 링크 복사 → #gid= 뒤 숫자
-            </div>
+            <label>월 탭 선택</label>
+            <button class="apply-btn" id="btn-scan" onclick="scanSheetTabs()" style="margin-top:4px;">🔍 탭 스캔</button>
             <div id="sheet-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"></div>
+            <div id="scan-status" style="font-size:11px;margin-top:4px;color:var(--ui-lo);"></div>
           </div>
           <div class="field">
             <label>시술 종류</label>
@@ -1568,125 +1563,107 @@ function normalizePeriod(str) {
   return `(~${mon}.${day})`;
 }
 
-// CORS 프록시 다중 시도
+// CORS 프록시 다중 시도 (타임아웃 없이 안정적으로)
 async function fetchProxy(url) {
   const proxies = [
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
     u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
   ];
+  let lastErr;
   for (const makeUrl of proxies) {
     try {
-      const res = await fetch(makeUrl(url), { signal: AbortSignal.timeout(6000) });
+      const res = await fetch(makeUrl(url));
       if (res.ok) return res;
-    } catch(e) { /* 다음 프록시 시도 */ }
+    } catch(e) { lastErr = e; }
   }
-  throw new Error('네트워크 연결을 확인해 주세요 (모든 프록시 실패)');
+  throw new Error('네트워크 오류 — GitHub Pages에서 사용하면 바로 작동해요');
 }
 
-// GID 목록으로 탭 버튼 생성 (각 탭 첫 행 읽어 월 자동 감지)
-async function buildTabsFromGids() {
-  const gidInput = document.getElementById('sheet-gids').value.trim();
+function proxyFetch(url) {
+  return location.protocol === 'file:' ? fetchProxy(url) : fetch(url);
+}
+
+// pubhtml → GID 추출 → 월 감지 → 탭 버튼 생성
+async function scanSheetTabs() {
+  const baseUrl = document.getElementById('sheet-url').value.trim();
   const tabsDiv = document.getElementById('sheet-tabs');
-  if (!gidInput) { tabsDiv.innerHTML = '<span style="font-size:11px;color:#c0392b">GID를 입력해주세요</span>'; return; }
+  const scanStatus = document.getElementById('scan-status');
+  const btn = document.getElementById('btn-scan');
+  if (!baseUrl) return;
 
-  const baseUrl = document.getElementById('sheet-url').value.trim().split('?')[0];
-  const gids = gidInput.split(',').map(g => g.trim()).filter(Boolean);
+  btn.textContent = '스캔 중...'; btn.disabled = true;
+  tabsDiv.innerHTML = '';
+  scanStatus.textContent = '';
 
-  tabsDiv.innerHTML = '<span style="font-size:11px;color:var(--ui-lo)">읽는 중...</span>';
+  try {
+    // 1. pubhtml 가져와서 GID 목록 추출
+    const pubUrl = baseUrl.replace(/\/pub\?.*/, '/pubhtml');
+    const htmlRes = await proxyFetch(pubUrl);
+    const html = await htmlRes.text();
+    const gids = [...new Set((html.match(/gid=(\d+)/g) || []).map(g => g.slice(4)))];
 
-  const tabs = [];
-  for (const gid of gids) {
-    try {
-      const csvUrl = `${baseUrl}?output=csv&gid=${gid}`;
-      const isLocal = location.protocol === 'file:';
-      const res = isLocal ? await fetchProxy(csvUrl) : await fetch(csvUrl);
-      const txt = await res.text();
-      const m = txt.match(/~(\d{1,2})\.\d{2}/);
-      const label = m ? `${m[1]}월` : `탭${tabs.length+1}`;
-      tabs.push({ gid, label });
-    } catch(e) {
-      tabs.push({ gid, label: `탭${tabs.length+1}` });
+    if (!gids.length) throw new Error('탭을 찾을 수 없어요. URL을 확인해주세요.');
+
+    // 2. 각 GID 데이터 읽어 월 감지
+    const tabs = [];
+    for (const gid of gids) {
+      try {
+        const csvUrl = baseUrl.split('?')[0] + `?output=csv&gid=${gid}`;
+        const r = await proxyFetch(csvUrl);
+        const txt = await r.text();
+        const m = txt.match(/~(\d{1,2})\.\d{1,2}/);
+        const label = m ? `${m[1]}월` : `탭${tabs.length + 1}`;
+        tabs.push({ gid, label });
+      } catch { tabs.push({ gid, label: `탭${tabs.length + 1}` }); }
     }
-  }
 
-  renderTabButtons(tabs);
+    // 중복 월 처리 (같은 월이 여러 탭이면 번호 붙이기)
+    const seen = {};
+    tabs.forEach(t => {
+      seen[t.label] = (seen[t.label] || 0) + 1;
+    });
+    const cnt = {};
+    tabs.forEach(t => {
+      if (seen[t.label] > 1) {
+        cnt[t.label] = (cnt[t.label] || 0) + 1;
+        t.label = `${t.label} (${cnt[t.label]})`;
+      }
+    });
+
+    // 3. 버튼 렌더링
+    renderTabButtons(tabs);
+    scanStatus.textContent = `✅ ${tabs.length}개 탭 발견`;
+  } catch(e) {
+    scanStatus.innerHTML = `❌ ${e.message}`;
+  } finally {
+    btn.textContent = '🔍 탭 스캔'; btn.disabled = false;
+  }
 }
 
 function renderTabButtons(tabs) {
   const tabsDiv = document.getElementById('sheet-tabs');
   tabsDiv.innerHTML = tabs.map(t =>
-    `<button class="col-btn${selectedGid===t.gid?' active':''}" onclick="selectSheetTab(this,'${t.gid}')">${t.label}</button>`
+    `<button class="col-btn${selectedGid === t.gid ? ' active' : ''}" onclick="selectSheetTab(this,'${t.gid}')">${t.label}</button>`
   ).join('');
+  // 첫 번째 탭 자동 선택
   if (tabs.length && !selectedGid) {
     selectedGid = tabs[0].gid;
     tabsDiv.querySelector('.col-btn')?.classList.add('active');
-    const baseUrl = document.getElementById('sheet-url').value.split('?')[0];
-    document.getElementById('sheet-url').value = `${baseUrl}?output=csv&gid=${selectedGid}`;
+    updateSheetUrl(tabs[0].gid);
   }
 }
 
-// 탭 스캔: pubhtml에서 GID 목록 추출 → 각 탭 첫 행 읽어 월 감지
-async function scanSheetTabs() {
-  const baseUrl = document.getElementById('sheet-url').value.trim();
-  const tabsDiv = document.getElementById('sheet-tabs');
-  if (!baseUrl) return;
-
-  tabsDiv.innerHTML = '<span style="font-size:11px;color:var(--ui-lo)">스캔 중...</span>';
-
-  try {
-    // pubhtml에서 GID 추출
-    const pubBase = baseUrl.replace(/\/pub\?.*/, '/pubhtml');
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(pubBase)}`;
-    const res = await fetch(proxyUrl);
-    const html = await res.text();
-    const gids = [...new Set(html.match(/gid=(\d+)/g)?.map(g => g.replace('gid=','')) || [])];
-
-    if (!gids.length) {
-      tabsDiv.innerHTML = '<span style="font-size:11px;color:#c0392b">GID를 찾을 수 없어요</span>';
-      return;
-    }
-
-    // 각 GID에서 월 감지
-    const tabs = [];
-    for (const gid of gids) {
-      try {
-        const csvUrl = baseUrl.split('?')[0] + `?output=csv&gid=${gid}`;
-        const r = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(csvUrl)}`);
-        const txt = await r.text();
-        // 날짜 패턴으로 월 추출: (~6.30) → 6월
-        const m = txt.match(/~(\d{1,2})\.\d{2}/);
-        const label = m ? `${m[1]}월` : `탭${tabs.length+1}`;
-        tabs.push({ gid, label });
-      } catch(e) { /* skip */ }
-    }
-
-    // 탭 버튼 렌더링
-    tabsDiv.innerHTML = tabs.map(t =>
-      `<button class="col-btn${selectedGid===t.gid?' active':''}" onclick="selectSheetTab(this,'${t.gid}')">${t.label}</button>`
-    ).join('') + '<button class="col-btn" style="font-size:11px;" onclick="scanSheetTabs()">🔄</button>';
-
-    // 첫 번째 탭 자동 선택
-    if (tabs.length && !selectedGid) {
-      selectedGid = tabs[0].gid;
-      tabsDiv.querySelector('.col-btn').classList.add('active');
-      // URL도 업데이트
-      const newUrl = baseUrl.split('?')[0] + `?output=csv&gid=${selectedGid}`;
-      document.getElementById('sheet-url').value = newUrl;
-    }
-  } catch(e) {
-    tabsDiv.innerHTML = `<span style="font-size:11px;color:#c0392b">오류: ${e.message}</span>`;
-  }
+function updateSheetUrl(gid) {
+  const base = document.getElementById('sheet-url').value.split('?')[0];
+  document.getElementById('sheet-url').value = `${base}?output=csv&gid=${gid}`;
 }
 
 function selectSheetTab(btn, gid) {
   document.querySelectorAll('#sheet-tabs .col-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedGid = gid;
-  // URL gid 업데이트
-  const base = document.getElementById('sheet-url').value;
-  const newUrl = base.split('?')[0] + `?output=csv&gid=${gid}`;
-  document.getElementById('sheet-url').value = newUrl;
+  updateSheetUrl(gid);
 }
 
 async function loadFromSheet() {
