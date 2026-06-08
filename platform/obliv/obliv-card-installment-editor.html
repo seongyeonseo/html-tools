@@ -212,9 +212,10 @@ body {
 .canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
 .canvas-area::-webkit-scrollbar-thumb { background: #C8CDD6; border-radius: 3px; }
 
-/* ── 카드 드래그 */
+/* ── 카드 드래그 & 편집 */
 .card-item {
   cursor: grab;
+  position: relative;
   transition: opacity .15s, transform .15s;
 }
 .card-item:active { cursor: grabbing; }
@@ -224,6 +225,49 @@ body {
   border-radius: 6px;
   background: var(--pri-alpha);
 }
+/* 삭제 버튼 */
+.card-del-btn {
+  display: none;
+  position: absolute; top: -6px; right: -6px;
+  width: 16px; height: 16px;
+  background: #e74c3c; color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 10px; line-height: 16px; text-align: center;
+  cursor: pointer; z-index: 10; padding: 0;
+  font-weight: 700;
+}
+.card-item:hover .card-del-btn { display: block; }
+
+/* 카드 추가 버튼 */
+.card-add-btn {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 2px;
+  width: 44px; height: 60px;
+  border: 2px dashed rgba(255,255,255,.4);
+  border-radius: 8px; background: transparent;
+  color: rgba(255,255,255,.6); font-size: 20px; line-height: 1;
+  cursor: pointer; transition: all .15s; flex-shrink: 0;
+}
+.card-add-btn:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,.1); }
+
+/* 카드 선택 팝업 */
+.card-picker {
+  position: absolute; z-index: 999;
+  background: #fff; border: 1px solid var(--ui-border);
+  border-radius: 12px; padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15);
+  display: none; flex-wrap: wrap; gap: 10px;
+  width: 260px;
+}
+.card-picker.open { display: flex; }
+.card-picker-item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 3px; cursor: pointer; padding: 6px; border-radius: 6px;
+  transition: background .12s; min-width: 50px;
+}
+.card-picker-item:hover { background: var(--ui-surface); }
+.card-picker-item img { width: 36px; height: 36px; object-fit: contain; }
+.card-picker-item span { font-size: 10px; font-weight: 600; color: var(--ui-hi); }
 
 /* ── 리사이즈 핸들 */
 .resize-handle {
@@ -1888,27 +1932,138 @@ function clearHistory() {
 // 페이지 로드 시 히스토리 렌더링
 window.addEventListener('DOMContentLoaded', renderHistory);
 
+/* ── 카드 추가/삭제 ── */
+
+// 모든 카드 데이터 (이미지 src를 동적으로 읽음)
+function getAllCardDefs() {
+  const defs = {};
+  document.querySelectorAll('.card-item').forEach(card => {
+    const img = card.querySelector('img');
+    const label = card.querySelector('.card-name-label');
+    const period = card.querySelector('.card-period');
+    const logo = card.querySelector('.card-logo');
+    if (!img || !label) return;
+    const name = label.textContent.trim();
+    if (!defs[name]) {
+      defs[name] = {
+        name,
+        src: img.src,
+        logoClass: [...logo.classList].find(c => c.startsWith('logo-')) || '',
+        period: period?.textContent.trim() || ''
+      };
+    }
+  });
+  return defs;
+}
+
+function createCardEl(def, periodOverride) {
+  const period = periodOverride || def.period;
+  const div = document.createElement('div');
+  div.className = 'card-item';
+  div.innerHTML = `
+    <button class="card-del-btn" onclick="removeCard(this)" title="삭제">✕</button>
+    <div class="card-logo ${def.logoClass}"><img src="${def.src}" alt="${def.name}"></div>
+    <div class="card-name-label">${def.name}</div>
+    <div class="card-period" contenteditable="true">${period}</div>
+  `;
+  return div;
+}
+
+function removeCard(btn) {
+  btn.closest('.card-item').remove();
+}
+
+function addCardPickerTo(list) {
+  // 기존 picker 닫기
+  document.querySelectorAll('.card-picker').forEach(p => p.remove());
+
+  const defs = getAllCardDefs();
+  const picker = document.createElement('div');
+  picker.className = 'card-picker open';
+
+  Object.values(defs).forEach(def => {
+    const item = document.createElement('div');
+    item.className = 'card-picker-item';
+    item.innerHTML = `<img src="${def.src}" alt="${def.name}"><span>${def.name}</span>`;
+    item.onclick = () => {
+      const card = createCardEl(def);
+      initCardDragOne(card);
+      addDelBtn(card);
+      // + 버튼 앞에 삽입
+      const addBtn = list.querySelector('.card-add-btn');
+      list.insertBefore(card, addBtn);
+      picker.remove();
+    };
+    picker.appendChild(item);
+  });
+
+  // 닫기 버튼
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;cursor:pointer;font-size:14px;color:#999;';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = () => picker.remove();
+  picker.style.position = 'absolute';
+  picker.appendChild(closeBtn);
+
+  list.style.position = 'relative';
+  list.appendChild(picker);
+
+  // 외부 클릭 시 닫기
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 0);
+}
+
+function addDelBtn(card) {
+  if (!card.querySelector('.card-del-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'card-del-btn';
+    btn.title = '삭제';
+    btn.textContent = '✕';
+    btn.onclick = () => removeCard(btn);
+    card.insertBefore(btn, card.firstChild);
+  }
+}
+
+function initAddBtns() {
+  document.querySelectorAll('.installment-table .card-list').forEach(list => {
+    if (list.querySelector('.card-add-btn')) return;
+    const btn = document.createElement('button');
+    btn.className = 'card-add-btn';
+    btn.innerHTML = '+';
+    btn.title = '카드 추가';
+    btn.onclick = (e) => { e.stopPropagation(); addCardPickerTo(list); };
+    list.appendChild(btn);
+  });
+  // 기존 카드에 X 버튼 추가
+  document.querySelectorAll('.installment-table .card-item').forEach(addDelBtn);
+}
+
+window.addEventListener('load', () => { setTimeout(initAddBtns, 150); });
+
 /* ── 카드 드래그&드롭 ── */
 let dragSrc = null;
 
-function initCardDrag() {
-  document.querySelectorAll('.installment-table .card-item').forEach(card => {
-    if (card.dataset.dragInit) return;
-    card.dataset.dragInit = '1';
-    card.setAttribute('draggable', 'true');
-
-    card.addEventListener('dragstart', e => {
-      dragSrc = card;
-      e.dataTransfer.effectAllowed = 'move';
-      card.classList.add('dragging');
-    });
-
-    card.addEventListener('dragend', () => {
-      if (dragSrc) dragSrc.classList.remove('dragging');
-      dragSrc = null;
-      document.querySelectorAll('.card-list').forEach(l => l.classList.remove('drag-over'));
-    });
+function initCardDragOne(card) {
+  if (card.dataset.dragInit) return;
+  card.dataset.dragInit = '1';
+  card.setAttribute('draggable', 'true');
+  card.addEventListener('dragstart', e => {
+    dragSrc = card;
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
   });
+  card.addEventListener('dragend', () => {
+    if (dragSrc) dragSrc.classList.remove('dragging');
+    dragSrc = null;
+    document.querySelectorAll('.card-list').forEach(l => l.classList.remove('drag-over'));
+  });
+}
+
+function initCardDrag() {
+  document.querySelectorAll('.installment-table .card-item').forEach(initCardDragOne);
 
   document.querySelectorAll('.installment-table .card-list').forEach(list => {
     if (list.dataset.dragInit) return;
