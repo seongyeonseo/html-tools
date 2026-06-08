@@ -1889,61 +1889,55 @@ function clearHistory() {
 window.addEventListener('DOMContentLoaded', renderHistory);
 
 /* ── 카드 드래그&드롭 ── */
+let dragSrc = null;
+
 function initCardDrag() {
   document.querySelectorAll('.installment-table .card-item').forEach(card => {
+    if (card.dataset.dragInit) return;
+    card.dataset.dragInit = '1';
     card.setAttribute('draggable', 'true');
 
     card.addEventListener('dragstart', e => {
+      dragSrc = card;
       e.dataTransfer.effectAllowed = 'move';
       card.classList.add('dragging');
-      // 카드 HTML 저장
-      e.dataTransfer.setData('text/html', card.outerHTML);
-      setTimeout(() => card.style.display = 'none', 0);
     });
 
     card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-      card.style.display = '';
+      if (dragSrc) dragSrc.classList.remove('dragging');
+      dragSrc = null;
       document.querySelectorAll('.card-list').forEach(l => l.classList.remove('drag-over'));
     });
   });
 
   document.querySelectorAll('.installment-table .card-list').forEach(list => {
+    if (list.dataset.dragInit) return;
+    list.dataset.dragInit = '1';
+
     list.addEventListener('dragover', e => {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       list.classList.add('drag-over');
     });
 
-    list.addEventListener('dragleave', () => {
-      list.classList.remove('drag-over');
+    list.addEventListener('dragleave', e => {
+      if (!list.contains(e.relatedTarget)) {
+        list.classList.remove('drag-over');
+      }
     });
 
     list.addEventListener('drop', e => {
       e.preventDefault();
       list.classList.remove('drag-over');
-      const html = e.dataTransfer.getData('text/html');
-      if (!html) return;
-
-      // 기존 dragging 카드 제거
-      const dragging = document.querySelector('.card-item.dragging');
-      if (dragging) dragging.remove();
-
-      // 새 위치에 삽입
-      const tmp = document.createElement('div');
-      tmp.innerHTML = html;
-      const newCard = tmp.firstElementChild;
-      newCard.classList.remove('dragging');
-      newCard.style.display = '';
-      list.appendChild(newCard);
-
-      // 이벤트 재등록
-      initCardDrag();
+      if (!dragSrc || dragSrc.closest('.card-list') === list) return;
+      // 원래 위치에서 제거 후 새 위치에 추가
+      list.appendChild(dragSrc);
+      dragSrc.classList.remove('dragging');
+      dragSrc = null;
     });
   });
 }
 
-// 페이지 로드 후 초기화
 window.addEventListener('load', initCardDrag);
 
 function togglePage(pageId, show) {
