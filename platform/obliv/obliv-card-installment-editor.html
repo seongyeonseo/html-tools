@@ -250,6 +250,33 @@ body {
 }
 .partial-table tbody tr:hover .row-del-btn { display: inline-flex; align-items: center; justify-content: center; }
 
+/* 비고 노트 아이템 */
+.note-item {
+  display: flex; align-items: flex-start; gap: 4px;
+  margin-bottom: 3px;
+}
+.note-item:last-of-type { margin-bottom: 0; }
+.note-item-text {
+  flex: 1; font-size: 10px; color: #666; line-height: 1.5;
+  min-width: 0; word-break: break-all;
+}
+.note-item-del {
+  display: none;
+  flex-shrink: 0; width: 14px; height: 14px; margin-top: 1px;
+  background: #e74c3c; color: #fff; border: none; border-radius: 50%;
+  font-size: 8px; cursor: pointer; padding: 0; line-height: 14px; text-align: center;
+}
+.td-note:hover .note-item-del { display: block; }
+.note-add-btn {
+  display: none;
+  width: 100%; padding: 3px 0; margin-top: 4px;
+  background: none; border: 1px dashed #ccc; border-radius: 4px;
+  font-size: 10px; color: #aaa; cursor: pointer; font-family: inherit;
+  transition: all .12s;
+}
+.td-note:hover .note-add-btn { display: block; }
+.note-add-btn:hover { border-color: var(--ui-primary); color: var(--ui-primary); }
+
 /* 부분무이자 행 추가 버튼 */
 .partial-add-row {
   width: 100%; padding: 10px;
@@ -2085,7 +2112,59 @@ function initAddBtns() {
   document.querySelectorAll('.installment-table .card-item').forEach(addDelBtn);
 }
 
-window.addEventListener('load', () => { setTimeout(initAddBtns, 150); setTimeout(initPartialTableEdit, 200); });
+window.addEventListener('load', () => {
+  setTimeout(initAddBtns, 150);
+  setTimeout(initPartialTableEdit, 200);
+  setTimeout(initNoteCells, 250);
+});
+
+/* ── 비고 셀 추가/삭제 ── */
+function initNoteCells() {
+  document.querySelectorAll('td.td-note').forEach(td => {
+    if (td.dataset.noteInit) return;
+    td.dataset.noteInit = '1';
+
+    // 기존 내용을 note-item 구조로 변환
+    const existing = td.querySelector('.note-right');
+    const texts = existing
+      ? existing.textContent.split('\n').map(t => t.trim()).filter(Boolean)
+      : [];
+    td.innerHTML = '';
+    texts.forEach(t => td.appendChild(makeNoteItem(t)));
+
+    // + 추가 버튼
+    td.appendChild(makeNoteAddBtn(td));
+  });
+}
+
+function makeNoteItem(text) {
+  const wrap = document.createElement('div');
+  wrap.className = 'note-item';
+  const span = document.createElement('span');
+  span.className = 'note-item-text';
+  span.contentEditable = 'true';
+  span.textContent = text;
+  const del = document.createElement('button');
+  del.className = 'note-item-del';
+  del.textContent = '×';
+  del.title = '삭제';
+  del.onclick = () => wrap.remove();
+  wrap.appendChild(span);
+  wrap.appendChild(del);
+  return wrap;
+}
+
+function makeNoteAddBtn(td) {
+  const btn = document.createElement('button');
+  btn.className = 'note-add-btn';
+  btn.textContent = '+ 비고 추가';
+  btn.onclick = () => {
+    const item = makeNoteItem('');
+    td.insertBefore(item, btn);
+    item.querySelector('.note-item-text').focus();
+  };
+  return btn;
+}
 
 /* ── 부분 무이자 테이블 행 추가/삭제 ── */
 function initPartialTableEdit() {
