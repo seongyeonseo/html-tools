@@ -225,7 +225,7 @@ body {
   border-radius: 6px;
   background: var(--pri-alpha);
 }
-/* 삭제 버튼 */
+/* 카드 삭제 버튼 */
 .card-del-btn {
   display: none;
   position: absolute; top: -6px; right: -6px;
@@ -237,6 +237,32 @@ body {
   font-weight: 700;
 }
 .card-item:hover .card-del-btn { display: block; }
+
+/* 부분무이자 행 삭제 버튼 */
+.row-del-btn {
+  display: none;
+  position: absolute; top: 50%; right: 6px;
+  transform: translateY(-50%);
+  width: 20px; height: 20px;
+  background: #e74c3c; color: #fff;
+  border: none; border-radius: 50%;
+  font-size: 11px; text-align: center; line-height: 20px;
+  cursor: pointer; z-index: 10; padding: 0; font-weight: 700;
+  flex-shrink: 0;
+}
+.partial-table tbody tr { position: relative; }
+.partial-table tbody tr:hover .row-del-btn { display: block; }
+
+/* 부분무이자 행 추가 버튼 */
+.partial-add-row {
+  width: 100%; padding: 8px;
+  background: transparent; border: none;
+  color: rgba(255,255,255,.6); font-size: 12px; font-weight: 600;
+  font-family: inherit; cursor: pointer; text-align: center;
+  letter-spacing: -.04em; transition: color .15s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.partial-add-row:hover { color: #fff; }
 
 /* 카드 추가 버튼 - 절대 위치로 레이아웃 영향 없음 */
 .card-list-wrap {
@@ -2060,7 +2086,97 @@ function initAddBtns() {
   document.querySelectorAll('.installment-table .card-item').forEach(addDelBtn);
 }
 
-window.addEventListener('load', () => { setTimeout(initAddBtns, 150); });
+window.addEventListener('load', () => { setTimeout(initAddBtns, 150); setTimeout(initPartialTableEdit, 200); });
+
+/* ── 부분 무이자 테이블 행 추가/삭제 ── */
+function initPartialTableEdit() {
+  document.querySelectorAll('.partial-table').forEach(table => {
+    if (table.dataset.editInit) return;
+    table.dataset.editInit = '1';
+
+    // 기존 행에 삭제 버튼 추가
+    table.querySelectorAll('tbody tr').forEach(addRowDelBtn);
+
+    // 테이블 아래 "+ 행 추가" 버튼
+    const addBtn = document.createElement('button');
+    addBtn.className = 'partial-add-row';
+    addBtn.innerHTML = '＋ 카드사 추가';
+    addBtn.onclick = (e) => { e.stopPropagation(); showPartialCardPicker(addBtn, table); };
+    table.parentNode.insertBefore(addBtn, table.nextSibling);
+  });
+}
+
+function addRowDelBtn(tr) {
+  if (tr.querySelector('.row-del-btn')) return;
+  const btn = document.createElement('button');
+  btn.className = 'row-del-btn';
+  btn.textContent = '✕';
+  btn.title = '행 삭제';
+  btn.onclick = () => tr.remove();
+  tr.querySelector('td').appendChild(btn);
+}
+
+function showPartialCardPicker(anchorBtn, table) {
+  document.querySelectorAll('.card-picker').forEach(p => p.remove());
+
+  const defs = getAllCardDefs();
+  const picker = document.createElement('div');
+  picker.className = 'card-picker';
+
+  const rect = anchorBtn.getBoundingClientRect();
+  picker.style.top = (rect.top - 10) + 'px';
+  picker.style.left = Math.min(rect.left, window.innerWidth - 280) + 'px';
+  picker.style.transform = 'translateY(-100%)';
+
+  const header = document.createElement('div');
+  header.style.cssText = 'width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
+  header.innerHTML = '<span style="font-size:11px;font-weight:700;color:var(--ui-md);">추가할 카드사</span>';
+  const closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:13px;color:#999;';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = () => picker.remove();
+  header.appendChild(closeBtn);
+  picker.appendChild(header);
+
+  Object.values(defs).forEach(def => {
+    const item = document.createElement('div');
+    item.className = 'card-picker-item';
+    item.innerHTML = `<img src="${def.src}" alt="${def.name}"><span>${def.name}</span>`;
+    item.onclick = () => {
+      const tr = createPartialRow(def);
+      table.querySelector('tbody').appendChild(tr);
+      addRowDelBtn(tr);
+      picker.remove();
+    };
+    picker.appendChild(item);
+  });
+
+  document.body.appendChild(picker);
+  setTimeout(() => {
+    document.addEventListener('click', function handler(e) {
+      if (!picker.contains(e.target)) { picker.remove(); document.removeEventListener('click', handler); }
+    });
+  }, 0);
+}
+
+function createPartialRow(def) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td>
+      <div class="partial-card-cell">
+        <div class="card-logo ${def.logoClass}" style="width:32px;height:32px;">
+          <img src="${def.src}" alt="${def.name}">
+        </div>
+        <div class="card-name">${def.name}<br>
+          <span style="font-size:10px;font-weight:400;color:#666;">${def.period}</span>
+        </div>
+      </div>
+    </td>
+    <td><div contenteditable="true" style="white-space:pre-line;min-height:20px;"></div></td>
+    <td class="td-note"><div class="note-right" contenteditable="true"></div></td>
+  `;
+  return tr;
+}
 
 /* ── 카드 드래그&드롭 ── */
 let dragSrc = null;
