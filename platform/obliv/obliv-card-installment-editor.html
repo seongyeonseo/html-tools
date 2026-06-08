@@ -212,6 +212,19 @@ body {
 .canvas-area::-webkit-scrollbar { width: 6px; height: 6px; }
 .canvas-area::-webkit-scrollbar-thumb { background: #C8CDD6; border-radius: 3px; }
 
+/* ── 카드 드래그 */
+.card-item {
+  cursor: grab;
+  transition: opacity .15s, transform .15s;
+}
+.card-item:active { cursor: grabbing; }
+.card-item.dragging { opacity: .35; transform: scale(.9); }
+.card-list.drag-over {
+  outline: 2px dashed var(--ui-primary);
+  border-radius: 6px;
+  background: var(--pri-alpha);
+}
+
 /* ── 리사이즈 핸들 */
 .resize-handle {
   width: 4px; flex-shrink: 0;
@@ -1874,6 +1887,64 @@ function clearHistory() {
 
 // 페이지 로드 시 히스토리 렌더링
 window.addEventListener('DOMContentLoaded', renderHistory);
+
+/* ── 카드 드래그&드롭 ── */
+function initCardDrag() {
+  document.querySelectorAll('.installment-table .card-item').forEach(card => {
+    card.setAttribute('draggable', 'true');
+
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.effectAllowed = 'move';
+      card.classList.add('dragging');
+      // 카드 HTML 저장
+      e.dataTransfer.setData('text/html', card.outerHTML);
+      setTimeout(() => card.style.display = 'none', 0);
+    });
+
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      card.style.display = '';
+      document.querySelectorAll('.card-list').forEach(l => l.classList.remove('drag-over'));
+    });
+  });
+
+  document.querySelectorAll('.installment-table .card-list').forEach(list => {
+    list.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      list.classList.add('drag-over');
+    });
+
+    list.addEventListener('dragleave', () => {
+      list.classList.remove('drag-over');
+    });
+
+    list.addEventListener('drop', e => {
+      e.preventDefault();
+      list.classList.remove('drag-over');
+      const html = e.dataTransfer.getData('text/html');
+      if (!html) return;
+
+      // 기존 dragging 카드 제거
+      const dragging = document.querySelector('.card-item.dragging');
+      if (dragging) dragging.remove();
+
+      // 새 위치에 삽입
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      const newCard = tmp.firstElementChild;
+      newCard.classList.remove('dragging');
+      newCard.style.display = '';
+      list.appendChild(newCard);
+
+      // 이벤트 재등록
+      initCardDrag();
+    });
+  });
+}
+
+// 페이지 로드 후 초기화
+window.addEventListener('load', initCardDrag);
 
 function togglePage(pageId, show) {
   const page = document.getElementById(pageId);
