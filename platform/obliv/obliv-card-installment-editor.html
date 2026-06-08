@@ -1853,12 +1853,14 @@ async function loadFromSheet() {
         });
       });
 
-      // ── 부분 무이자: 할부 조건 업데이트
+      // ── 부분 무이자: 할부 조건 + 날짜 업데이트
       partialRows.forEach(row => {
         // 카드명 첫 줄만 추출 (예: "비씨카드\n(~6.30)" → "비씨카드")
         const rawName = (row[0] || '').split('\n')[0].trim();
         const cardName = CARD_NAME_MAP[rawName] || rawName;
         const val = row[selectedCol] || '';
+        // row[0] 에서 기간 추출 (예: "(~6.30)" → "(~06.30)")
+        const rowPeriod = normalizePeriod((row[0] || '').match(/\(~[\d.]+\)/)?.[0] || '');
 
         // 페이지에서 해당 카드 행 찾기
         page.querySelectorAll('.partial-table tbody tr').forEach(tr => {
@@ -1875,6 +1877,12 @@ async function loadFromSheet() {
           const rawText = (textNodes || directText).replace(/\(~[\d.]+\)/g, '').replace(/\s+/g, '');
           const cardNameClean = cardName.replace(/\s+/g, '');
           if (!rawText.includes(cardNameClean)) return;
+
+          // 카드명 아래 날짜 업데이트
+          if (rowPeriod) {
+            const periodSpan = cell.querySelector('span');
+            if (periodSpan) periodSpan.textContent = rowPeriod;
+          }
 
           const monthsTd = tr.querySelectorAll('td')[1];
           if (!monthsTd) return;
