@@ -1829,24 +1829,26 @@ async function loadFromSheet() {
       const page = document.getElementById(pageId);
       if (!page || page.style.display === 'none') return;
 
-      // ── 전체 무이자: 기간 업데이트
+      // ── 전체 무이자: 기간 업데이트 + 없음인 카드 숨김
       fullRows.forEach(row => {
         const rawName = (row[0] || '').split('\n')[0].trim();
         const cardName = CARD_NAME_MAP[rawName] || rawName;
         const val = row[selectedCol] || '';
-        if (!val || val === '적용대상 X') return;
+        const isNone = !val || val === '없음' || val === '적용대상 X';
 
-        const period = normalizePeriod(val.match(/\(~[\d.]+\)/)?.[0] || '');
-        if (!period) return;
+        page.querySelectorAll('.card-item').forEach(card => {
+          const nameEl = card.querySelector('.card-name-label');
+          if (!nameEl || nameEl.textContent.trim() !== cardName) return;
 
-        // 해당 카드의 기간 텍스트 찾아서 업데이트
-        page.querySelectorAll('.card-name-label, .card-name').forEach(el => {
-          const parent = el.closest('.card-item, .partial-card-cell');
-          if (!parent) return;
-          const nameEl = parent.querySelector('.card-name-label');
-          if (nameEl && nameEl.textContent.trim() === cardName) {
-            const periodEl = parent.querySelector('.card-period');
-            if (periodEl) { periodEl.textContent = period; updated++; }
+          if (isNone) {
+            // 없음인 카드 숨김
+            card.style.display = 'none';
+            updated++;
+          } else {
+            card.style.display = '';
+            const period = normalizePeriod(val.match(/\(~[\d.]+\)/)?.[0] || '');
+            const periodEl = card.querySelector('.card-period');
+            if (period && periodEl) { periodEl.textContent = period; updated++; }
           }
         });
       });
@@ -1878,9 +1880,10 @@ async function loadFromSheet() {
           if (!monthsTd) return;
 
           const noteTd = tr.querySelectorAll('td')[2];
-          if (val === '없음' || val === '적용대상 X') {
-            monthsTd.innerHTML = '<div contenteditable="true" style="color:#c0392b;font-weight:600;">적용대상 X</div>';
-            if (noteTd) noteTd.innerHTML = '';
+          if (val === '없음' || val === '적용대상 X' || val === '없음') {
+            // 없음인 경우 행 숨김
+            tr.style.display = 'none';
+            updated++;
           } else if (val) {
             const { main, note } = convertPartialText(val);
             if (main) monthsTd.innerHTML = `<div contenteditable="true" style="white-space:pre-line;">${main}</div>`;
