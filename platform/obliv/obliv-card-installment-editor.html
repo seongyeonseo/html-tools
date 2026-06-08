@@ -1838,14 +1838,15 @@ async function loadFromSheet() {
 
         page.querySelectorAll('.card-item').forEach(card => {
           const nameEl = card.querySelector('.card-name-label');
-          if (!nameEl || nameEl.textContent.trim() !== cardName) return;
+          if (!nameEl) return;
+          const labelText = nameEl.textContent.replace(/\s+/g,'').trim();
+          const targetText = cardName.replace(/\s+/g,'').trim();
+          if (!labelText.includes(targetText) && !targetText.includes(labelText)) return;
 
           if (isNone) {
-            // 없음인 카드 숨김
-            card.style.display = 'none';
+            card.remove(); // DOM에서 완전 제거
             updated++;
           } else {
-            card.style.display = '';
             const period = normalizePeriod(val.match(/\(~[\d.]+\)/)?.[0] || '');
             const periodEl = card.querySelector('.card-period');
             if (period && periodEl) { periodEl.textContent = period; updated++; }
