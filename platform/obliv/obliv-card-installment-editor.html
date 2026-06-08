@@ -761,6 +761,9 @@ body {
 
   @media print {
     .topbar, .sidebar, .resize-handle { display: none !important; }
+    /* 편집 UI 모두 숨김 */
+    .card-del-btn, .row-del-btn, .card-add-btn,
+    .partial-add-row, .note-add-btn, .note-item-del { display: none !important; }
     .main-layout { display: block; }
     .canvas-area { padding: 0; overflow: visible; }
     body { background: none; overflow: visible; height: auto; }
