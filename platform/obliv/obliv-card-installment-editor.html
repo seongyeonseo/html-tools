@@ -241,28 +241,27 @@ body {
 /* 부분무이자 행 삭제 버튼 */
 .row-del-btn {
   display: none;
-  position: absolute; top: 50%; right: 6px;
-  transform: translateY(-50%);
-  width: 20px; height: 20px;
+  width: 18px; height: 18px;
   background: #e74c3c; color: #fff;
   border: none; border-radius: 50%;
-  font-size: 11px; text-align: center; line-height: 20px;
-  cursor: pointer; z-index: 10; padding: 0; font-weight: 700;
-  flex-shrink: 0;
+  font-size: 10px; text-align: center; line-height: 18px;
+  cursor: pointer; padding: 0; font-weight: 700;
+  flex-shrink: 0; margin-left: 6px;
 }
-.partial-table tbody tr { position: relative; }
-.partial-table tbody tr:hover .row-del-btn { display: block; }
+.partial-table tbody tr:hover .row-del-btn { display: inline-flex; align-items: center; justify-content: center; }
 
 /* 부분무이자 행 추가 버튼 */
 .partial-add-row {
-  width: 100%; padding: 8px;
-  background: transparent; border: none;
-  color: rgba(255,255,255,.6); font-size: 12px; font-weight: 600;
+  width: 100%; padding: 10px;
+  background: rgba(255,255,255,.08); border: none;
+  border-top: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.7); font-size: 12px; font-weight: 600;
   font-family: inherit; cursor: pointer; text-align: center;
-  letter-spacing: -.04em; transition: color .15s;
+  letter-spacing: -.04em; transition: all .15s;
   display: flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 0 0 10px 10px;
 }
-.partial-add-row:hover { color: #fff; }
+.partial-add-row:hover { background: rgba(255,255,255,.16); color: #fff; }
 
 /* 카드 추가 버튼 - 절대 위치로 레이아웃 영향 없음 */
 .card-list-wrap {
@@ -2113,7 +2112,9 @@ function addRowDelBtn(tr) {
   btn.textContent = '✕';
   btn.title = '행 삭제';
   btn.onclick = () => tr.remove();
-  tr.querySelector('td').appendChild(btn);
+  // partial-card-cell 안에 삽입 (flex 레이아웃 활용)
+  const cell = tr.querySelector('.partial-card-cell');
+  if (cell) cell.appendChild(btn);
 }
 
 function showPartialCardPicker(anchorBtn, table) {
