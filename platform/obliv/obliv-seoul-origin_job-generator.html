@@ -714,8 +714,10 @@ function saveState() {
   document.querySelectorAll('[data-b]').forEach(cb => {
     benefitStates[cb.dataset.b] = cb.checked;
   });
+  const customPos = collectCustomPos();
+  const posOrder = collectPosOrder();
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify({ texts, posStates, benefitStates }));
+    localStorage.setItem(SAVE_KEY, JSON.stringify({ texts, posStates, benefitStates, customPos, posOrder }));
   } catch(e) {}
 }
 
@@ -723,7 +725,9 @@ function restoreState() {
   const raw = localStorage.getItem(SAVE_KEY);
   if (!raw) return;
   try {
-    const { texts, posStates, benefitStates } = JSON.parse(raw);
+    const { texts, posStates, benefitStates, customPos, posOrder } = JSON.parse(raw);
+    // 추가된 포지션을 먼저 복구해야 텍스트 인덱스가 맞춰짐
+    rebuildCustomPositions(customPos, posOrder);
     const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
     editables.forEach((el, i) => { if (texts[i] != null) el.innerHTML = texts[i]; });
     Object.entries(posStates).forEach(([id, checked]) => {
@@ -759,10 +763,11 @@ function getSnapshot() {
   document.querySelectorAll('[data-b]').forEach(cb => {
     benefitStates[cb.dataset.b] = cb.checked;
   });
-  return { texts, posStates, benefitStates };
+  return { texts, posStates, benefitStates, customPos: collectCustomPos(), posOrder: collectPosOrder() };
 }
 
 function applySnapshot(snap) {
+  rebuildCustomPositions(snap.customPos, snap.posOrder);
   const editables = document.querySelectorAll('#poster-canvas [contenteditable]');
   editables.forEach((el, i) => { if (snap.texts[i] != null) el.innerHTML = snap.texts[i]; });
   Object.entries(snap.posStates).forEach(([id, checked]) => {
@@ -940,17 +945,8 @@ function bindPosDelButtons() {
 }
 
 // 포지션 추가
-function addPosition(name) {
-  const uid = 'pos-' + Date.now();
-  const rowId = 'row-' + uid;
-  const togId = 'tog-' + uid;
-  posMap[togId] = rowId;
-
-  // 테이블에 행 추가
-  const row = document.createElement('div');
-  row.className = 'recruit-row';
-  row.id = rowId;
-  row.innerHTML = `
+function posDefaultContent(name) {
+  return `
     <div class="col-pos">
       <span contenteditable="true">${name}</span>
       <span contenteditable="true">0명</span>
@@ -962,6 +958,17 @@ function addPosition(name) {
       <span class="req-label">우대사항</span>
       <div contenteditable="true">· </div>
     </div>`;
+}
+
+// 포지션 행 + 토글 생성 (공통)
+function buildPosition(togId, rowId, name, contentHTML, checked) {
+  posMap[togId] = rowId;
+
+  // 테이블에 행 추가
+  const row = document.createElement('div');
+  row.className = 'recruit-row' + (checked ? '' : ' hidden');
+  row.id = rowId;
+  row.innerHTML = contentHTML;
   document.querySelector('.recruit-table').appendChild(row);
 
   // 사이드바에 토글 추가
@@ -971,7 +978,7 @@ function addPosition(name) {
   li.draggable = true;
   li.innerHTML = `
     <span class="pos-drag-handle">⠿</span>
-    <input type="checkbox" checked id="${togId}">
+    <input type="checkbox" ${checked ? 'checked' : ''} id="${togId}">
     <label for="${togId}">${name}</label>
     <button class="pos-del">✕</button>`;
   li.querySelector('input').addEventListener('change', e => {
@@ -980,7 +987,55 @@ function addPosition(name) {
   });
   document.getElementById('pos-toggle-list').appendChild(li);
   bindPosDelButtons();
+  return row;
+}
+
+function addPosition(name) {
+  const uid = 'pos-' + Date.now();
+  const rowId = 'row-' + uid;
+  const togId = 'tog-' + uid;
+  buildPosition(togId, rowId, name, posDefaultContent(name), true);
   saveState();
+}
+
+// 추가된(기본이 아닌) 포지션의 구조/순서 수집·복원
+function collectCustomPos() {
+  const arr = [];
+  document.querySelectorAll('#pos-toggle-list .pos-toggle-item').forEach(li => {
+    const togId = li.dataset.tog;
+    if (ORIGINAL_TOG_IDS.has(togId)) return;
+    arr.push({
+      togId,
+      rowId: posMap[togId],
+      name: li.querySelector('label')?.textContent || '',
+      checked: li.querySelector('input')?.checked !== false,
+    });
+  });
+  return arr;
+}
+
+function collectPosOrder() {
+  return [...document.querySelectorAll('.recruit-table .recruit-row')].map(r => r.id);
+}
+
+function rebuildCustomPositions(customPos, posOrder) {
+  if (Array.isArray(customPos)) {
+    customPos.forEach(p => {
+      if (!p || !p.rowId || document.getElementById(p.rowId)) return;
+      buildPosition(p.togId, p.rowId, p.name, posDefaultContent(p.name), p.checked !== false);
+    });
+  }
+  if (Array.isArray(posOrder) && posOrder.length) {
+    const table = document.querySelector('.recruit-table');
+    const list = document.getElementById('pos-toggle-list');
+    posOrder.forEach(rowId => {
+      const row = document.getElementById(rowId);
+      if (row) table.appendChild(row);
+      const togId = Object.keys(posMap).find(k => posMap[k] === rowId);
+      const li = togId && list.querySelector(`.pos-toggle-item[data-tog="${togId}"]`);
+      if (li) list.appendChild(li);
+    });
+  }
 }
 
 // 포지션 토글
@@ -994,6 +1049,8 @@ const posMap = {
   'tog-manual':      'row-manual',
   'tog-nail':        'row-nail',
 };
+// 기본 제공 포지션 id (추가된 포지션과 구분용)
+const ORIGINAL_TOG_IDS = new Set(Object.keys(posMap));
 Object.entries(posMap).forEach(([cbId, rowId]) => {
   const cb = document.getElementById(cbId);
   if (!cb) return;
