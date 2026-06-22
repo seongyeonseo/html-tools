@@ -63,6 +63,10 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
 .team-delete-btn{width:26px;height:26px;border-radius:50%;background:rgba(220,50,50,0.85);color:#fff;border:none;cursor:pointer;font-size:17px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;padding:0;}
 .team-delete-btn:hover{background:rgba(200,30,30,1);}
 .edit-only{display:inline-flex;}
+.add-fax-btn{margin-top:10px;margin-left:50px;padding:7px 18px;border-radius:22px;border:1.5px dashed rgba(44,91,255,.5);background:rgba(44,91,255,.07);color:var(--accent);font-family:'Pretendard',sans-serif;font-size:21px;font-weight:600;cursor:pointer;letter-spacing:-0.02em;line-height:1;}
+.add-fax-btn:hover{background:rgba(44,91,255,.14);}
+.contact-delete-btn{width:30px;height:30px;border-radius:50%;background:rgba(220,50,50,0.85);color:#fff;border:none;cursor:pointer;font-size:20px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;padding:0;align-self:center;}
+.contact-delete-btn:hover{background:rgba(200,30,30,1);}
 </style>
 </head>
 <body>
@@ -130,6 +134,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                       <span class="contact-label">E.</span>
                       <span class="contact-value" contenteditable="true" data-label="이메일">name@leshine.co.kr</span>
                     </div>
+                    <button class="add-fax-btn edit-only" data-fax-mode="std">+ 팩스 추가</button>
                   </div>
                 </div>
                 <div class="back-bottom">
@@ -232,6 +237,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                       <span class="contact-label">E.</span>
                       <span class="contact-value" contenteditable="true">name@onlif.co.kr</span>
                     </div>
+                    <button class="add-fax-btn edit-only" data-fax-mode="std">+ 팩스 추가</button>
                   </div>
                 </div>
                 <div class="back-bottom">
@@ -332,6 +338,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                       <span class="contact-label">E.</span>
                       <span class="contact-value" contenteditable="true">name@obliv.co.kr</span>
                     </div>
+                    <button class="add-fax-btn edit-only" data-fax-mode="std">+ 팩스 추가</button>
                   </div>
                 </div>
                 <div class="back-bottom">
@@ -439,7 +446,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                   <div style="font-family:'Poppins',sans-serif;font-size:30px;font-weight:300;font-style:italic;color:#bbb;letter-spacing:0;cursor:text;white-space:nowrap;" contenteditable="true">"Aggregate &amp; Accelerate"</div>
                 </div>
                 <!-- 우하단: 연락처 -->
-                <div style="position:absolute;bottom:67px;left:500px;text-align:left;">
+                <div style="position:absolute;bottom:67px;left:500px;text-align:left;" id="medib-contact">
                   <div style="display:flex;align-items:baseline;margin-bottom:9px;">
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:700;color:#395fa9;min-width:44px;text-align:center;">M</span>
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:400;color:#333;cursor:text;margin-left:16px;" contenteditable="true">010 9319 8065</span>
@@ -448,10 +455,11 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:700;color:#395fa9;min-width:44px;text-align:center;">E</span>
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:400;color:#333;cursor:text;margin-left:16px;" contenteditable="true">name@medibuilder.com</span>
                   </div>
-                  <div style="display:flex;align-items:baseline;">
+                  <div style="display:flex;align-items:baseline;" id="medib-addr-row">
                     <span style="font-family:'Poppins',sans-serif;font-size:28px;font-weight:700;color:#395fa9;min-width:44px;text-align:center;">A</span>
                     <span style="font-family:'Pretendard',sans-serif;font-size:26px;font-weight:400;color:#333;cursor:text;letter-spacing:-0.04em;margin-left:16px;" contenteditable="true">서울시 강남구 테헤란로 123, 8층</span>
                   </div>
+                  <button class="add-fax-btn edit-only" data-fax-mode="medib" style="margin-left:60px;">+ 팩스 추가</button>
                 </div>
               </div>
             </div>
@@ -494,6 +502,26 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
   var currentBrand='leshine';
   function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},2500);}
   function switchBrand(brand){currentBrand=brand;document.querySelectorAll('.brand-tab').forEach(function(t){t.classList.toggle('active',t.dataset.brand===brand);});document.querySelectorAll('.brand-section').forEach(function(s){s.classList.remove('active');});document.getElementById('section-'+brand).classList.add('active');document.getElementById('medib-team-section').style.display=brand==='medib'?'block':'none';}
+  function focusEditable(el){var range=document.createRange();range.selectNodeContents(el);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);el.focus();}
+  function addFaxStd(btn){
+    var item=document.createElement('div');item.className='contact-item';
+    var label=document.createElement('span');label.className='contact-label';label.textContent='F.';
+    var value=document.createElement('span');value.className='contact-value';value.contentEditable='true';value.setAttribute('data-label','팩스');value.textContent='02 0000 0000';
+    var del=document.createElement('button');del.className='contact-delete-btn edit-only';del.innerHTML='&times;';del.title='삭제';del.addEventListener('click',function(){item.remove();});
+    item.appendChild(label);item.appendChild(value);item.appendChild(del);
+    btn.parentNode.insertBefore(item,btn);
+    focusEditable(value);
+  }
+  function addFaxMedib(){
+    var addr=document.getElementById('medib-addr-row');if(!addr)return;
+    var row=document.createElement('div');row.style.cssText='display:flex;align-items:baseline;margin-bottom:9px;';
+    var label=document.createElement('span');label.style.cssText="font-family:'Poppins',sans-serif;font-size:28px;font-weight:700;color:#395fa9;min-width:44px;text-align:center;";label.textContent='F';
+    var value=document.createElement('span');value.style.cssText="font-family:'Poppins',sans-serif;font-size:28px;font-weight:400;color:#333;cursor:text;margin-left:16px;";value.contentEditable='true';value.textContent='02 0000 0000';
+    var del=document.createElement('button');del.className='contact-delete-btn edit-only';del.innerHTML='&times;';del.title='삭제';del.style.marginLeft='12px';del.addEventListener('click',function(){row.remove();});
+    row.appendChild(label);row.appendChild(value);row.appendChild(del);
+    addr.parentNode.insertBefore(row,addr);
+    focusEditable(value);
+  }
   function addTeam(){var container=document.getElementById('medib-teams');var item=document.createElement('div');item.className='team-item';var text=document.createElement('div');text.className='team-item-text';text.contentEditable='true';text.textContent='팀 이름';var btn=document.createElement('button');btn.className='team-delete-btn edit-only';btn.innerHTML='&times;';btn.title='삭제';btn.addEventListener('click',function(){item.remove();});item.appendChild(text);item.appendChild(btn);container.appendChild(item);var range=document.createRange();range.selectNodeContents(text);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);text.focus();}
   async function captureCard(cardId){var original=document.getElementById(cardId);if(!original)return null;var tmp=document.createElement('div');tmp.style.cssText='position:fixed;left:-9999px;top:0;width:1039px;height:587px;overflow:hidden;z-index:-1;background:#fff;';var clone=original.cloneNode(true);clone.style.cssText='width:1039px;height:587px;transform:none;position:relative;font-family:Pretendard,-apple-system,sans-serif;letter-spacing:-0.03em;background:#fff;';clone.querySelectorAll('.edit-only').forEach(function(el){el.style.display='none';});tmp.appendChild(clone);document.body.appendChild(tmp);await new Promise(function(r){setTimeout(r,200);});var canvas=await html2canvas(tmp,{scale:3,useCORS:true,allowTaint:true,backgroundColor:'#ffffff',width:1039,height:587,logging:false});document.body.removeChild(tmp);return canvas;}
   function getDateStr(){var d=new Date();return d.getFullYear().toString()+(('0'+(d.getMonth()+1)).slice(-2))+(('0'+d.getDate()).slice(-2));}
@@ -503,6 +531,7 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
   document.addEventListener('DOMContentLoaded',function(){
     document.querySelectorAll('.brand-tab').forEach(function(tab){tab.addEventListener('click',function(){switchBrand(tab.dataset.brand);});});
     document.getElementById('btn-add-team').addEventListener('click',function(){addTeam();});
+    document.querySelectorAll('.add-fax-btn').forEach(function(btn){btn.addEventListener('click',function(){if(btn.dataset.faxMode==='medib'){addFaxMedib();}else{addFaxStd(btn);}});});
     document.getElementById('sb-front-png').addEventListener('click',function(){exportPNG('front');});
     document.getElementById('sb-back-png').addEventListener('click',function(){exportPNG('back');});
     document.getElementById('sb-pdf').addEventListener('click',function(){exportPDF();});
