@@ -582,7 +582,7 @@ body {
             <svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="acc-body closed">
-            <div class="field-hint">Enter로 항목 구분</div>
+            <div class="field-hint">Enter로 항목 구분 · Shift+Enter로 기호 없는 줄바꿈</div>
             <div class="field">
               <textarea id="in-duties" rows="4">파트너 병원과 구축하는 성약 체결 Full-cycle
 원무지 채용 통한 병원 기반/성장관리
@@ -674,7 +674,7 @@ body {
             <svg class="acc-arr" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
           <div class="acc-body closed">
-            <div class="field-hint">Enter로 항목 구분</div>
+            <div class="field-hint">Enter로 항목 구분 · Shift+Enter로 기호 없는 줄바꿈</div>
             <div class="field"><textarea id="in-duties-p2" rows="4">업무 내용을 입력하세요</textarea></div>
           </div>
         </div>
@@ -1002,12 +1002,23 @@ body {
   });
 
   /* ── 리스트 렌더 */
-  function renderList(text) {
-    return text.split("\n").filter(function(l){return l.trim();}).map(function(l){
-      if(l.startsWith("## ")) return '<li class="list-subheading">'+renderMarkup(l.slice(3).trim())+'</li>';
-      if(l.startsWith("# "))  return '<li class="list-heading" style="color:'+BRAND_COLOR+'">'+renderMarkup(l.slice(2).trim())+'</li>';
-      if(/^[ \t]{2,}/.test(l)) return '<li class="indented">'+renderMarkup(l.trim())+'</li>';
-      return "<li>"+renderMarkup(l.trim())+"</li>";
+  function renderList(text){
+    var items=[];
+    text.split("\n").forEach(function(l){
+      if(!l.trim())return;
+      var t=l.trim();
+      if(t.startsWith("\\")){ // \ 로 시작하는 줄 = 이전 항목의 이어지는 줄 (기호 없음)
+        if(items.length){items[items.length-1].text+="\n"+t.slice(1).trim();return;}
+        t=t.slice(1).trim();
+      }
+      if(l.startsWith("## "))items.push({cls:"list-subheading",text:l.slice(3).trim()});
+      else if(l.startsWith("# "))items.push({cls:"list-heading",text:l.slice(2).trim()});
+      else if(/^[ \t]{2,}/.test(l))items.push({cls:"indented",text:t});
+      else items.push({cls:"",text:t});
+    });
+    return items.map(function(it){
+      var style=it.cls==="list-heading"?' style="color:'+BRAND_COLOR+'"':'';
+      return '<li'+(it.cls?' class="'+it.cls+'"':'')+style+'>'+renderMarkup(it.text)+'</li>';
     }).join("");
   }
 
@@ -1024,6 +1035,7 @@ body {
         if((e.ctrlKey||e.metaKey)&&e.shiftKey&&(e.key==="X"||e.key==="x")){
           e.preventDefault(); toggleColor(this);
         }
+        if(e.key==="Enter"&&e.shiftKey){ e.preventDefault(); replaceAt(this,this.selectionStart,this.selectionEnd,"\n\\ "); }
       });
       document.getElementById("out-"+key+sfx).innerHTML=renderList(el.value);
     });
