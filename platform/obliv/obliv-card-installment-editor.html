@@ -698,14 +698,11 @@ body {
     font-size: 11.5px;
     line-height: 1.55;
   }
-  .partial-table tr:nth-child(1) td { background: var(--table-row-light); }
-  .partial-table tr:nth-child(2) td { background: var(--table-row-white); }
-  .partial-table tr:nth-child(3) td { background: var(--table-row-blue); }
-  .partial-table tr:nth-child(4) td { background: var(--table-row-pink); }
-  .partial-table tr:nth-child(5) td { background: var(--table-row-light); }
-  .partial-table tr:nth-child(6) td { background: var(--table-row-white); }
-  .partial-table tr:nth-child(7) td { background: var(--table-row-blue); }
-  .partial-table tr:nth-child(8) td { background: var(--table-row-pink); }
+  /* 4색 반복 — 행 개수와 무관하게 배경 유지 (카드사 추가 대응) */
+  .partial-table tr:nth-child(4n+1) td { background: var(--table-row-light); }
+  .partial-table tr:nth-child(4n+2) td { background: var(--table-row-white); }
+  .partial-table tr:nth-child(4n+3) td { background: var(--table-row-blue); }
+  .partial-table tr:nth-child(4n)   td { background: var(--table-row-pink); }
 
   .partial-card-cell {
     display: flex;
