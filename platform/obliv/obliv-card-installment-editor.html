@@ -1646,8 +1646,10 @@ const LOGO_ORIGIN = "data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZ
 function selectBranch(btn) {
   document.querySelectorAll('.col-btn[data-branch]').forEach(b => b.classList.remove('active'));
   btn.classList.add("active");
-  const src = btn.dataset.branch === 'origin' ? LOGO_ORIGIN : LOGO_SONGDO;
-  document.querySelectorAll('.brand-logo img').forEach(img => { img.src = src; });
+  const isOrigin = btn.dataset.branch === 'origin';
+  const src = isOrigin ? LOGO_ORIGIN : LOGO_SONGDO;
+  const h = isOrigin ? '32px' : '21px';
+  document.querySelectorAll('.brand-logo img').forEach(img => { img.src = src; img.style.height = h; });
 }
 
 function parseCSVFull(text) {
