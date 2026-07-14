@@ -1412,11 +1412,11 @@ const PAGE_H = 1123;
 
 function fitPages() {
   document.querySelectorAll('.page').forEach(page => {
-    // 기존 wrap이 있으면 제거 후 다시 측정
-    const existingWrap = page.querySelector('.page-fit-wrap');
-    if (existingWrap) {
-      existingWrap.style.transform = 'none';
-    }
+    const wrap = page.querySelector('.page-fit-wrap');
+    // 측정 전 이전 축소 상태 초기화 (카드 삭제 시 원상복구되도록)
+    if (wrap) wrap.style.transform = 'none';
+    page.style.height = '';
+    page.style.overflow = '';
 
     const contentH = page.scrollHeight;
     if (contentH <= PAGE_H) return; // 넘치지 않으면 그대로
@@ -1424,13 +1424,20 @@ function fitPages() {
     const scale = PAGE_H / contentH;
     page.style.height = PAGE_H + 'px';
     page.style.overflow = 'hidden';
-    if (existingWrap) {
-      existingWrap.style.transform = `scale(${scale})`;
-      existingWrap.style.transformOrigin = 'top center';
-      existingWrap.style.marginLeft = 'auto';
-      existingWrap.style.marginRight = 'auto';
+    if (wrap) {
+      wrap.style.transform = `scale(${scale})`;
+      wrap.style.transformOrigin = 'top center';
+      wrap.style.marginLeft = 'auto';
+      wrap.style.marginRight = 'auto';
     }
   });
+}
+
+// 콘텐츠 변경 시마다 자동 재피트 (디바운스)
+let _fitTimer = null;
+function scheduleFit() {
+  clearTimeout(_fitTimer);
+  _fitTimer = setTimeout(fitPages, 120);
 }
 
 function wrapPages() {
@@ -1446,6 +1453,11 @@ function wrapPages() {
 window.addEventListener('load', () => {
   wrapPages();
   setTimeout(fitPages, 100); // 이미지 로드 여유
+  // 카드/행 추가·삭제 등 구조 변경 시 자동 재피트
+  const pagesEl = document.getElementById('pages');
+  if (pagesEl) {
+    new MutationObserver(scheduleFit).observe(pagesEl, { childList: true, subtree: true });
+  }
 });
 
 /* ── 테마 컬러 적용 ── */
@@ -2319,6 +2331,23 @@ function initCardDragOne(card) {
   });
 }
 
+// 포인터 위치 기준으로 삽입할 카드(그 앞에 넣을 대상) 찾기 — 줄바꿈(wrap) 레이아웃 대응
+function getDropTarget(list, x, y) {
+  const cards = [...list.querySelectorAll('.card-item:not(.dragging)')];
+  let closest = null, closestDist = Infinity, insertAfter = false;
+  for (const c of cards) {
+    const r = c.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const d = Math.hypot(x - cx, y - cy);
+    if (d < closestDist) {
+      closestDist = d;
+      closest = c;
+      insertAfter = x > cx; // 카드 중앙보다 오른쪽이면 뒤에 삽입
+    }
+  }
+  return { closest, insertAfter };
+}
+
 function initCardDrag() {
   document.querySelectorAll('.installment-table .card-item').forEach(initCardDragOne);
 
@@ -2330,6 +2359,16 @@ function initCardDrag() {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
       list.classList.add('drag-over');
+      if (!dragSrc) return;
+      // 같은 리스트든 다른 리스트든 포인터 위치에 실시간 재배치
+      const { closest, insertAfter } = getDropTarget(list, e.clientX, e.clientY);
+      if (!closest) {
+        list.appendChild(dragSrc);
+      } else if (insertAfter) {
+        closest.after(dragSrc);
+      } else {
+        closest.before(dragSrc);
+      }
     });
 
     list.addEventListener('dragleave', e => {
@@ -2341,11 +2380,9 @@ function initCardDrag() {
     list.addEventListener('drop', e => {
       e.preventDefault();
       list.classList.remove('drag-over');
-      if (!dragSrc || dragSrc.closest('.card-list') === list) return;
-      // 원래 위치에서 제거 후 새 위치에 추가
-      list.appendChild(dragSrc);
-      dragSrc.classList.remove('dragging');
+      if (dragSrc) dragSrc.classList.remove('dragging');
       dragSrc = null;
+      scheduleFit();
     });
   });
 }
