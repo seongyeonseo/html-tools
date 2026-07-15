@@ -250,6 +250,19 @@ body {
 }
 .partial-table tbody tr:hover .row-del-btn { display: inline-flex; align-items: center; justify-content: center; }
 
+/* 부분무이자 행 순서 이동 버튼 */
+.row-move-group { display: none; flex-direction: column; gap: 2px; flex-shrink: 0; margin-left: 6px; }
+.partial-table tbody tr:hover .row-move-group { display: inline-flex; }
+.row-move-btn {
+  width: 18px; height: 15px;
+  background: var(--green); color: #fff;
+  border: none; border-radius: 4px;
+  font-size: 9px; line-height: 15px; text-align: center;
+  cursor: pointer; padding: 0; font-weight: 700;
+}
+.row-move-btn:hover { filter: brightness(1.15); }
+.row-move-btn:disabled { opacity: .3; cursor: default; }
+
 /* 비고 노트 아이템 */
 .note-item {
   display: flex; align-items: flex-start; gap: 4px;
@@ -759,7 +772,7 @@ body {
   @media print {
     .topbar, .sidebar, .resize-handle { display: none !important; }
     /* 편집 UI 모두 숨김 */
-    .card-del-btn, .row-del-btn, .card-add-btn,
+    .card-del-btn, .row-del-btn, .card-add-btn, .row-move-group,
     .partial-add-row, .note-add-btn, .note-item-del { display: none !important; }
     .main-layout { display: block; }
     .canvas-area { padding: 0; overflow: visible; }
@@ -2236,15 +2249,60 @@ function initPartialTableEdit() {
 }
 
 function addRowDelBtn(tr) {
-  if (tr.querySelector('.row-del-btn')) return;
-  const btn = document.createElement('button');
-  btn.className = 'row-del-btn';
-  btn.textContent = '✕';
-  btn.title = '행 삭제';
-  btn.onclick = () => tr.remove();
-  // partial-card-cell 안에 삽입 (flex 레이아웃 활용)
   const cell = tr.querySelector('.partial-card-cell');
-  if (cell) cell.appendChild(btn);
+  if (!cell) return;
+
+  // 순서 이동 버튼 (▲▼)
+  if (!cell.querySelector('.row-move-group')) {
+    const group = document.createElement('div');
+    group.className = 'row-move-group';
+    const up = document.createElement('button');
+    up.className = 'row-move-btn'; up.textContent = '▲'; up.title = '위로';
+    up.onclick = () => movePartialRow(tr, -1);
+    const down = document.createElement('button');
+    down.className = 'row-move-btn'; down.textContent = '▼'; down.title = '아래로';
+    down.onclick = () => movePartialRow(tr, 1);
+    group.appendChild(up); group.appendChild(down);
+    cell.appendChild(group);
+  }
+
+  // 삭제 버튼
+  if (!cell.querySelector('.row-del-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'row-del-btn';
+    btn.textContent = '✕';
+    btn.title = '행 삭제';
+    btn.onclick = () => { const t = tr.closest('table'); tr.remove(); refreshPartialMoveState(t); };
+    cell.appendChild(btn);
+  }
+
+  refreshPartialMoveState(tr.closest('table'));
+}
+
+// 행 한 칸 위/아래로 이동
+function movePartialRow(tr, dir) {
+  const tbody = tr.parentElement;
+  if (!tbody) return;
+  if (dir < 0) {
+    const prev = tr.previousElementSibling;
+    if (prev) tbody.insertBefore(tr, prev);
+  } else {
+    const next = tr.nextElementSibling;
+    if (next) tbody.insertBefore(next, tr);
+  }
+  refreshPartialMoveState(tr.closest('table'));
+}
+
+// 첫/마지막 행의 이동 버튼 비활성화 처리
+function refreshPartialMoveState(table) {
+  if (!table) return;
+  const rows = [...table.querySelectorAll('tbody tr')];
+  rows.forEach((tr, i) => {
+    const up = tr.querySelector('.row-move-btn[title="위로"]');
+    const down = tr.querySelector('.row-move-btn[title="아래로"]');
+    if (up) up.disabled = (i === 0);
+    if (down) down.disabled = (i === rows.length - 1);
+  });
 }
 
 function showPartialCardPicker(anchorBtn, table) {
