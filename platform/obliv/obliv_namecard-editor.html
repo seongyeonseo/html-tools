@@ -339,13 +339,30 @@ body{font-family:'Pretendard',-apple-system,sans-serif;background:transparent;mi
     showToast('저장 중...');await new Promise(function(r){setTimeout(r,60);});
     fitLogos(currentBrand);
     var jsPDF=window.jspdf.jsPDF;
-    var pdf=new jsPDF({orientation:'landscape',unit:'pt',format:[252.283,167.244]});
+    var MM=2.834645669;                 // 1mm in pt
+    // 재단(완성) 85×55 + 사방 도련 2mm = 89×59 이미지, 그 바깥 4mm 여백에 재단선(크롭마크)
+    var pageW=97*MM, pageH=67*MM;       // 97×67mm 문서
+    var bleedW=89*MM, bleedH=59*MM;     // 도련 포함 카드 이미지
+    var imgX=(pageW-bleedW)/2, imgY=(pageH-bleedH)/2;  // 사방 4mm
+    function drawCropMarks(pdf){
+      var g=2*MM, L=3.5*MM;             // 도련폭만큼 갭 + 마크 길이
+      var tx1=imgX+2*MM, ty1=imgY+2*MM;               // 재단선 좌상단
+      var tx2=imgX+bleedW-2*MM, ty2=imgY+bleedH-2*MM; // 재단선 우하단
+      pdf.setDrawColor(0,0,0);pdf.setLineWidth(0.3);
+      pdf.line(tx1,ty1-g-L,tx1,ty1-g); pdf.line(tx1-g-L,ty1,tx1-g,ty1); // 좌상
+      pdf.line(tx2,ty1-g-L,tx2,ty1-g); pdf.line(tx2+g,ty1,tx2+g+L,ty1); // 우상
+      pdf.line(tx1,ty2+g,tx1,ty2+g+L); pdf.line(tx1-g-L,ty2,tx1-g,ty2); // 좌하
+      pdf.line(tx2,ty2+g,tx2,ty2+g+L); pdf.line(tx2+g,ty2,tx2+g+L,ty2); // 우하
+    }
+    var pdf=new jsPDF({orientation:'landscape',unit:'pt',format:[pageW,pageH]});
     var cf=await captureCard('card-front-'+currentBrand);
     var cb=await captureCard('card-back-'+currentBrand);
     if(!cf||!cb)return;
-    pdf.addImage(cf.toDataURL('image/png'),'PNG',0,0,252.283,167.244);
-    pdf.addPage([252.283,167.244],'landscape');
-    pdf.addImage(cb.toDataURL('image/png'),'PNG',0,0,252.283,167.244);
+    pdf.addImage(cf.toDataURL('image/png'),'PNG',imgX,imgY,bleedW,bleedH);
+    drawCropMarks(pdf);
+    pdf.addPage([pageW,pageH],'landscape');
+    pdf.addImage(cb.toDataURL('image/png'),'PNG',imgX,imgY,bleedW,bleedH);
+    drawCropMarks(pdf);
     var name=getNameStr();
     pdf.save(getDateStr()+'_'+brandNames[currentBrand]+'_양면'+(name?'_'+name:'')+'.pdf');
     showToast('저장 완료!');
